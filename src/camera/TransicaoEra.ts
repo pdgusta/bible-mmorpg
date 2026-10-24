@@ -27,9 +27,6 @@ export interface OpcoesTransicaoEra {
 /** Raio (m) a partir do qual o mundo começa a se dissolver / até onde se revela. */
 const RAIO_TOTAL = 420;
 const RAIO_INFINITO = 1e6;
-const RAIO_TERRENO_INFINITO = 99999;
-/** O terreno afunda numa faixa de 25 m e os objetos encolhem em 20 m: o chão vai atrás. */
-const FOLGA_TERRENO = 15;
 
 const suave = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 
@@ -106,16 +103,11 @@ export async function transicaoEra(jogo: Jogo, op: OpcoesTransicaoEra): Promise<
   const olhar = new THREE.Vector3();
   const tmp = new THREE.Vector3();
   const centroRosto = new THREE.Vector3();
-  const unif = () => jogo.mundo?.terreno.uniforms;
+  // o terreno usa os mesmos uniforms (GLOBAIS); as faixas de Shaders.ts afundam o chão depois
+  // de a vegetação e as estruturas encolherem (nada flutua)
   const definirRaio = (r: number, centro: THREE.Vector3) => {
     GLOBAIS.uCentro.value.set(centro.x, centro.z);
     GLOBAIS.uRaio.value = r;
-    const u = unif();
-    if (u) {
-      u.uCentro.value.set(centro.x, centro.z);
-      // o chão afunda um pouco depois de a vegetação e as estruturas encolherem (nada flutua)
-      u.uRaio.value = r + FOLGA_TERRENO;
-    }
   };
   /** Esconde quem está fora do raio (pessoas não usam o "patch" de revelação). */
   const visibilidade = (r: number, centro: THREE.Vector3, exceto: Personagem) => {
@@ -195,7 +187,6 @@ export async function transicaoEra(jogo: Jogo, op: OpcoesTransicaoEra): Promise<
 
     // clarão dourado: a troca acontece no auge da luz
     await durante(jogo, 0.45, (k) => filtro.aplicar(lerp(0.8, 1, k), easeIn(k)));
-    novo.terreno.uniforms.uRaio.value = FOLGA_TERRENO;
     GLOBAIS.uRaio.value = 0;
     jogo.definirMundo(novo);
     const prot = op.criarProtagonista(novo);
@@ -252,8 +243,6 @@ export async function transicaoEra(jogo: Jogo, op: OpcoesTransicaoEra): Promise<
   } finally {
     // estado limpo mesmo se algo falhar
     GLOBAIS.uRaio.value = RAIO_INFINITO;
-    const u = unif();
-    if (u) u.uRaio.value = RAIO_TERRENO_INFINITO;
     const m = jogo.mundo;
     if (m) {
       for (const p of m.personagens.values()) p.humano.visivel = true;

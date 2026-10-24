@@ -86,7 +86,7 @@ Chamada: `transicaoEra(jogo, {de, criarMundo, criarProtagonista, nomes, aoNome?,
 Detalhes:
 - Os nomes da genealogia saem por `aoNome`. Ligue `(n, i) => ui.genealogia(n, i)` e, no fim, chame `ui.genealogia(null)`.
 - Emite 'era:transicao' quando recebe `eras`.
-- **Atenção:** as faixas de revelação têm larguras diferentes. A vegetação e as estruturas encolhem numa faixa de 20 m, e o terreno afunda em 25 m. A transição soma 15 m de folga ao `uRaio` do terreno. A água não tem revelação: a malha fica escondida durante a transição.
+- **Atenção:** o terreno usa os mesmos uniforms (`GLOBAIS.uCentro`/`uRaio`). As faixas de `Shaders.ts` vêm encadeadas: a vegetação e as instâncias encolhem nos 20 m de dentro, e o terreno e as estruturas afundam nos 20 m de fora (ver `tecnico/motor.md`). A transição só escreve nos `GLOBAIS`. A água não tem revelação: a malha fica escondida durante a transição.
 
 ## Teste (`node e2e/teste-troca.mjs [pasta] [--era]`)
 

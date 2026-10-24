@@ -41,7 +41,7 @@ troncos()                                   // colisores dos troncos; distanciaM
 1. de `uRaio − 20` a `uRaio`: vegetação, grama e instâncias encolhem até sumir (`glslEncolher`);
 2. de `uRaio` a `uRaio + 20`: terreno e estruturas (malhas com `aplicarPatch`, sem instância) afundam até `AFUNDAR_REVELAR` (30 m) e a água se apaga no começo do afundamento (`glslAfundar`).
 
-Assim nada flutua sobre o buraco, seja qual for o raio. A `FOLGA_TERRENO` de `src/camera/TransicaoEra.ts` não tem mais efeito (escreve no mesmo objeto) e pode sair. Shaders próprios que queiram participar declaram `uniform vec2 uCentro; uniform float uRaio;`, ligam aos `GLOBAIS` e usam essas funções (ex.: `src/eras/abraao/estruturas.ts`, que ainda tem a faixa de encolher escrita à mão).
+Assim nada flutua sobre o buraco, seja qual for o raio. Shaders próprios que queiram participar declaram `uniform vec2 uCentro; uniform float uRaio;`, ligam aos `GLOBAIS` e usam essas funções (ex.: `src/eras/abraao/estruturas.ts`, que ainda tem a faixa de encolher escrita à mão).
 
 ## Neblina e céu
 - A neblina linear do three foi trocada por uma curva suave (ease-out) entre `near` e `far` (`Ceu.ajustarDistancia(dist)`: 9% e 210% do alcance do preset), mais rala no alto: entre 14 m e 75 m de altitude ela perde até 40%. As cristas do horizonte guardam o relevo em vez de virar recortes chapados.
