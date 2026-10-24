@@ -13,7 +13,7 @@ Renderização (`src/render/*`), mundo físico (`src/mundo/*`), o vale de Noé (
 | `src/render/Agua.ts` | Plano de água com cor por profundidade (textura de alturas), espuma, ondas, reflexo do céu, turbidez, recorte (casco da arca) e nível animável. |
 | `src/render/Natureza.ts` | Vegetação e rochas do `natureza.glb` instanciadas por variante, com 3 níveis de detalhe e cor por variante. Ver abaixo. |
 | `src/render/Chuva.ts` | Chuva em 1 draw call: riscos numa caixa que acompanha a câmera, posição calculada no shader. `definir(alvo, segundos)`. |
-| `src/render/Simplificar.ts` | `simplificarIndice(g, fracao, op)`: índice simplificado pelo meshopt sobre os vértices originais, com solda por posição e escolha do lado da costura por um atributo (`uv` nas árvores, `color` nos humanos). `simplificadorPronto` resolve quando o WASM carrega. Testes em `Simplificar.test.ts`. |
+| `src/render/Simplificar.ts` | `simplificarIndice(g, fracao, op)`: índice simplificado pelo meshopt sobre os vértices originais, com solda por posição (e pelas influências de ossos, em malhas com esqueleto) e escolha do lado da costura por um atributo (`uv` nas árvores, `color` nos humanos). `simplificadorPronto` resolve quando o WASM carrega. Testes em `Simplificar.test.ts`. |
 | `src/render/Ativos.ts` | Carregador glTF com cache (meshopt) e `extrairPartes` (malhas → Lambert, folha × sólido). |
 | `src/mundo/Mundo.ts` | `Mundo`: relevo, colisões, física, terreno, natureza, grama, água, estruturas, interativos, áreas, pontos, escaladas, personagens. |
 | `src/mundo/Relevo.ts` | Campo de alturas em grade (passo 1 m), `altura`, `normal`, `inclinacao`, raio contra o terreno; formas auxiliares (`achatar`, `fatorBorda`, `distPolilinha`). |

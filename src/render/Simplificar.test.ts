@@ -2,25 +2,36 @@ import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { simplificadorPronto, simplificarIndice } from './Simplificar';
 
-/** Esfera com uma costura de cor: metade de cima vermelha, de baixo azul, com vértices duplicados no equador. */
-function esferaCosturada() {
+/**
+ * Esfera com uma costura no equador (vértices duplicados): metade de cima vermelha, de baixo azul.
+ * Com `ossos`, as duas metades têm a mesma cor e ficam presas a ossos diferentes (0 e 1).
+ */
+function esferaCosturada(ossos = false) {
   const cima = new THREE.SphereGeometry(1, 48, 24, 0, Math.PI * 2, 0, Math.PI / 2);
   const baixo = new THREE.SphereGeometry(1, 48, 24, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
   const pos: number[] = [];
   const cor: number[] = [];
+  const si: number[] = [];
+  const sw: number[] = [];
   const idx: number[] = [];
   for (const [g, c] of [[cima, [1, 0, 0]], [baixo, [0, 0, 1]]] as const) {
     const base = pos.length / 3;
     const p = g.attributes.position;
     for (let i = 0; i < p.count; i++) {
       pos.push(p.getX(i), p.getY(i), p.getZ(i));
-      cor.push(...c);
+      cor.push(...(ossos ? [1, 1, 1] : c));
+      si.push(c[0] > 0 ? 0 : 1, 0, 0, 0);
+      sw.push(1, 0, 0, 0);
     }
     for (let i = 0; i < g.index!.count; i++) idx.push(base + g.index!.getX(i));
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setAttribute('color', new THREE.Float32BufferAttribute(cor, 3));
+  if (ossos) {
+    g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4));
+    g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
+  }
   g.setIndex(idx);
   return g;
 }
@@ -58,6 +69,20 @@ describe('simplificarIndice', () => {
       expect(new Set(tri.map((i) => cor.getX(i))).size).toBe(1);
     }
     expect(naCostura).toBeGreaterThan(0);
+  });
+
+  it('não solda vértices de mesma posição presos a ossos diferentes', async () => {
+    await simplificadorPronto;
+    const g = esferaCosturada(true);
+    const ind = simplificarIndice(g, 0.25, { coerencia: 'color', erro: 0.05 })!;
+    const si = g.attributes.skinIndex;
+    const p = g.attributes.position;
+    for (let t = 0; t < ind.length; t += 3) {
+      const tri = [ind[t], ind[t + 1], ind[t + 2]];
+      // um triângulo da metade de baixo (algum vértice abaixo do equador) só usa vértices do osso 1
+      if (tri.some((i) => p.getY(i) < -1e-3)) expect(tri.every((i) => si.getX(i) === 1)).toBe(true);
+      if (tri.some((i) => p.getY(i) > 1e-3)) expect(tri.every((i) => si.getX(i) === 0)).toBe(true);
+    }
   });
 
   it('devolve null para malha sem índice', async () => {

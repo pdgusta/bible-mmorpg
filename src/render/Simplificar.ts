@@ -27,13 +27,26 @@ export function simplificarIndice(g: THREE.BufferGeometry, fracao: number, op: O
   if (!pronto || !idx) return null;
   // solda os vértices por posição: as costuras de UV e de normal duplicam vértices, e para o
   // simplificador cada costura vira uma borda travada (o tronco da oliveira não passava de 7212 → 6540
-  // triângulos; soldado, chega a 30% com erro de 0,3%)
+  // triângulos; soldado, chega a 30% com erro de 0,3%). Malhas com esqueleto só soldam vértices
+  // presos aos mesmos ossos com os mesmos pesos: na mesma posição em bind, ossos diferentes se
+  // separam ao animar (a barra da túnica, entre as duas pernas)
   const pa = g.attributes.position;
+  const ossos = g.getAttribute('skinIndex');
+  const pesos = g.getAttribute('skinWeight');
+  const influencias = (i: number) => {
+    const lista: string[] = [];
+    for (let c = 0; c < ossos.itemSize; c++) {
+      const w = pesos.getComponent(i, c);
+      if (w > 1e-4) lista.push(`${ossos.getComponent(i, c)}:${Math.round(w * 1e3)}`);
+    }
+    return lista.sort().join(';');
+  };
   const chaves = new Map<string, number>();
   const solda = new Uint32Array(pa.count);
   const originais: number[][] = [];
   for (let i = 0; i < pa.count; i++) {
-    const k = `${Math.round(pa.getX(i) * 1e4)},${Math.round(pa.getY(i) * 1e4)},${Math.round(pa.getZ(i) * 1e4)}`;
+    let k = `${Math.round(pa.getX(i) * 1e4)},${Math.round(pa.getY(i) * 1e4)},${Math.round(pa.getZ(i) * 1e4)}`;
+    if (ossos && pesos) k += `|${influencias(i)}`;
     let w = chaves.get(k);
     if (w === undefined) {
       w = originais.length;

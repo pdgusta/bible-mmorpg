@@ -18,9 +18,9 @@ Todos os humanos usam **um único corpo base animado**: o manequim da Universal 
 
 ## LOD do corpo (`Humano.ts`)
 
-- O corpo (~21 a 25 mil triângulos) ganha um nível de longe com 25% dos triângulos (`FRACAO_LONGE`), feito por `simplificarIndice` (`src/render/Simplificar.ts`, erro de 1%, cor como atributo de coerência nas costuras).
+- O corpo (~21 a 25 mil triângulos) ganha um nível de longe com 25% dos triângulos (`FRACAO_LONGE`), feito por `simplificarIndice` (`src/render/Simplificar.ts`, erro de 1%, cor como atributo de coerência nas costuras). A solda só junta vértices presos aos mesmos ossos com os mesmos pesos: na barra da túnica há vértices na mesma posição presos a pernas diferentes, que se separam ao animar.
 - Os dois índices ficam no mesmo buffer (perto, depois longe) e cada passada escolhe a faixa pelo `drawRange`: `onBeforeRender` usa o de longe a partir de `Humano.distanciaLonge` (18 m, volta ao de perto a 16 m); `onBeforeShadow` usa sempre o de longe. Nenhuma malha ou draw call a mais, e a escolha vale para qualquer câmera.
-- De perto o corpo é idêntico: com o tempo congelado, a foto muda só em 240 pixels, todos na sombra dos pés no chão (`e2e/saida/motor/t008-perto-{antes,depois}.png`; a 19 m, `t008-lod19-{perto,longe}.png`). A sombra barata não escurece o próprio corpo porque o erro (1% de ~1,8 m) fica abaixo do `normalBias` do sol (4 cm).
+- De perto o corpo é idêntico: com o tempo congelado, a foto muda só em 159 pixels, todos na sombra dos pés no chão (`e2e/saida/motor/t008-perto-{antes,depois}.png`; a 19 m, `t008-lod19-{perto,longe}.png`). A sombra barata não escurece o próprio corpo porque o erro (1% de ~1,8 m) fica abaixo do `normalBias` do sol (4 cm).
 - O LOD é montado quando o simplificador (WASM) fica pronto (`simplificadorPronto`); até lá o humano desenha o corpo inteiro. No laboratório (`?lab=personagens`), que desenha um quadro só, a foto sai sempre com o corpo inteiro.
 
 ## Detalhes que custaram caro (não desfaça)
