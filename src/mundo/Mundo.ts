@@ -171,6 +171,7 @@ export class Mundo {
   }
 
   atualizar(dt: number, t: number, camera: THREE.Camera, foco: THREE.Vector3) {
+    this.terreno.atualizar(camera.position);
     this.natureza.atualizar(dt, camera, camera.position);
     this.grama.atualizar(foco);
     for (const a of this.atualizaveis) a.atualizar(dt, t);
