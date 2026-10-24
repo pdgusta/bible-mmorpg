@@ -60,10 +60,25 @@ export interface OpcoesPatch {
   luminancia?: number;
 }
 
-/** Largura (m) da faixa da "revelação" radial (transição entre eras), igual em todos os materiais. */
+/**
+ * Largura (m) de cada faixa da "revelação" radial (transição entre eras). São duas faixas
+ * encadeadas, para que nada flutue:
+ * - de uRaio - FAIXA a uRaio, a vegetação, a grama e as instâncias encolhem até sumir;
+ * - de uRaio a uRaio + FAIXA, o terreno, as estruturas e a água afundam (ou se apagam), já sem nada em cima.
+ */
 export const FAIXA_REVELAR = 20;
 /** Quanto o terreno e as estruturas afundam fora do raio revelado. */
 export const AFUNDAR_REVELAR = 30;
+
+/** GLSL: fator 0..1 de encolher (vegetação, grama) num ponto xz. Precisa de uCentro e uRaio. */
+export function glslEncolher(xz: string) {
+  return `smoothstep(uRaio - ${FAIXA_REVELAR.toFixed(1)}, uRaio, distance(${xz}, uCentro))`;
+}
+
+/** GLSL: fator 0..1 de afundar (terreno, estruturas, água) num ponto xz: começa onde a vegetação já sumiu. */
+export function glslAfundar(xz: string) {
+  return `smoothstep(uRaio, uRaio + ${FAIXA_REVELAR.toFixed(1)}, distance(${xz}, uCentro))`;
+}
 
 /** Trecho GLSL que mantém a normal da frente nas faces de trás (DoubleSide). */
 export const GLSL_SEM_VERSO = `#include <normal_fragment_begin>
@@ -106,14 +121,12 @@ export function aplicarPatch(material: THREE.Material, op: OpcoesPatch = {}) {
     }
     if (revelar) {
       // instâncias (vegetação) encolhem em torno da base; malhas fundidas (estruturas) afundam
-      // por vértice, junto com o terreno
+      // por vértice, na mesma faixa do terreno (ver FAIXA_REVELAR)
       corpo += /* glsl */ `
       #ifdef USE_INSTANCING
-        float _enc = 1.0 - smoothstep(uRaio - ${FAIXA_REVELAR.toFixed(1)}, uRaio, distance(_base.xz, uCentro));
-        transformed *= _enc;
+        transformed *= 1.0 - ${glslEncolher('_base.xz')};
       #else
-        float _af = smoothstep(uRaio - ${FAIXA_REVELAR.toFixed(1)}, uRaio, distance(_pm.xz, uCentro));
-        transformed.y -= _af * ${AFUNDAR_REVELAR.toFixed(1)};
+        transformed.y -= ${glslAfundar('_pm.xz')} * ${AFUNDAR_REVELAR.toFixed(1)};
       #endif
       `;
     }

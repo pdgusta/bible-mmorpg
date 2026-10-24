@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Relevo } from '../mundo/Relevo';
-import { GLSL_RUIDO, GLOBAIS, FAIXA_REVELAR, AFUNDAR_REVELAR } from './Shaders';
+import { GLSL_RUIDO, GLOBAIS, AFUNDAR_REVELAR, glslAfundar } from './Shaders';
 
 export type FuncaoCor = (x: number, z: number, h: number, inclinacao: number, out: THREE.Color) => void;
 
@@ -20,7 +20,8 @@ export class Terreno {
   private meio: number;
   /**
    * Uniforms do terreno. uCentro/uRaio são os mesmos objetos de GLOBAIS (a "revelação" da
-   * transição de era move terreno, estruturas, vegetação, grama e água juntos).
+   * transição de era move terreno, estruturas, vegetação, grama e água juntos). O chão afunda
+   * na faixa externa (de uRaio a uRaio + FAIXA_REVELAR), depois de a vegetação sumir.
    */
   readonly uniforms = {
     uRevelar: { value: 1 },
@@ -48,9 +49,7 @@ export class Terreno {
           '#include <begin_vertex>',
           `#include <begin_vertex>
            vec4 mp = modelMatrix * vec4(transformed, 1.0);
-           float dc = distance(mp.xz, uCentro);
-           float afunda = smoothstep(uRaio - ${FAIXA_REVELAR.toFixed(1)}, uRaio, dc);
-           transformed.y -= afunda * ${AFUNDAR_REVELAR.toFixed(1)};
+           transformed.y -= ${glslAfundar('mp.xz')} * ${AFUNDAR_REVELAR.toFixed(1)};
            vNy = normal.y;`,
         )
         .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvMundo = (modelMatrix * vec4(transformed, 1.0)).xyz;');

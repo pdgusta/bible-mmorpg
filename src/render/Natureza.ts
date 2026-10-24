@@ -49,6 +49,11 @@ interface Modelo {
   nome: string;
   perto: ParteModelo[];
   longe: ParteModelo[];
+  /**
+   * Material de sombra de cada parte de perto, com o mesmo patch (vento, alcance, revelação):
+   * sem ele a sombra fica parada e não encolhe com a instância.
+   */
+  sombras: THREE.Material[];
   raio: number;
   sil: Silhueta | null;
 }
@@ -149,6 +154,7 @@ export class Natureza {
     const partesBase = extrairPartes(no, this.cacheMat);
     const perto: ParteModelo[] = [];
     const longe: ParteModelo[] = [];
+    const sombras: THREE.Material[] = [];
     let raio = 0;
     const temFolha = partesBase.some((p) => p.folha);
     const temTronco = partesBase.some((p) => !p.folha);
@@ -187,7 +193,9 @@ export class Natureza {
       if (tint) mat.color.multiply(new THREE.Color(tint));
       p.geometria.computeBoundingSphere();
       raio = Math.max(raio, p.geometria.boundingSphere!.radius + p.geometria.boundingSphere!.center.length());
-      aplicarPatch(mat, { vento: p.folha ? (op.vento ?? 0.12) : (op.vento ?? 0.12) * 0.25, alturaRef: 6, alcance: uAlcance, semVerso: p.folha, luminancia: lum });
+      const vento = p.folha ? (op.vento ?? 0.12) : (op.vento ?? 0.12) * 0.25;
+      aplicarPatch(mat, { vento, alturaRef: 6, alcance: uAlcance, semVerso: p.folha, luminancia: lum });
+      sombras.push(aplicarPatch(new THREE.MeshDepthMaterial(), { vento, alturaRef: 6, alcance: uAlcance }));
       if (lum) mat.userData.luminancia = lum;
       mat.name = `${variante}_${mat.name}`;
       const geoPerto = !p.folha && reduzirPerto < 0.99 ? simplificar(p.geometria, reduzirPerto) : p.geometria;
@@ -197,7 +205,7 @@ export class Natureza {
         : reduzir ? simplificar(p.geometria, reduzir) : p.geometria;
       longe.push({ geometria: geoLonge, material: mat, folha: p.folha });
     }
-    return { nome, perto, longe, raio, sil };
+    return { nome, perto, longe, sombras, raio, sil };
   }
 
   adicionar(variante: string, x: number, y: number, z: number, ry: number, s: number, aleatorio?: Aleatorio, rx = 0) {
@@ -283,12 +291,13 @@ export class Natureza {
         return;
       }
       const criar = (partes: ParteModelo[], sombra: boolean, sufixo: string) =>
-        partes.map((p) => {
+        partes.map((p, pi) => {
           const im = new THREE.InstancedMesh(p.geometria, p.material, total);
           im.count = 0;
           im.visible = false;
           im.frustumCulled = false;
           im.castShadow = sombra && v.op.sombra;
+          if (im.castShadow) im.customDepthMaterial = mod.sombras[pi];
           im.receiveShadow = true;
           im.name = `${v.nome}_${mod.nome}${sufixo}`;
           this.grupo.add(im);
@@ -397,6 +406,7 @@ export class Natureza {
       for (const mod of v.modelos) {
         for (const p of mod.perto) { p.geometria.dispose(); p.material.dispose(); }
         for (const p of mod.longe) p.geometria.dispose();
+        for (const s of mod.sombras) s.dispose();
       }
     }
   }
