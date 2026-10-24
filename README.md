@@ -102,5 +102,5 @@ O workflow `.github/workflows/pages.yml` testa, gera o build e publica no **GitH
 - **Modelos 3D:** [Quaternius](https://quaternius.com), CC0 (Stylized Nature MegaKit, Universal Animation Library 1 e 2, Universal Base Characters, Farm Animals, Animal Pack). Os animais procedurais e as roupas foram feitos em código.
 - **Motor gráfico:** [three.js](https://threejs.org) (MIT).
 - **Fontes tipográficas:** Nunito e Cormorant Garamond (SIL Open Font License), via Fontsource.
-- **Bíblia King James Fiel 1611** e **Nova Versão Transformadora:** © dos respectivos detentores. Citadas como trechos dentro do jogo.
+- **Bíblia King James Fiel 1611** e **Nova Versão Transformadora:** © dos respectivos detentores. Citadas como trechos dentro do jogo (só os versículos usados), dentro dos limites de citação permitidos pelas editoras.
 - **King James Version 1611:** domínio público.
