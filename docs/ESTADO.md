@@ -26,43 +26,29 @@ Estado do código ao sair: `npx tsc --noEmit` dá 0 erros, `npx vitest run` pass
 | Conteúdo da era 1 | ✅ escrito e revisado · ⏳ 5 ajustes de lógica pendentes (abaixo) | `tecnico/era-noe.md`, `tecnico/revisao.md` |
 | Conteúdo da era 2 | 🟡 parcial (abaixo) | briefing: `agentes/era-abraao.md` |
 | Motor visual do vale de Noé | 🟡 parcial (abaixo) | briefing: `agentes/motor.md` |
-| Integração (fluxo da partida, ligações, e2e) | 🟡 parcial (abaixo) | briefing: `agentes/integracao.md` |
+| Integração (fluxo da partida, ligações, e2e) | 🟡 até A1 jogável ✅ (e2e `integracao.mjs`) · era 2 e `jogar-mvp` pendentes | `tecnico/integracao.md` |
 | Deploy (GitHub Pages) | ✅ workflow pronto (ativar em *Settings → Pages → GitHub Actions*) | `README.md` |
 
 ## O que ficou pela metade, frente por frente
 
 Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam caminhos de um scratchpad da nuvem (`/tmp/claude-0/...`) que **não existem mais**: ignore esses caminhos e salve as fotos em `e2e/saida/` (fora do git).
 
-### 1. Integração (`agentes/integracao.md`)
+### 1. Integração (`agentes/integracao.md`, `tecnico/integracao.md`)
 
-**Já existe:**
-- `src/jogo/Partida.ts` (670 linhas): modos carregando, título e jogo; `novoJogo`, `continuar`, `carregar`, `salvar`, `sairParaTitulo`, `atualizarDiario`.
-- `src/jogo/eras.ts`: registro `ERAS`, `ORDEM_ERAS = ['noe', 'abraao']` e as interfaces `DefEra`, `EraAtiva` e `AtalhosEra`.
-- `src/jogo/ligacao/`:
-  - `noe.ts` implementa `ServicosNoe`;
-  - `abraao.ts` implementa `ServicosAbraao` (não verificado);
-  - `audio.ts` liga o áudio aos eventos;
-  - `comum.ts`;
-  - `depuracao.ts` trata `?dev&missao=a3` e `?dev&auto=1`.
-- `src/jogo/inicio.ts` (entrada) e `e2e/utilidades.mjs`.
-
-**Ao parar:** o agente ia fazer um teste rápido da tela de título. **Ninguém viu o jogo integrado rodando ainda.**
+**Feito (frente/integracao, 24/10/2026, no computador local):**
+- O jogo integrado roda: `node e2e/integracao.mjs` passa (carregamento, título sobre o vale, Novo jogo, prólogo, A1 com Noé no controle, HUD, objetivo, andar, Diário com J, pausa com Esc, salvar no espaço 1 pela pausa, carregar de volta, sem erros no console). Fotos em `e2e/saida/integracao/`.
+- `npm run validar` funciona no Windows (`scripts/biblia-comum.mjs` usa `fileURLToPath`).
+- `playwright` virou dependência de desenvolvimento (`npx playwright install chromium` uma vez).
+- `docs/tecnico/integracao.md` escrito.
+- Pendências de ligação conferidas no código: a câmera ignora colisores `invisivel`, `cam.tremer`/`cam.balanco`, `removerPersonagem`, Cristo por `ctx.cristo(id)` (flag `cristo_<id>`), `canaa.ceu = jogo.ceu`, transição com `aoNome` → `ui.genealogia` e `ui.genealogia(null)` no fim, e o começo de `ERA_NOE.seguinte.missao` (B1) depois de A6 em `Partida.aoConcluirMissao`.
 
 **Falta:**
-1. Abrir `/` e conferir: carregamento, título sobre o vale, Novo jogo, prólogo e A1 jogável (HUD, Diário, pausa, save).
-2. Pendências recebidas dos outros módulos:
-   - `CameraTerceira` deve ignorar colisores com tag `invisivel` (paredes invisíveis do Moriá).
-   - `camera.tremer(int, s)` e `camera.balanco(int)` para a era 1.
-   - `removerPersonagem(id)` e `progresso cristo(id)`.
-   - `canaa.ceu = jogo.ceu`.
-   - A transição de era deve usar `aoNome: (n, i) => ui.genealogia(n, i)` e chamar `ui.genealogia(null)` no fim.
-   - Iniciar B1 depois de A6 (A6 não tem `proxima` de propósito).
-3. Escrever `e2e/jogar-mvp.mjs` (o `npm run e2e` aponta para ele):
-   - joga a era 1 por `jogarEraNoe` (`src/eras/noe/atalhos.ts`) e a era 2 pelos atalhos dela;
-   - tira fotos dos momentos-chave;
-   - simula o websocket do Vite, como em `e2e/teste-troca.mjs`.
-4. Medir `jogo.render.gl.info.render` em 3 vistas.
-5. Escrever `docs/tecnico/integracao.md`.
+1. **A4 trava (bug de jogo, não só do atalho):** o casal de leões para numa barreira perto de (−82,7; 10), no caminho de `chegadaAnimais3` até `filaAnimais`, e fica tremendo no lugar. O `semProgresso` do `Animal` sobe e desce sem chegar a 5 s, então `travado()` nunca dispara (`src/entidades/Animal.ts`, `irPor`/`compIr`), o `irPara` não resolve e `acalmar_leao` nunca aparece. Por isso a transição de era ainda não foi vista rodando: `node e2e/integracao.mjs --transicao` para em A4.
+2. **Era 2 na integração:** quando `src/eras/abraao/index.ts` (`ERA_ABRAAO`) existir, trocar as definições provisórias de `src/jogo/ligacao/abraao.ts` pelas de lá, implementar `ServicosAbraao` (como em `ligacao/noe.ts`) e os atalhos. Até lá, depois de A6 aparece o aviso "a jornada continua em breve", em vez de B1.
+3. `e2e/jogar-mvp.mjs` (`npm run e2e`), do começo da era 1 ao fim da era 2. O `--transicao` de `integracao.mjs` já tem o miolo da era 1.
+4. Medir `jogo.render.gl.info.render` em 3 vistas, no preset médio.
+
+**Dicas para o e2e no Windows:** no Git Bash, use `MSYS_NO_PATHCONV=1` antes de `node e2e/foto.mjs "/..."`. Com o laço parado (`jogo.manual = true; jogo.renderizarManual = false`), só as fotos renderizam: o título fica pronto em cerca de 50 s e o roteiro inteiro até A1 leva uns 2 min. Com o laço rodando no SwiftShader, o `page.screenshot` estoura o tempo.
 
 ### 2. Conteúdo da era 2 (`agentes/era-abraao.md`)
 
