@@ -129,8 +129,9 @@ export const MORIA = {
   /** Fileiras de pedras no fosso (t ao longo do segmento) e quais são firmes [esquerda, direita]. */
   fileirasFosso: [0.11, 0.24, 0.37, 0.5, 0.63, 0.76, 0.89],
   pedrasFirmes: [[true, false], [true, true], [false, true], [false, true], [true, true], [true, false], [true, true]] as [boolean, boolean][],
-  ladoPedra: 0.55,
-  raioPedra: 0.62,
+  /** Afastamento lateral das duas colunas: o meio do caminho fica sem apoio (é preciso pisar nas pedras). */
+  ladoPedra: 0.86,
+  raioPedra: 0.58,
 };
 
 /** Sentinelas do acampamento inimigo: rotas de ronda (vai e volta, ou laço quando fecha). */
@@ -418,7 +419,7 @@ export const MAPA_CANAA: DefMapa = {
   },
 
   corGrama(x, z, out) {
-    out.set('#c9b263');
+    out.set('#dcc478');
     const w = Math.sin(x * 0.045 + 1) * Math.cos(z * 0.038);
     if (w > 0.25) out.lerp(_c.set('#dcc47c'), (w - 0.25) * 0.9);
     if (w < -0.4) out.lerp(_c.set('#b0a758'), (-0.4 - w) * 0.9);

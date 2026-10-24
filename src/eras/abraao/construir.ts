@@ -797,7 +797,7 @@ function criarPorteira(m: Mundo, nome: NomePorteira, cur: DefCurral) {
 
 function definirVariantes(m: Mundo) {
   const n = m.natureza;
-  n.definirVariante('oliveira', { modelos: ['TwistedTree_1', 'TwistedTree_4'], tintFolha: '#c9d2b8', tintTronco: '#cdbda4', vento: 0.08, raioTronco: 1.0, alcance: 160, alcancePerto: 36, reduzirTronco: 0.22, fracaoLonge: 0.36 });
+  n.definirVariante('oliveira', { modelos: ['TwistedTree_1', 'TwistedTree_4'], tintFolha: '#c9d2b8', tintTronco: '#cdbda4', vento: 0.08, raioTronco: 1.0, alcance: 160, alcancePerto: 42, reduzirTronco: 0.2, fracaoLonge: 0.62 });
   n.definirVariante('carvalho', { modelos: ['CommonTree_3', 'CommonTree_5'], tintFolha: '#b4cf80', tintTronco: '#b8a890', vento: 0.1, raioTronco: 0.45, alcance: 230, alcancePerto: 48, reduzirTronco: 0.3 });
   n.definirVariante('carvalhoGrande', { modelos: ['CommonTree_1'], tintFolha: '#b0cc7c', tintTronco: '#b0a088', vento: 0.07, raioTronco: 0.42, alcance: 300, alcancePerto: 70, reduzirTronco: 0.3 });
   n.definirVariante('arvoreJordao', { modelos: ['CommonTree_5'], tintFolha: '#a8dc74', vento: 0.13, raioTronco: 0.4, alcance: 230, alcancePerto: 40, reduzirTronco: 0.25, fracaoLonge: 0.3 });
@@ -993,12 +993,12 @@ function construirMirantes(m: Mundo) {
     }
     // mirante do Jordão: saliência de lajes calcárias na beira da escarpa
     const [jx, jz] = CANAA.miranteJordao;
-    em(c, m, jx, jz, -0.2, () => {
-      c.caixa(3.2, -0.3, 0.5, 3.4, 0.6, 2.8, CORES_CANAA.calcario, { raio: 0.2, ry: 0.3 });
-      c.caixa(-2.6, -0.2, -2.8, 2.2, 1.1, 1.6, CORES_CANAA.calcarioEscuro, { raio: 0.25, ry: -0.5 });
-      c.esfera(-1.5, 0.3, 3.2, 0.8, CORES_CANAA.calcarioEscuro, 1.3, 0.7, 1.1, 0);
-      c.colisor({ x: -2.6, z: -2.8, hx: 1.2, hz: 0.9, yaw: -0.5, y0: -1, y1: 0.9, piso: true });
+    em(c, m, jx + 2.6, jz + 0.6, 0.1, () => c.caixa(0, -0.45, 0, 3.0, 0.75, 2.4, CORES_CANAA.calcario, { raio: 0.2 }));
+    em(c, m, jx - 2.6, jz - 2.6, -0.5, () => {
+      c.caixa(0, -0.3, 0, 2.2, 1.2, 1.6, CORES_CANAA.calcarioEscuro, { raio: 0.25 });
+      c.colisor({ x: 0, z: 0, hx: 1.1, hz: 0.8, y0: -1, y1: 0.9, piso: true });
     });
+    em(c, m, jx - 1.5, jz + 3.2, 0, () => c.esfera(0, 0.1, 0, 0.8, CORES_CANAA.calcarioEscuro, 1.3, 0.7, 1.1, 0));
   });
 }
 

@@ -68,13 +68,15 @@ export function extrairPartes(raiz: THREE.Object3D, cacheMat: Map<string, THREE.
     const orig = m.material as THREE.MeshStandardMaterial;
     const chave = orig.name || orig.uuid;
     let novo = cacheMat.get(chave);
-    const folha = orig.alphaTest > 0 || orig.transparent || /leaf|leaves|grass|flower|fern|clover|plant/i.test(orig.name);
+    // casca com máscara (ex.: Bark_NormalTree) não é folha: não vira cartão nem ganha face dupla
+    const mascara = orig.alphaTest > 0 || orig.transparent;
+    const folha = /leaf|leaves|grass|flower|fern|clover|plant/i.test(orig.name) || (mascara && !/bark|rock|trunk/i.test(orig.name));
     if (!novo) {
       const l = new THREE.MeshLambertMaterial({
         name: orig.name,
         map: orig.map,
         color: orig.color,
-        alphaTest: folha ? 0.5 : 0,
+        alphaTest: mascara || folha ? 0.5 : 0,
         side: folha ? THREE.DoubleSide : THREE.FrontSide,
       });
       if (l.map) l.map.colorSpace = THREE.SRGBColorSpace;
