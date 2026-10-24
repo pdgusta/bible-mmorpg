@@ -52,8 +52,8 @@ Arquivos:
 
 ## e2e
 
-- `node e2e/integracao.mjs [pasta]`: do carregamento até A1 jogável (título sobre o vale, Novo jogo, prólogo, HUD, andar, Diário, pausa, salvar no espaço 1 e carregar de volta). Fotos em `e2e/saida/integracao/`. Leva uns 2 min no SwiftShader: o laço fica parado e só as fotos renderizam.
-- `--transicao`: joga o resto da era 1 pelos atalhos e confere a transição para Canaã (genealogia mostrada e limpa, Abrão no controle, B1 ou o aviso de continuação). Hoje para em A4 (os leões ficam presos; ver `docs/ESTADO.md`).
+- `node e2e/integracao.mjs [pasta]`: do carregamento até A1 jogável (título sobre o vale, Novo jogo, prólogo, HUD, andar, Diário, pausa, salvar no espaço 1; depois muda a posição de Noé e uma flag, sai para o título e carrega o espaço 1 pelo menu, conferindo que posição e flag voltam). Fotos em `e2e/saida/integracao/`. Leva uns 2 min no SwiftShader: o laço fica parado e só as fotos renderizam.
+- `--transicao`: joga o resto da era 1 pelos atalhos e confere a transição para Canaã (genealogia mostrada e limpa, Abrão no controle, B1 ou o aviso de continuação). Na base atual para em A4 (ver `docs/ESTADO.md`).
 - `e2e/jogar-mvp.mjs` (`npm run e2e`) ainda não existe.
 - Os testes simulam o websocket do Vite (`abrir()` em `e2e/utilidades.mjs`), para o HMR não recarregar a página.
 - No Git Bash do Windows, use `MSYS_NO_PATHCONV=1` antes de `node e2e/foto.mjs "/..."`, senão o `/` vira um caminho do Windows.

@@ -43,10 +43,12 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 - Pendências de ligação conferidas no código: a câmera ignora colisores `invisivel`, `cam.tremer`/`cam.balanco`, `removerPersonagem`, Cristo por `ctx.cristo(id)` (flag `cristo_<id>`), `canaa.ceu = jogo.ceu`, transição com `aoNome` → `ui.genealogia` e `ui.genealogia(null)` no fim, e o começo de `ERA_NOE.seguinte.missao` (B1) depois de A6 em `Partida.aoConcluirMissao`.
 
 **Falta:**
-1. **A4 trava (bug de jogo, não só do atalho):** o casal de leões para numa barreira perto de (−82,7; 10), no caminho de `chegadaAnimais3` até `filaAnimais`, e fica tremendo no lugar. O `semProgresso` do `Animal` sobe e desce sem chegar a 5 s, então `travado()` nunca dispara (`src/entidades/Animal.ts`, `irPor`/`compIr`), o `irPara` não resolve e `acalmar_leao` nunca aparece. Por isso a transição de era ainda não foi vista rodando: `node e2e/integracao.mjs --transicao` para em A4.
+1. **Transição de era ainda não vista rodando:** `node e2e/integracao.mjs --transicao` parou em A4 na base `claude/gallant-hypatia-wt3gey`: o casal de leões ficou preso perto de (−82,7; 10) e `acalmar_leao` nunca apareceu. A A4 foi reescrita em `frente/era-noe` (aprovada); reconferir com `--transicao` depois da junção, antes de depurar.
 2. **Era 2 na integração:** quando `src/eras/abraao/index.ts` (`ERA_ABRAAO`) existir, trocar as definições provisórias de `src/jogo/ligacao/abraao.ts` pelas de lá, implementar `ServicosAbraao` (como em `ligacao/noe.ts`) e os atalhos. Até lá, depois de A6 aparece o aviso "a jornada continua em breve", em vez de B1.
 3. `e2e/jogar-mvp.mjs` (`npm run e2e`), do começo da era 1 ao fim da era 2. O `--transicao` de `integracao.mjs` já tem o miolo da era 1.
 4. Medir `jogo.render.gl.info.render` em 3 vistas, no preset médio.
+
+**Teste instável:** o teste da prova de ira (`tests/Provas.test.ts:171`, anterior a esta frente) pode estourar o tempo com a máquina carregada (vários agentes e o Chromium rodando); sozinho, passa.
 
 **Dicas para o e2e no Windows:** no Git Bash, use `MSYS_NO_PATHCONV=1` antes de `node e2e/foto.mjs "/..."`. Com o laço parado (`jogo.manual = true; jogo.renderizarManual = false`), só as fotos renderizam: o título fica pronto em cerca de 50 s e o roteiro inteiro até A1 leva uns 2 min. Com o laço rodando no SwiftShader, o `page.screenshot` estoura o tempo.
 

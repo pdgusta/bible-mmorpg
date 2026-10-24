@@ -132,6 +132,7 @@ const pausa = await pag.evaluate(() => ({ aberta: window.partida.ui.menuAberto()
 v(pausa.aberta && pausa.pausado, `Esc abre a pausa e pausa o jogo (${JSON.stringify(pausa)})`);
 await pag.waitForTimeout(400);
 await foto('5-a1-pausa');
+await pag.evaluate(() => (window.jogo.flags.e2eMarca = 'salva'));
 await pag.getByRole('button', { name: 'Salvar', exact: true }).click();
 await pag.getByRole('button', { name: /Salvar aqui|Sobrescrever/ }).first().click();
 await pag.waitForTimeout(500);
@@ -142,12 +143,39 @@ const s1 = slots.find((s) => s.slot === 1);
 v(s1 && !s1.vazio && !s1.erro, `espaço 1 salvo (${s1?.era} · ${s1?.missao} · ${s1?.personagem})`);
 v(await pag.evaluate(() => window.partida.temSave), 'Continuar habilitado (temSave)');
 
-// Carregar o espaço 1 de volta (pela API) e conferir que volta para A1 com Noé
-await pag.keyboard.press('Escape');
-await pag.keyboard.press('Escape');
-await pag.evaluate(() => window.partida.carregar(1));
-const carregado = await ate(() => window.partida.modo === 'jogo' && window.jogo.ativo?.id === 'noe', 10, { passarFala: false });
-v(carregado && (await pag.evaluate(() => window.partida.s.missoes.missaoAtual)) === 'a1', 'carregar o espaço 1 volta para A1 com Noé');
+// Depois de salvar, muda o que foi salvo (posição de Noé e uma flag), sai para o título pela
+// pausa e carrega o espaço 1 pelo menu do título: o carregar tem de restaurar o estado salvo.
+const salvo = await pag.evaluate(() => window.partida.s.salvamento.carregar(1));
+const posSalva = salvo?.personagens?.noe?.pos;
+v(Array.isArray(posSalva) && salvo.flags?.e2eMarca === 'salva', `o save guarda a posição de Noé e a flag de teste (${JSON.stringify(posSalva)})`);
+await pag.evaluate(() => {
+  const n = window.jogo.ativo;
+  const [x, z] = [n.posicao.x + 20, n.posicao.z + 20];
+  n.teleportar(x, window.jogo.mundo.chao(x, z), z);
+  window.jogo.flags.e2eMarca = 'mudada';
+});
+await pag.keyboard.press('Escape'); // da tela de salvar de volta à pausa
+await pag.getByRole('button', { name: 'Sair para o título' }).click();
+await pag.getByRole('button', { name: 'Sair', exact: true }).click();
+await pag.waitForTimeout(400);
+const noTitulo = await pag.evaluate(() => {
+  const n = window.jogo.personagem('noe');
+  return { modo: window.partida.modo, ativo: window.jogo.ativo?.id ?? null, pos: [n.posicao.x, n.posicao.z] };
+});
+v(noTitulo.modo === 'titulo' && noTitulo.ativo === null, `"Sair para o título" volta ao título (${noTitulo.modo})`);
+v(Math.hypot(noTitulo.pos[0] - posSalva[0], noTitulo.pos[1] - posSalva[2]) > 15, 'antes de carregar, Noé está longe do ponto salvo');
+await pag.getByRole('button', { name: 'Carregar', exact: true }).click();
+await pag.locator('.slot', { hasText: 'Espaço 1' }).getByRole('button', { name: 'Carregar', exact: true }).click();
+const carregado = await ate(() => window.partida.modo === 'jogo' && window.jogo.ativo?.id === 'noe', 20, { passarFala: false });
+const depois = await pag.evaluate(() => ({
+  missao: window.partida.s.missoes.missaoAtual,
+  marca: window.jogo.flags.e2eMarca,
+  pos: [window.jogo.ativo?.posicao.x, window.jogo.ativo?.posicao.z],
+}));
+const erroPos = Math.hypot(depois.pos[0] - posSalva[0], depois.pos[1] - posSalva[2]);
+v(carregado && depois.missao === 'a1', `carregar pelo título entra no jogo em A1 com Noé (${depois.missao})`);
+v(erroPos < 1, `carregar restaura a posição salva de Noé (${erroPos.toFixed(2)} m)`);
+v(depois.marca === 'salva', `carregar restaura as flags salvas (e2eMarca=${depois.marca})`);
 
 // ------------------------------------------------------------------ transição para a era 2
 if (comTransicao) {
