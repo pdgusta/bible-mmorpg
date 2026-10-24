@@ -102,7 +102,8 @@ export class Musica {
     g.setTargetAtTime(1, agora + (antes ? 1.2 : 0.1), 1.2);
     if (!antes || this.proximo < agora) this.proximo = agora + 0.1;
     this.mudar = true;
-    if (!this.cfg.drone) this.soltarDrone(agora, 3);
+    // o bordão é de cada estado (tônica e volume): solta o antigo; o novo entra no próximo acorde
+    this.soltarDrone(agora, 3);
   }
 
   /** Agenda as colcheias até o tempo `ate`. */

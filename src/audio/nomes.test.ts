@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { EFEITOS } from './Audio';
 import { tocarEfeito, type CtxSom } from './Efeitos';
 import { ESTADOS_MUSICA, Musica } from './Musica';
+import { midiParaHz } from './sintese';
 
 // Web Audio falso, só o bastante para os efeitos e a música montarem o grafo sem erro.
 class ParamFalso {
@@ -28,15 +29,23 @@ class NoFalso {
   connect(d: unknown) { if (d instanceof NoFalso) d.recebidas++; }
   disconnect() {}
   start() {}
-  stop() {}
+  parado = false;
+  stop() { this.parado = true; }
 }
+
+/** Osciladores criados, em ordem (para conferir o bordão nas trocas de estado). */
+const osciladores: NoFalso[] = [];
 
 const buffer = { duration: 4 } as AudioBuffer;
 const ctx = {
   currentTime: 0,
   sampleRate: 44100,
   createGain: () => new NoFalso(),
-  createOscillator: () => new NoFalso(),
+  createOscillator: () => {
+    const o = new NoFalso();
+    osciladores.push(o);
+    return o;
+  },
   createBufferSource: () => new NoFalso(),
   createBiquadFilter: () => new NoFalso(),
   createStereoPanner: () => new NoFalso(),
@@ -75,5 +84,24 @@ describe('nomes de som', () => {
     m.agendar(0, 4);
     expect(destino.recebidas).toBe(1);
     expect((c.eco as unknown as NoFalso).recebidas).toBeGreaterThan(0);
+  });
+
+  it('a troca entre estados com bordão (prova ↔ batalha) troca o bordão', () => {
+    const tem = (os: NoFalso[], midi: number) => os.some((o) => Math.abs(o.frequency.value - midiParaHz(midi)) < 1e-6);
+    const m = new Musica(ctxSom(), new NoFalso() as unknown as AudioNode);
+    m.definir('prova', 0);
+    m.agendar(0, 4);
+    const daProva = osciladores.slice();
+    expect(tem(daProva, 47)).toBe(true); // bordão de mi: 40 e 47
+    const antes = osciladores.length;
+    m.definir('batalha', 4);
+    m.agendar(4, 8);
+    // o bordão de mi foi solto e entrou o de ré (38 e 45)
+    expect(daProva.filter((o) => Math.abs(o.frequency.value - midiParaHz(47)) < 1e-6).every((o) => o.parado)).toBe(true);
+    expect(tem(osciladores.slice(antes), 45)).toBe(true);
+    const antes2 = osciladores.length;
+    m.definir('prova', 8);
+    m.agendar(8, 12);
+    expect(tem(osciladores.slice(antes2), 47)).toBe(true);
   });
 });
