@@ -1661,7 +1661,8 @@ const B5: DefMissao = {
           esperarAli(c, SERVOS_MORIA);
           c.objetivo('Vá ao pé do monte Moriá.', ['peMoria']);
           seguirLider(c, ['isaque'], 'abraao', 2.2);
-          await c.chegar('abraao', 'peMoria', 8);
+          // raio padrão (3): o pé é plano só ~7 m em volta, e os servos (Gn 22:5) esperam na beira dele
+          await c.chegar('abraao', 'peMoria');
           aproximarSeLonge(c, 'isaque', lugar(c, 'peMoria'), 8, 1);
           await c.dialogo([
             abraaoDiz('Gn 22:5', 'Ficai aqui com o jumento, e eu e o menino vamos adiante para adorar, e voltaremos a vós.'),
