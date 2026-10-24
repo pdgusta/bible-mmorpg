@@ -26,7 +26,7 @@ Estado do código ao sair: `npx tsc --noEmit` dá 0 erros, `npx vitest run` pass
 | Conteúdo da era 1 | ✅ escrito, revisado e com os 5 ajustes de lógica da revisão (branch `frente/era-noe`) | `tecnico/era-noe.md`, `tecnico/revisao.md` |
 | Conteúdo da era 2 | ✅ escrito, testado e revisado · ⏳ ligação na integração (abaixo) | `tecnico/era-abraao.md` |
 | Motor visual do vale de Noé | 🟡 parcial (abaixo) | briefing: `agentes/motor.md` |
-| Integração (fluxo da partida, ligações, e2e) | 🟡 até A1 jogável ✅ (e2e `integracao.mjs`) · era 2 e `jogar-mvp` pendentes | `tecnico/integracao.md` |
+| Integração (fluxo da partida, ligações, e2e) | ✅ era 1 → transição → B1 jogável (e2e `integracao.mjs --transicao`) · ⏳ `jogar-mvp` até o fim de B5 | `tecnico/integracao.md` |
 | Deploy (GitHub Pages) | ✅ workflow pronto (ativar em *Settings → Pages → GitHub Actions*) | `README.md` |
 
 ## O que ficou pela metade, frente por frente
@@ -35,22 +35,43 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 
 ### 1. Integração (`agentes/integracao.md`, `tecnico/integracao.md`)
 
-**Feito (frente/integracao, 24/10/2026, no computador local):**
-- O jogo integrado roda: `node e2e/integracao.mjs` passa (carregamento, título sobre o vale, Novo jogo, prólogo, A1 com Noé no controle, HUD, objetivo, andar, Diário com J, pausa com Esc, salvar no espaço 1 pela pausa, carregar de volta, sem erros no console). Fotos em `e2e/saida/integracao/`.
-- `npm run validar` funciona no Windows (`scripts/biblia-comum.mjs` usa `fileURLToPath`).
-- `playwright` virou dependência de desenvolvimento (`npx playwright install chromium` uma vez).
-- `docs/tecnico/integracao.md` escrito.
-- Pendências de ligação conferidas no código: a câmera ignora colisores `invisivel`, `cam.tremer`/`cam.balanco`, `removerPersonagem`, Cristo por `ctx.cristo(id)` (flag `cristo_<id>`), `canaa.ceu = jogo.ceu`, transição com `aoNome` → `ui.genealogia` e `ui.genealogia(null)` no fim, e o começo de `ERA_NOE.seguinte.missao` (B1) depois de A6 em `Partida.aoConcluirMissao`.
+**Feito (frente/integracao, no computador local):**
+- O jogo integrado roda do título até B1. `node e2e/integracao.mjs` cobre:
+  - carregamento, título sobre o vale, Novo jogo, prólogo;
+  - A1 com HUD, objetivo, andar, Diário (J), pausa (Esc);
+  - salvar no espaço 1; depois muda posição e flag, sai para o título e carrega pelo menu, conferindo que voltam.
+- Com `--transicao`, ele joga a era 1 inteira pelos atalhos: A6 (arco-íris), transição com a genealogia de Sem a Abrão, que é limpa no fim, e B1 jogável com Abrão em Canaã. Fotos em `e2e/saida/integracao/`.
+- Junção de `frente/era-noe` (5 ajustes e o cervo) e de `frente/era-abraao` (c4cff7f) na `frente/integracao`.
+- Era 2 ligada (`src/jogo/ligacao/abraao.ts`):
+  - `ERA_ABRAAO` com jogáveis, NPCs e início;
+  - `ServicosAbraao` completo (rebanhos em `mundo.atualizaveis`, NPCs de cena, entrada, `aCadaQuadro`, créditos);
+  - segredos, reconstrução pelas flags e atalhos;
+  - `ligarServicosAbraao(null)` e `ERA_ABRAAO.limparCena()` ao descartar o mundo.
+- Créditos e fim:
+  - `ContextoEra.creditos()` mostra o resumo (memórias, segredos, tempo) e a tela de créditos, e resolve ao fechar;
+  - depois de B5, a Partida volta ao título;
+  - `?dev&auto=1` fecha os créditos sozinho.
+- Áudio:
+  - `PonteAudio.musica` toca `aventura` quando o estado não existe no módulo de áudio (`batalha`, até a T-007), em vez de quebrar a trilha (`Musica.definir` lia `cfg.drone` de `undefined`);
+  - efeitos desconhecidos (`alarme`, `aparar`, `golpe`, `discernir`, `pedra`) só geram um aviso no console;
+  - `Ceu.estrelas` fica opcional: o céu de B4 usa só a noite até o motor ler a propriedade.
+- Dois defeitos corrigidos:
+  - **Tela de carregamento por cima do jogo:** `Jogo.carregarBase` deixava `ativos.aoProgresso` ligado, e qualquer modelo carregado depois (os animais da A4) reabria a tela. Agora o callback é desligado no fim da carga base.
+  - **A4 travava:** `Arca.definirEstagio` troca os colisores do casco mas não refaz `mundo.nav`, montada com a arca no estágio 0, e os animais ficavam presos na ponta oeste do casco. O adaptador em `ligacao/noe.ts` (`refazerNavegacaoComArca`) refaz a navegação a cada estágio. O conserto definitivo é uma linha em `Arca.definirEstagio` (`this.mundo.nav?.reconstruir()`); quando ele entrar, remova o adaptador.
+- `npm run validar` funciona no Windows (`fileURLToPath` em `scripts/biblia-comum.mjs`); `playwright` é dependência de desenvolvimento.
 
 **Falta:**
-1. **Transição de era ainda não vista rodando:** `node e2e/integracao.mjs --transicao` parou em A4 na base `claude/gallant-hypatia-wt3gey`: o casal de leões ficou preso perto de (−82,7; 10) e `acalmar_leao` nunca apareceu. A A4 foi reescrita em `frente/era-noe` (aprovada); reconferir com `--transicao` depois da junção, antes de depurar.
-2. **Era 2 na integração:** quando `src/eras/abraao/index.ts` (`ERA_ABRAAO`) existir, trocar as definições provisórias de `src/jogo/ligacao/abraao.ts` pelas de lá, implementar `ServicosAbraao` (como em `ligacao/noe.ts`) e os atalhos. Até lá, depois de A6 aparece o aviso "a jornada continua em breve", em vez de B1.
-3. `e2e/jogar-mvp.mjs` (`npm run e2e`), do começo da era 1 ao fim da era 2. O `--transicao` de `integracao.mjs` já tem o miolo da era 1.
-4. Medir `jogo.render.gl.info.render` em 3 vistas, no preset médio.
+1. `e2e/jogar-mvp.mjs` (`npm run e2e`) até o fim de B5 e os créditos. O miolo já está no `--transicao` de `integracao.mjs`; a era 2 tem `jogarEraAbraao` ligado aos atalhos.
+2. Medir `jogo.render.gl.info.render` em 3 vistas, no preset médio (inclusive A4, com cerca de 29 animais).
+3. Robustez do `Animal`: quando o caminho está bloqueado, o animal treme no lugar, `semProgresso` oscila abaixo de 5 s e `travado()` nunca dispara (`src/entidades/Animal.ts`). Com a navegação certa isso não aparece, mas um bloqueio novo trava a missão de novo.
+4. Sons da era 2 (T-007, Gofer): música `batalha` e os efeitos acima.
 
 **Teste instável:** o teste da prova de ira (`tests/Provas.test.ts:171`, anterior a esta frente) pode estourar o tempo com a máquina carregada (vários agentes e o Chromium rodando); sozinho, passa.
 
-**Dicas para o e2e no Windows:** no Git Bash, use `MSYS_NO_PATHCONV=1` antes de `node e2e/foto.mjs "/..."`. Com o laço parado (`jogo.manual = true; jogo.renderizarManual = false`), só as fotos renderizam: o título fica pronto em cerca de 50 s e o roteiro inteiro até A1 leva uns 2 min. Com o laço rodando no SwiftShader, o `page.screenshot` estoura o tempo.
+**Dicas para o e2e no Windows:**
+- No Git Bash, use `MSYS_NO_PATHCONV=1` antes de `node e2e/foto.mjs "/..."`.
+- Com o laço parado (`jogo.manual = true; jogo.renderizarManual = false`), só as fotos renderizam: até A1 leva uns 2 min, e com `--transicao` uns 14 min.
+- Com o laço rodando no SwiftShader, o `page.screenshot` estoura o tempo.
 
 ### 2. Conteúdo da era 2 (`tecnico/era-abraao.md`)
 

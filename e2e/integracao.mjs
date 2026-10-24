@@ -2,8 +2,8 @@
 // Uso: node e2e/integracao.mjs [pastaFotos] [--transicao]   (padrão: e2e/saida/integracao)
 // Confere: carregamento → título sobre o vale → Novo jogo → prólogo → A1 com Noé no controle,
 // HUD, Diário (J), pausa (Esc), salvar num espaço pela pausa e carregar de volta.
-// Com --transicao, joga o resto da era 1 pelos atalhos e confere a transição para Canaã
-// (genealogia na tela e limpa no fim, Abrão no controle, começo da era 2).
+// Com --transicao, joga o resto da era 1 pelos atalhos e confere A6, a transição para Canaã
+// (genealogia na tela e limpa no fim) e B1 jogável com Abrão.
 // A lógica corre em modo manual (partida.dev.avancar); só as fotos renderizam.
 import { abrir, pasta, verificador, segundos } from './utilidades.mjs';
 
@@ -106,6 +106,7 @@ const a1 = await pag.evaluate(() => {
 v(a1.ativo === 'noe' && a1.controlado, `Noé sob controle (${a1.ativo})`);
 v(a1.hud, `HUD visível: "${a1.hudTexto}"`);
 v(a1.objetivo.length > 0, `objetivo na tela: "${a1.objetivo}"`);
+v(await pag.evaluate(() => !window.partida.ui.raiz.querySelector('.carregamento.visivel')), 'sem tela de carregamento por cima de A1');
 await pag.evaluate(() => window.jogo.entrada.simular('frente', true));
 await pag.evaluate(() => window.jogo.avancar(1.2));
 await pag.evaluate(() => window.jogo.entrada.simular('frente', false));
@@ -177,7 +178,7 @@ v(carregado && depois.missao === 'a1', `carregar pelo título entra no jogo em A
 v(erroPos < 1, `carregar restaura a posição salva de Noé (${erroPos.toFixed(2)} m)`);
 v(depois.marca === 'salva', `carregar restaura as flags salvas (e2eMarca=${depois.marca})`);
 
-// ------------------------------------------------------------------ transição para a era 2
+// ------------------------------------------------------------------ A6 → transição → B1
 if (comTransicao) {
   await pag.evaluate(() => {
     const p = window.partida;
@@ -192,40 +193,75 @@ if (comTransicao) {
       window.registro.avisos.push(t);
       return aviso(t, tipo);
     };
+    p.dev.ligarCapturas(['a6-arco', 'transicao']);
     p.dev.jogar();
   });
-  let fotoGenealogia = false;
+  const fotos = { 'a6-arco': '6-a6-arco-iris', transicao: '7-transicao-genealogia' };
   const limite = Date.now() + 40 * 60 * 1000;
   let ultimaMissao = '';
   while (Date.now() < limite) {
-    const e = await pag.evaluate(() => ({
-      fim: window.partida.dev.fim, transicao: !!window.jogo.transicao, era: window.partida.eraId,
-      missao: window.partida.s.missoes.missaoAtual, gen: window.registro.genealogia.length,
-    }));
-    if (e.missao && e.missao !== ultimaMissao) log(`missão: ${(ultimaMissao = e.missao)}`);
-    if (!fotoGenealogia && e.transicao && e.gen >= 3) {
-      fotoGenealogia = true;
-      await foto('6-transicao-genealogia');
+    const r = await pag.evaluate(() => window.partida.dev.avancar(2, 0.1));
+    const missao = await pag.evaluate(() => window.partida.s.missoes.missaoAtual);
+    if (missao && missao !== ultimaMissao) log(`missão: ${(ultimaMissao = missao)}`);
+    if (r.captura) {
+      await foto(fotos[r.captura] ?? r.captura);
+      await pag.evaluate(() => window.partida.dev.liberar());
     }
-    if (e.fim && !e.transicao && e.era === 'abraao') break;
-    if (e.fim && e.era !== 'abraao') break;
-    await pag.evaluate(() => window.partida.dev.avancar(2, 0.1));
+    if (r.fim) break;
   }
   const fim = await pag.evaluate(() => ({
-    erro: window.partida.dev.erro, era: window.partida.eraId, ativo: window.jogo.ativo?.id,
-    transicao: !!window.jogo.transicao, ...window.registro,
+    erro: window.partida.dev.erro, era: window.partida.eraId, transicao: !!window.jogo.transicao, ...window.registro,
   }));
   v(!fim.erro, `atalhos da era 1 sem erro ${fim.erro ?? ''}`);
   v(fim.era === 'abraao' && !fim.transicao, `transição terminou em Canaã (era ${fim.era})`);
-  v(fim.ativo === 'abraao', `Abrão sob controle (${fim.ativo})`);
   const nomes = fim.genealogia.filter((x) => x !== null);
   v(nomes.length >= 2, `genealogia mostrada: ${nomes.join(', ')}`);
   v(fim.genealogia.at(-1) === null, 'genealogia limpa no fim (ui.genealogia(null))');
-  const b1 = await pag.evaluate(() => window.partida.s.missoes.missaoAtual);
-  v(b1 === 'b1' || fim.avisos.some((a) => /jornada continua/.test(a)),
-    `depois de A6: ${b1 === 'b1' ? 'B1 começou' : 'aviso de continuação (era 2 ainda sem missões)'}`);
-  await pag.evaluate(() => window.jogo.avancar(1));
-  await foto('7-canaa');
+
+  // B1 começa sozinha depois de A6; passa as falas até o jogador ter o controle
+  const b1Jogavel = () => {
+    const p = window.partida;
+    const j = window.jogo;
+    return p.s.missoes.missaoAtual === 'b1' && j.ativo?.id === 'abraao' && j.ativo.controlado && j.controleLivre
+      && !j.cinematica.ativa && !p.ui.dialogoAberto() && !p.ui.menuAberto() && !j.transicao;
+  };
+  let jogavel = false;
+  for (let t = 0; t < 180 && !jogavel; t += 1) {
+    jogavel = await pag.evaluate(b1Jogavel);
+    if (jogavel) break;
+    await pag.evaluate(async () => {
+      const ui = window.partida.ui;
+      for (let k = 0; k < 10; k++) {
+        if (ui.dialogoAberto()) {
+          if (ui.dialogoC.emEscolha()) {
+            window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit1', key: '1', bubbles: true }));
+            window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Digit1', key: '1', bubbles: true }));
+          } else ui.avancarDialogo();
+        }
+        await window.jogo.avancar(0.1);
+      }
+    });
+  }
+  const b1 = await pag.evaluate(() => ({
+    missao: window.partida.s.missoes.missaoAtual,
+    ativo: window.jogo.ativo?.id,
+    hud: !document.querySelector('.hud')?.classList.contains('oculto'),
+    objetivo: document.querySelector('.hud-objetivo:not(.oculto)')?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+    pos: window.jogo.ativo ? [window.jogo.ativo.posicao.x, window.jogo.ativo.posicao.z] : null,
+  }));
+  v(jogavel, `B1 jogável depois da transição (missão ${b1.missao}, ativo ${b1.ativo})`);
+  v(jogavel && b1.hud && b1.objetivo.length > 0, `HUD e objetivo de B1: "${b1.objetivo}"`);
+  v(await pag.evaluate(() => !window.partida.ui.raiz.querySelector('.carregamento.visivel')), 'sem tela de carregamento por cima de B1');
+  if (jogavel) {
+    await pag.evaluate(() => window.jogo.entrada.simular('frente', true));
+    await pag.evaluate(() => window.jogo.avancar(1.2));
+    await pag.evaluate(() => window.jogo.entrada.simular('frente', false));
+    await pag.evaluate(() => window.jogo.avancar(0.3));
+    const pos = await pag.evaluate(() => [window.jogo.ativo.posicao.x, window.jogo.ativo.posicao.z]);
+    const andou = Math.hypot(pos[0] - b1.pos[0], pos[1] - b1.pos[1]);
+    v(andou > 1, `Abrão anda com W em Canaã (${andou.toFixed(2)} m)`);
+  }
+  await foto('8-b1-canaa');
 }
 
 const erroMissao = await pag.evaluate(() => window.partida.errosMissao);

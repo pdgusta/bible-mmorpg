@@ -8,7 +8,7 @@ Arquivos:
 
 ## Partida (`src/jogo/Partida.ts`)
 
-- **Criação:** `Partida.criar(canvas, raiz)` carrega a Bíblia, registra memórias e missões de todas as eras, cria a `UI` (com a tela de carregamento), o `Jogo` e os sistemas (`criarSistemas`), monta a primeira era e abre o título. Expõe `window.jogo`, `window.partida` e, 30 quadros depois do título, `window.pronto`.
+- **Criação:** `Partida.criar(canvas, raiz)` carrega a Bíblia, registra memórias e missões de todas as eras, cria a `UI` (com a tela de carregamento), o `Jogo` e os sistemas (`criarSistemas`), monta a primeira era e abre o título. Expõe `window.jogo`, `window.partida` e, 30 quadros depois do título, `window.pronto`. O progresso de `jogo.carregarBase` alimenta a tela de carregamento só durante a carga base: no fim, `ativos.aoProgresso` é desligado, e modelos carregados depois (animais) não reabrem a tela.
 - **Modos:** `modo` é `'carregando' | 'titulo' | 'jogo'`.
   - Título: câmera externa em órbita lenta (`EraAtiva.vistaTitulo()`), céu parado, ninguém sob controle, HUD escondido, `ui.tituloSobre3D(true)`.
   - Jogo: `comecarJogo(id)` entrega o controle, encaixa a câmera e liga o HUD.
@@ -29,13 +29,14 @@ Arquivos:
 - `ERAS`, `ORDEM_ERAS = ['noe', 'abraao']`, `defEra(id)` e `NOMES_ERAS`.
 - `DefEra`: id, nome, sub, protagonista, missão inicial, jogáveis, NPCs, missões, memórias, Cristo, `seguinte`, texto de carregamento, hora de chegada e `criar(ctx)`.
 - `EraAtiva`: `mundo`, `sujo`, `criarPersonagens()`, `posicoesIniciais()`, `ligar()`/`desligar()`, `reconstruir()`, `vistaTitulo()`, `ambiente()` e `atalhos?(op)`.
-- `ContextoEra`: `jogo`, `ui`, `s`, `audio`, `transicaoEra(nomes)` e `cristo(id)`.
+- `ContextoEra`: `jogo`, `ui`, `s`, `audio`, `transicaoEra(nomes)`, `cristo(id)` e `creditos()` (resumo da jornada e a tela de créditos; resolve quando ela fecha).
 
 ## Ligações (`src/jogo/ligacao/`)
 
 - **`noe.ts`:** `ERA_NOE_JOGO` monta `MundoNoe` e implementa `ServicosNoe`: vale, céu, áudio, animais (`criarAnimal`), progresso, câmera (`tremer`, `balanco`), Cristo, `controlar`, `liberarPosto`, `removerPersonagem` e `transicaoEra`. Reconstrói o vale por `ERA_NOE.reconstruir` e calcula o ambiente sonoro por área e estado do dilúvio.
-- **`abraao.ts`:** provisória. Monta `MundoCanaa` (com `canaa.ceu = jogo.ceu`) e cria Abrão, Sarai, Ló e Eliézer, o bastante para a transição e o save. Falta trocar as definições pelas de `src/eras/abraao/index.ts` (`ERA_ABRAAO`) e implementar `ServicosAbraao`, como em `noe.ts`.
-- **`audio.ts`:** `PonteAudio` liga `Audio.iniciarNoPrimeiroGesto()`, efeitos de eventos (troca, interação, memória, nível), passos, música por estado e ambientes (pedidos das missões somados à área da era).
+- **`abraao.ts`:** `ERA_ABRAAO_JOGO` monta `MundoCanaa` (com `canaa.ceu = jogo.ceu`), cria jogáveis e NPCs em `INICIO_ABRAAO` e implementa `ServicosAbraao`: Canaã, céu, áudio, animais e rebanhos (`Rebanho` em `mundo.atualizaveis`), progresso, câmera, entrada, `aCadaQuadro`, Cristo, `controlar`, `liberarPosto`, `emitir`, `criarPersonagem`, `removerPersonagem` e `creditos` (pelo `ContextoEra`). `ligar()` registra os segredos; `desligar()` chama `ligarServicosAbraao(null)` e `ERA_ABRAAO.limparCena()`. Última era: sem `seguinte`; depois de B5 a Partida volta ao título.
+- **Adaptador da arca (`noe.ts`, `refazerNavegacaoComArca`):** `Arca.definirEstagio` não refaz `mundo.nav`; a ligação embrulha o método e chama `nav.reconstruir()` a cada estágio. Remova quando o Arca fizer isso sozinho.
+- **`audio.ts`:** `PonteAudio` (um estado de música que o áudio não tem toca como `aventura`) liga `Audio.iniciarNoPrimeiroGesto()`, efeitos de eventos (troca, interação, memória, nível), passos, música por estado e ambientes (pedidos das missões somados à área da era).
 - **`comum.ts`:** `estadoMissaoAtual`, `esperarJogo`, `removerPersonagem` (nunca remove quem está sob controle), `desvio` e `reiniciarPessoa`.
 - **`depuracao.ts`:** `?dev&missao=a3` pula pelos atalhos da era; `?dev&auto=1` joga sozinho; `?dev&hora=`, `?dev&pos=x,z`. Para o e2e: `partida.dev.avancar(seg, passo)` avança a lógica em modo manual passando as falas; `ligarCapturas()` e `liberar()` param em momentos de foto.
 
@@ -53,7 +54,7 @@ Arquivos:
 ## e2e
 
 - `node e2e/integracao.mjs [pasta]`: do carregamento até A1 jogável (título sobre o vale, Novo jogo, prólogo, HUD, andar, Diário, pausa, salvar no espaço 1; depois muda a posição de Noé e uma flag, sai para o título e carrega o espaço 1 pelo menu, conferindo que posição e flag voltam). Fotos em `e2e/saida/integracao/`. Leva uns 2 min no SwiftShader: o laço fica parado e só as fotos renderizam.
-- `--transicao`: joga o resto da era 1 pelos atalhos e confere a transição para Canaã (genealogia mostrada e limpa, Abrão no controle, B1 ou o aviso de continuação). Na base atual para em A4 (ver `docs/ESTADO.md`).
+- `--transicao`: joga o resto da era 1 pelos atalhos e confere a transição para Canaã (genealogia mostrada e limpa, Abrão no controle, B1 jogável). Leva uns 14 min; fotos de A6 (arco-íris), da genealogia e de B1. Confere também que a tela de carregamento não fica por cima do jogo.
 - `e2e/jogar-mvp.mjs` (`npm run e2e`) ainda não existe.
 - Os testes simulam o websocket do Vite (`abrir()` em `e2e/utilidades.mjs`), para o HMR não recarregar a página.
 - No Git Bash do Windows, use `MSYS_NO_PATHCONV=1` antes de `node e2e/foto.mjs "/..."`, senão o `/` vira um caminho do Windows.

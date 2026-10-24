@@ -22,6 +22,8 @@ export interface ContextoEra {
   transicaoEra(genealogia: string[]): Promise<void>;
   /** Desbloqueia uma entrada "Aponta para Cristo" no Diário. */
   cristo(id: string): void;
+  /** Créditos do fim da jornada (estatísticas e a tela de créditos); resolve ao fechar. */
+  creditos(): Promise<void>;
 }
 
 /** Câmera da tela de título: órbita lenta em volta de um ponto. */

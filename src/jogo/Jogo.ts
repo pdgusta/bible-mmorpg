@@ -143,11 +143,17 @@ export class Jogo {
 
   async carregarBase(progresso?: (f: number, nome: string) => void) {
     this.ativos.aoProgresso = progresso;
-    const [gm, gf, nat] = await Promise.all([
-      this.ativos.carregar('personagens/humano.glb'),
-      this.ativos.carregar('personagens/humana.glb'),
-      this.ativos.carregar('natureza.glb'),
-    ]);
+    let gm, gf, nat;
+    try {
+      [gm, gf, nat] = await Promise.all([
+        this.ativos.carregar('personagens/humano.glb'),
+        this.ativos.carregar('personagens/humana.glb'),
+        this.ativos.carregar('natureza.glb'),
+      ]);
+    } finally {
+      // o progresso é só da carga base: modelos carregados depois (animais) não reabrem a tela
+      this.ativos.aoProgresso = undefined;
+    }
     this.corpos = { masc: new CorpoBase(gm, gm.animations), fem: new CorpoBase(gf, gm.animations) };
     this.natureza = nat.scene;
   }

@@ -125,6 +125,11 @@ export class Depuracao {
   /** Passa a fala/escolha na tela (a primeira opção disponível). */
   private passarFala() {
     const ui = this.p.ui;
+    // os créditos do fim da era 2 esperam alguém fechar a tela
+    if (ui.menusC.topo() === 'creditos') {
+      ui.fecharMenus();
+      return;
+    }
     if (!ui.dialogoAberto()) return;
     if (ui.dialogoC.emEscolha()) {
       window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit1', key: '1', bubbles: true }));
