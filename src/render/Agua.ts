@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GLOBAIS, FAIXA_REVELAR } from './Shaders';
+import { GLOBAIS, glslAfundar } from './Shaders';
 import type { Relevo } from '../mundo/Relevo';
 
 /**
@@ -100,8 +100,9 @@ export class Agua {
           cor = mix(cor, vec3(0.95, 0.97, 0.95), esp2 * 0.7 * (1.0 - uTurva));
           cor *= uLuz;
           float alfa = mix(0.55, 0.92, t) + esp2 * 0.3;
-          // revelação da transição de era (mesma faixa do terreno e das estruturas)
-          alfa *= 1.0 - smoothstep(uRaio - ${FAIXA_REVELAR.toFixed(1)}, uRaio, distance(vMundo.xz, uCentro));
+          // revelação da transição de era: a água some no começo da faixa em que o chão afunda
+          // (antes de o leito descer uns 3 m), para não ficar uma lâmina sobre o buraco
+          alfa *= 1.0 - smoothstep(0.0, 0.1, ${glslAfundar('vMundo.xz')});
           if (alfa < 0.01) discard;
           gl_FragColor = vec4(cor, clamp(alfa, 0.0, 1.0));
           #include <tonemapping_fragment>

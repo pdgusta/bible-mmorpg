@@ -12,8 +12,38 @@ export const GLOBAIS = {
   uRaio: { value: 1e6 },
 };
 
-// Neblina "atmosférica": curva suave (ease-out) entre near e far. Com o far bem além do alcance
-// da vegetação, as montanhas do horizonte ficam azuladas mas mantêm o relevo (não viram recortes chapados).
+// Neblina "atmosférica": curva suave (ease-out) entre near e far, mais rala no alto (o ar do vale
+// é mais denso que o das cristas). Assim as montanhas do horizonte ficam azuladas mas mantêm o
+// relevo, em vez de virarem recortes chapados da cor da neblina.
+/** Altitudes (m) entre as quais a neblina afina, e quanto ela afina no topo (0..1). */
+const NEBLINA_ALT = { base: 14, topo: 75, alivio: 0.4 };
+THREE.ShaderChunk.fog_pars_vertex = /* glsl */ `
+#ifdef USE_FOG
+  varying float vFogDepth;
+  varying float vFogAlt;
+#endif
+`;
+// altura de mundo sem modelMatrix (serve também para instâncias): a câmera mais o deslocamento
+// de vista girado de volta (a parte 3x3 da viewMatrix é ortonormal: inversa = transposta)
+THREE.ShaderChunk.fog_vertex = /* glsl */ `
+#ifdef USE_FOG
+  vFogDepth = - mvPosition.z;
+  vFogAlt = cameraPosition.y + dot( viewMatrix[1].xyz, mvPosition.xyz ); // linha 1 de Rᵀ = coluna 1 de R
+#endif
+`;
+THREE.ShaderChunk.fog_pars_fragment = /* glsl */ `
+#ifdef USE_FOG
+  uniform vec3 fogColor;
+  varying float vFogDepth;
+  varying float vFogAlt;
+  #ifdef FOG_EXP2
+    uniform float fogDensity;
+  #else
+    uniform float fogNear;
+    uniform float fogFar;
+  #endif
+#endif
+`;
 THREE.ShaderChunk.fog_fragment = /* glsl */ `
 #ifdef USE_FOG
   #ifdef FOG_EXP2
@@ -22,6 +52,7 @@ THREE.ShaderChunk.fog_fragment = /* glsl */ `
     float _tf = clamp( ( vFogDepth - fogNear ) / max( fogFar - fogNear, 0.001 ), 0.0, 1.0 );
     float fogFactor = 1.0 - ( 1.0 - _tf ) * ( 1.0 - _tf );
   #endif
+  fogFactor *= 1.0 - ${NEBLINA_ALT.alivio.toFixed(2)} * smoothstep( ${NEBLINA_ALT.base.toFixed(1)}, ${NEBLINA_ALT.topo.toFixed(1)}, vFogAlt );
   gl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );
 #endif
 `;
@@ -60,10 +91,25 @@ export interface OpcoesPatch {
   luminancia?: number;
 }
 
-/** Largura (m) da faixa da "revelação" radial (transição entre eras), igual em todos os materiais. */
+/**
+ * Largura (m) de cada faixa da "revelação" radial (transição entre eras). São duas faixas
+ * encadeadas, para que nada flutue:
+ * - de uRaio - FAIXA a uRaio, a vegetação, a grama e as instâncias encolhem até sumir;
+ * - de uRaio a uRaio + FAIXA, o terreno, as estruturas e a água afundam (ou se apagam), já sem nada em cima.
+ */
 export const FAIXA_REVELAR = 20;
 /** Quanto o terreno e as estruturas afundam fora do raio revelado. */
 export const AFUNDAR_REVELAR = 30;
+
+/** GLSL: fator 0..1 de encolher (vegetação, grama) num ponto xz. Precisa de uCentro e uRaio. */
+export function glslEncolher(xz: string) {
+  return `smoothstep(uRaio - ${FAIXA_REVELAR.toFixed(1)}, uRaio, distance(${xz}, uCentro))`;
+}
+
+/** GLSL: fator 0..1 de afundar (terreno, estruturas, água) num ponto xz: começa onde a vegetação já sumiu. */
+export function glslAfundar(xz: string) {
+  return `smoothstep(uRaio, uRaio + ${FAIXA_REVELAR.toFixed(1)}, distance(${xz}, uCentro))`;
+}
 
 /** Trecho GLSL que mantém a normal da frente nas faces de trás (DoubleSide). */
 export const GLSL_SEM_VERSO = `#include <normal_fragment_begin>
@@ -106,14 +152,12 @@ export function aplicarPatch(material: THREE.Material, op: OpcoesPatch = {}) {
     }
     if (revelar) {
       // instâncias (vegetação) encolhem em torno da base; malhas fundidas (estruturas) afundam
-      // por vértice, junto com o terreno
+      // por vértice, na mesma faixa do terreno (ver FAIXA_REVELAR)
       corpo += /* glsl */ `
       #ifdef USE_INSTANCING
-        float _enc = 1.0 - smoothstep(uRaio - ${FAIXA_REVELAR.toFixed(1)}, uRaio, distance(_base.xz, uCentro));
-        transformed *= _enc;
+        transformed *= 1.0 - ${glslEncolher('_base.xz')};
       #else
-        float _af = smoothstep(uRaio - ${FAIXA_REVELAR.toFixed(1)}, uRaio, distance(_pm.xz, uCentro));
-        transformed.y -= _af * ${AFUNDAR_REVELAR.toFixed(1)};
+        transformed.y -= ${glslAfundar('_pm.xz')} * ${AFUNDAR_REVELAR.toFixed(1)};
       #endif
       `;
     }

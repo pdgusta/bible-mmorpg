@@ -25,7 +25,7 @@ Estado do código ao sair: `npx tsc --noEmit` dá 0 erros, `npx vitest run` pass
 | Mundo de Canaã | ✅ (`?lab=canaa`, ≤ 92 draw calls) | `tecnico/canaa.md` |
 | Conteúdo da era 1 | ✅ escrito, revisado e com os 5 ajustes de lógica da revisão (branch `frente/era-noe`) | `tecnico/era-noe.md`, `tecnico/revisao.md` |
 | Conteúdo da era 2 | ✅ escrito, testado e revisado · ⏳ ligação na integração (abaixo) | `tecnico/era-abraao.md` |
-| Motor visual do vale de Noé | 🟡 parcial (abaixo) | briefing: `agentes/motor.md` |
+| Motor visual do vale de Noé | ✅ arte, transição, física e orçamento (abaixo) | `tecnico/motor.md` |
 | Integração (fluxo da partida, ligações, e2e) | ✅ era 1 → transição → B1 jogável (e2e `integracao.mjs --transicao`) · ⏳ `jogar-mvp` até o fim de B5 | `tecnico/integracao.md` |
 | Deploy (GitHub Pages) | ✅ workflow pronto (ativar em *Settings → Pages → GitHub Actions*) | `README.md` |
 
@@ -92,23 +92,26 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 
 ### 3. Motor visual (`agentes/motor.md`)
 
-**Já existe:**
-- `src/render/Chuva.ts`;
-- `Arca.ts` e `construir.ts` muito ampliados: estados do dilúvio, interior, `pontoArca`, viga mestra e andaime, todos usados pela era 1 e pelos testes;
-- ajustes em `Ceu`, `Shaders`, `Fisica` e `Mundo`.
+**O que o motor tem hoje** (branch `frente/motor`; API e detalhes em `tecnico/motor.md`):
+- **Vale de Noé completo:** relevo, rio com vau, cidade, estaleiro, bosque e platô. A `MundoNoe` tem estados do dilúvio (`definirEstado`), água animável, interior da arca, `pontoArca`, viga mestra, andaime, árvores de gofer e altar. A chuva (`Chuva.ts`) usa 1 draw call.
+- **Vegetação (`Natureza`):**
+  - três níveis de detalhe: perto com sombra, longe com folhagem reduzida e silhueta de ~100 triângulos com normais macias;
+  - perto e silhueta limitados pelo preset;
+  - troncos simplificados com solda de vértices;
+  - cor por variante (`corFolha`/`corSolido`), usada no vale para oliveiras, arbustos, pedras e seixos;
+  - sombras com vento e revelação (`customDepthMaterial`).
+- **Céu e luz:** ciclo do dia, nuvens brancas e fofas, tempestade, arco-íris e glória dourada. A neblina é suave e mais rala no alto, então as montanhas do horizonte guardam o relevo.
+- **Terreno:** blocos de 96 m com malha de 2 m perto e de 4 m longe, mais saias contra frestas; modos lama e molhado. A grama tem a base na cor do chão e a ponta clara.
+- **Transição de era:** duas faixas encadeadas em `Shaders.ts`. A vegetação e a grama somem primeiro; depois o terreno, as estruturas e a água afundam ou se apagam. Nada flutua.
+- **Física:** inclinação máxima a pé, que vale também no ar; quem fica numa encosta íngreme escorrega e não pula (`CorpoFisico.naEncosta`). Testes em `src/mundo/Fisica.test.ts`.
+- **Orçamento (preset médio, 7 vistas):** no máximo 128 draw calls e 579 mil triângulos. Tabela em `tecnico/motor.md`.
 
-**Ao parar:** reescrevia `src/render/Natureza.ts` para ter um terceiro LOD (silhuetas de longe). As mudanças em `Ceu.ts` e `Shaders.ts` foram commitadas no meio do trabalho: **confira visualmente**.
-
-**Falta:**
-- **Cor da vegetação:** o kit traz folhas de TwistedTree e Bush_Common vermelhas e rochas verde-escuras. Crie uma opção de cor por variante na `Natureza`, use-a no vale de Noé e troque o `recolorirFolhas()` de Canaã por ela.
-- **Outros problemas de arte:**
-  - grama com pontas escuras;
-  - nuvens que parecem bolhas bege;
-  - montanhas do horizonte chapadas;
-  - árvores de longe que viram manchas escuras.
-- **Transição de era:** alinhar as faixas de revelação (`FAIXA_REVELAR` em `Shaders.ts` e o afundamento do `Terreno`) e dar revelação à água.
-- **Física:** inclinação máxima no `CorpoFisico`; hoje as encostas não bloqueiam a subida.
-- **Desempenho:** medir o vale (≤ 150 draw calls e ≤ 600 mil triângulos no preset médio) e escrever `docs/tecnico/motor.md`.
+**Para outras frentes (fora do escopo desta):**
+- **Canaã (`src/eras/abraao/construir.ts`):** trocar o `recolorirFolhas()` pela cor por variante em `definirVariantes`: `oliveira` com `corFolha: '#b4c0a2'` (sem `tintFolha`), `arbusto` com `corFolha: '#a9b583'`, `arbustoVerde` com `corFolha: '#86b860'` e `pedra` com `corSolido: '#c9bea6'`; depois apagar as duas chamadas e a função. Hoje as silhuetas de longe das oliveiras de Canaã saem avermelhadas, porque a cor média vem da textura original. A fórmula é outra (`0,45 + 0,55·lum/média` em vez de `0,55 + 1,6·lum`): confira as cores em `?lab=canaa`.
+- **Canaã (`estruturas.ts`):** a faixa de encolher está escrita à mão (`uRaio - 20.0`); trocar por `glslEncolher()` de `Shaders.ts`.
+- **Transição (`src/camera/TransicaoEra.ts`):** a `FOLGA_TERRENO` não tem efeito (o `uRaio` do terreno é o mesmo objeto do `GLOBAIS`); a folga agora mora nas faixas de `Shaders.ts` e a constante pode sair.
+- **Personagens:** cada humano tem ~22 mil triângulos e projeta sombra: 4 em cena pesam ~180 mil, o maior custo do vale. Um LOD para os humanos é o próximo ganho.
+- **Câmera:** a câmera de 3ª pessoa entra na copa das árvores (a tela fica verde-escura); ela não colide com folhagem.
 
 ### 4. Ajustes de lógica da era 1 (pedidos pela revisão; aplicados na branch `frente/era-noe`)
 
