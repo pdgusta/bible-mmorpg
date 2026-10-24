@@ -231,6 +231,28 @@ export class Arca {
     if (e < 2 && this.vigaMestra.altura >= 1) this.vigaMestra.altura = 0;
     this.atualizarObra();
     this.atualizarInteriorVisivel(this.interiorVisivel);
+    this.refazerNavegacao();
+  }
+
+  /**
+   * Refaz a grade de navegação na área da arca: o casco troca de colisores a cada estágio
+   * e a grade foi montada com o estágio 0. Sem isto, os animais tentam atravessar o casco.
+   */
+  private refazerNavegacao() {
+    const nav = this.mundo.nav;
+    if (!nav) return;
+    const lx = ARCA.comprimento / 2 + 4;
+    let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
+    const p = new THREE.Vector3();
+    // a rampa da porta desce até W2 + 6,6 em +z
+    for (const [cx, cz] of [[-lx, -W2 - 4], [lx, -W2 - 4], [-lx, W2 + 10], [lx, W2 + 10]]) {
+      this.mundoDe(cx, 0, cz, p);
+      x0 = Math.min(x0, p.x);
+      z0 = Math.min(z0, p.z);
+      x1 = Math.max(x1, p.x);
+      z1 = Math.max(z1, p.z);
+    }
+    nav.reconstruir(x0, z0, x1, z1);
   }
 
   /** Abre/fecha a porta. Aberta, ela desce como rampa até o chão (qualquer estágio ≥ 4). */

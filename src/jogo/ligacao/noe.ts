@@ -27,27 +27,11 @@ class EraNoe implements EraAtiva {
 
   constructor(private ctx: ContextoEra) {
     this.vale = new MundoNoe(ctx.jogo.natureza);
-    this.refazerNavegacaoComArca();
     this.servicos = this.criarServicos();
   }
 
   get mundo() {
     return this.vale.mundo;
-  }
-
-  /**
-   * Adaptador: `Arca.definirEstagio` troca os colisores do casco mas não refaz a grade de
-   * navegação, montada com a arca no estágio 0. Sem isto, na A4 os animais tentam atravessar
-   * a ponta oeste do casco e ficam presos. Remova quando o Arca refizer a navegação sozinho.
-   */
-  private refazerNavegacaoComArca() {
-    const arca = this.vale.arca;
-    const m = this.vale.mundo;
-    const definir = arca.definirEstagio.bind(arca);
-    arca.definirEstagio = (e) => {
-      definir(e);
-      m.nav?.reconstruir();
-    };
   }
 
   private criarServicos(): ServicosNoe {
