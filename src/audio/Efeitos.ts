@@ -32,10 +32,16 @@ export interface OpcoesEfeito {
 
 // ------------------------------------------------------------------ utilitários ------
 
-function g(c: CtxSom, destino: AudioNode, valor = 0): GainNode {
+/** Liga um nó a outro nó ou a um parâmetro (modulação). */
+export function ligar(n: AudioNode, d: AudioNode | AudioParam) {
+  if (d instanceof AudioNode) n.connect(d);
+  else n.connect(d);
+}
+
+function g(c: CtxSom, destino: AudioNode | AudioParam, valor = 0): GainNode {
   const n = c.ctx.createGain();
   n.gain.value = valor;
-  n.connect(destino);
+  ligar(n, destino);
   return n;
 }
 
@@ -143,7 +149,7 @@ function vozAnimal(nome: string, c: CtxSom, t: number, o: OpcoesEfeito, d: Audio
     case 'balido':
       return voz(c, t, { alturas: [330 * k, 360 * k, 340 * k, 300 * k], dur: 0.85, formantes: [[650, 5], [1500, 6], [2600, 8]], pulsos: [8.5, 0.7], ruido: 0.1, vol: 0.45 }, d);
     case 'mugido':
-      return voz(c, t, { alturas: [105 * k, 125 * k, 128 * k, 98 * k], dur: 1.6, formantes: [[320, 4], [650, 5], [1000, 6]], vibrato: [5, 2], vol: 0.6, ataque: 0.15 }, d);
+      return voz(c, t, { alturas: [105 * k, 125 * k, 128 * k, 98 * k], dur: 1.6, formantes: [[320, 4], [650, 5], [1000, 6]], vibrato: [5, 2], vol: 0.45, ataque: 0.15 }, d);
     case 'relincho':
       voz(c, t, { alturas: [1100 * k, 950 * k, 800 * k, 520 * k], dur: 1.1, formantes: [[1100, 4], [2300, 6]], vibrato: [13, 70], ruido: 0.15, vol: 0.32 }, d);
       return ruidoBufo(c, t + 1.15, d);
@@ -169,7 +175,7 @@ function vozAnimal(nome: string, c: CtxSom, t: number, o: OpcoesEfeito, d: Audio
     case 'pomba':
     case 'arrulho': {
       const notas: [number, number][] = [[0, 0.22], [0.32, 0.28], [0.72, 0.5]];
-      for (const [dt, du] of notas) voz(c, t + dt, { alturas: [480 * k, 540 * k, 470 * k], dur: du, tipo: 'sine', formantes: [[500, 1], [1000, 2]], pulsos: [18, 0.4], vol: 0.6, ataque: 0.06 }, d);
+      for (const [dt, du] of notas) voz(c, t + dt, { alturas: [480 * k, 540 * k, 470 * k], dur: du, tipo: 'sine', formantes: [[500, 1], [1000, 2]], pulsos: [18, 0.4], vol: 0.32, ataque: 0.06 }, d);
       return;
     }
     case 'corvo':
@@ -321,7 +327,7 @@ export function tocarEfeito(nome: string, c: CtxSom, t: number, o: OpcoesEfeito)
         sino(c, midiParaHz(81), t + 0.35, 4, 0.7, d, 0.8);
         tocarEfeito('brilho', c, t + 0.1, { volume: 0.4 });
       } else if (tipo === 'armadura') {
-        for (const [m, dt] of [[50, 0], [57, 0.12], [62, 0.24], [69, 0.5]] as const) sino(c, midiParaHz(m + 12), t + dt, 5, 0.9, d, 0.9);
+        for (const [m, dt] of [[50, 0], [57, 0.12], [62, 0.24], [69, 0.5]] as const) sino(c, midiParaHz(m + 12), t + dt, 5, 0.65, d, 0.9);
         const ga = g(c, d);
         env(ga.gain, t, 0.8, 0.1, 3);
         for (const m of [50, 57, 62]) osc(c, 'sawtooth', midiParaHz(m), t, t + 4, filtro(c, 'lowpass', 900, 0.5, ga));
@@ -387,7 +393,7 @@ export function tocarEfeito(nome: string, c: CtxSom, t: number, o: OpcoesEfeito)
       for (let i = 0; i < n; i++) {
         const ti = t + i * (0.11 + r() * 0.03);
         const ga = g(c, d);
-        env(ga.gain, ti, 0.012, 0.3 * (1 - i / (n + 2)), 0.07);
+        env(ga.gain, ti, 0.012, 0.75 * (1 - i / (n + 2)), 0.07);
         ruido(c, 'rosa', ti, 0.1, filtro(c, 'bandpass', 500 + r() * 300, 0.9, ga));
       }
       return true;
@@ -419,7 +425,7 @@ export function tocarEfeito(nome: string, c: CtxSom, t: number, o: OpcoesEfeito)
     case 'corda': {
       const dur = o.duracao ?? 0.7;
       const ga = g(c, d);
-      env(ga.gain, t, 0.08, 0.22, dur);
+      env(ga.gain, t, 0.08, 0.45, dur);
       const f = filtro(c, 'bandpass', 1300, 7, ga);
       const s = osc(c, 'sawtooth', 170, t, t + dur + 0.1, f);
       s.frequency.linearRampToValueAtTime(230, t + dur * 0.6);
@@ -458,7 +464,7 @@ export function tocarEfeito(nome: string, c: CtxSom, t: number, o: OpcoesEfeito)
       // madeira rangendo (casco da arca)
       const dur = 0.8 + r() * 1.2;
       const ga = g(c, d);
-      env(ga.gain, t, dur * 0.3, 0.16 * (o.volume ?? 1), dur * 0.7);
+      env(ga.gain, t, dur * 0.3, 0.32 * (o.volume ?? 1), dur * 0.7);
       const f = filtro(c, 'bandpass', 500 + r() * 500, 9, ga);
       const s = osc(c, 'sawtooth', 70 + r() * 50, t, t + dur, f);
       s.frequency.linearRampToValueAtTime(90 + r() * 70, t + dur);

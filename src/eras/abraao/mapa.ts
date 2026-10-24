@@ -329,6 +329,8 @@ export const MAPA_CANAA: DefMapa = {
     topoMoria: CANAA.moria,
     altarMoria: [50.5, 170.6],
     arbustoCarneiro: [56.8, 176.6],
+    // canto do mapa onde ficam, fora de cena, os personagens indisponíveis
+    bastidor: [-236, 236],
   },
 
   altura(x, z, r) {

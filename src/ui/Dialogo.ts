@@ -36,6 +36,8 @@ export class Dialogo {
   private escolhaAtual: { opcoes: OpcaoEscolha[]; podem: boolean[]; foco: number; resolver: (i: number) => void; botoes: HTMLButtonElement[] } | null = null;
   private emUso = 0;
   private ultimoPulo = 0;
+  /** Muda a cada cancelar(): execuções antigas param sem mexer na caixa. */
+  private geracao = 0;
   /** Caracteres por segundo da máquina de escrever (0 = instantâneo). */
   velocidade = 52;
 
@@ -94,6 +96,30 @@ export class Dialogo {
     }
     const f = this.aoAvancar;
     this.aoAvancar = null;
+    f?.();
+  }
+
+  /**
+   * Fecha o que estiver na tela (missão abortada, jogo carregado, saída para o título): as
+   * falas pendentes terminam sem mostrar o resto; uma escolha pendente fica sem resposta
+   * (nenhum efeito é aplicado). A fila recomeça vazia.
+   */
+  cancelar() {
+    this.geracao++;
+    this.fila = Promise.resolve();
+    const f = this.aoAvancar;
+    this.aoAvancar = null;
+    this.pararDigitacao();
+    if (this.escolhaAtual) {
+      this.escolhaAtual = null;
+      limpar(this.opcoesEl);
+      this.caixa.classList.remove('com-escolhas');
+    }
+    const estava = this.emUso > 0;
+    this.emUso = 0;
+    this.caixa.classList.remove('aberto');
+    this.captura.classList.remove('aberto');
+    if (estava) this.ctx.mudouBloqueio();
     f?.();
   }
 
@@ -163,31 +189,40 @@ export class Dialogo {
 
   private async executar(linhas: Linha[]) {
     if (!linhas.length) return;
+    const g = this.geracao;
     this.abrir();
     try {
       for (const l of linhas) {
         this.mostrarLinha(l, true);
         await new Promise<void>((r) => (this.aoAvancar = r));
+        if (g !== this.geracao) return;
       }
     } finally {
-      this.aoAvancar = null;
-      this.pararDigitacao();
-      this.fechar();
+      if (g === this.geracao) {
+        this.aoAvancar = null;
+        this.pararDigitacao();
+        this.fechar();
+      }
     }
   }
 
   private async executarEscolha(pergunta: Linha | null, opcoes: OpcaoEscolha[], pode: (o: OpcaoEscolha) => boolean): Promise<number> {
+    const g = this.geracao;
     this.abrir();
     try {
       if (pergunta) this.mostrarLinha(pergunta, false);
       else this.mostrarVazio();
       return await new Promise<number>((resolver) => this.montarOpcoes(opcoes, pode, resolver));
     } finally {
-      this.escolhaAtual = null;
-      limpar(this.opcoesEl);
-      this.caixa.classList.remove('com-escolhas');
-      this.fechar();
+      if (g === this.geracao) this.limparEscolha();
     }
+  }
+
+  private limparEscolha() {
+    this.escolhaAtual = null;
+    limpar(this.opcoesEl);
+    this.caixa.classList.remove('com-escolhas');
+    this.fechar();
   }
 
   private mostrarVazio() {

@@ -23,7 +23,7 @@ export const CRISTO_NOE: EntradaCristo[] = [
     desbloqueia: 'prologo',
     completaEm: 'b5',
     texto:
-      'Logo depois da queda, Deus promete que a semente da mulher feriria a cabeça da serpente. ' +
+      'Logo depois da queda, Deus prometeu que a semente da mulher feriria a cabeça da serpente. ' +
       'Essa promessa passa de geração em geração: de Noé a Sem, de Sem a Abraão. ' +
       'O apóstolo Paulo explica que a Semente é uma só pessoa: Cristo.',
   },
@@ -35,7 +35,7 @@ export const CRISTO_NOE: EntradaCristo[] = [
     texto:
       'A arca tinha uma só porta, e foi o próprio Senhor quem a fechou. ' +
       'Pedro vê nas águas do dilúvio uma figura do batismo, e Jesus se apresenta como a porta: quem entra por ele é salvo. ' +
-      'Como nos dias de Noé, a vida seguia distraída até o fim chegar; por isso Jesus chama à vigilância.',
+      'Jesus lembra que, nos dias de Noé, todos comiam e bebiam e não perceberam nada até o dilúvio chegar: assim será a sua vinda.',
   },
   {
     id: 'tempestade',
@@ -44,8 +44,8 @@ export const CRISTO_NOE: EntradaCristo[] = [
     desbloqueia: 'a5.medo',
     texto:
       'Noé e sua família atravessaram a tempestade guardados por Deus, sem ver o fim das águas. ' +
-      'Séculos depois, num barco no mar da Galileia, Jesus repreendeu o vento, e o mar se acalmou. ' +
-      'Ele perguntou aos discípulos pela fé deles: a mesma confiança que sustentou a arca.',
+      'Muitos séculos depois, num barco no mar da Galileia, Jesus repreendeu o vento, e o mar se acalmou. ' +
+      'Ele perguntou aos discípulos pela fé deles: confiar em Deus no meio da tempestade, como Noé na arca.',
   },
   {
     id: 'linhagem',
@@ -55,7 +55,7 @@ export const CRISTO_NOE: EntradaCristo[] = [
     texto:
       'Lucas traça a genealogia de Jesus até o princípio, e nela estão Sem e Noé. ' +
       'A promessa feita no Éden atravessou o dilúvio dentro da arca e seguiu por Sem até Abraão. ' +
-      'Cada geração guardou a Semente até que ela chegasse em Cristo.',
+      'Cada geração guardou a promessa até que viesse a Semente: Cristo.',
   },
 ];
 

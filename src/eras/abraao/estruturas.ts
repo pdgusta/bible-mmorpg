@@ -364,11 +364,11 @@ export class Fogueiras {
       this.chamas.setMatrixAt(k, m4);
       q.identity();
       p.set(f.x, f.y + 0.65 * e, f.z);
-      s.setScalar(e * (3.2 + this.noite * 2.2) * (1 + Math.sin(t * 7.7 + f.fase) * 0.06));
+      s.setScalar(e * (3.2 + this.noite * 3.2) * (1 + Math.sin(t * 7.7 + f.fase) * 0.06));
       m4.compose(p, q, s);
       this.halos.setMatrixAt(k, m4);
       p.set(f.x, f.y + 0.06, f.z);
-      s.setScalar(e * (5 + this.noite * 4) * (1 + Math.sin(t * 6.1 + f.fase) * 0.05));
+      s.setScalar(e * (5 + this.noite * 7) * (1 + Math.sin(t * 6.1 + f.fase) * 0.05));
       m4.compose(p, q, s);
       this.chao.setMatrixAt(k, m4);
       k++;
@@ -377,8 +377,8 @@ export class Fogueiras {
       im.count = k;
       im.instanceMatrix.needsUpdate = true;
     }
-    this.matHalo.uniforms.uForca.value = 0.18 + this.noite * 0.75;
-    this.matChao.uniforms.uForca.value = 0.08 + this.noite * 0.55;
+    this.matHalo.uniforms.uForca.value = 0.18 + this.noite * 0.85;
+    this.matChao.uniforms.uForca.value = 0.08 + this.noite * 0.9;
   }
 }
 

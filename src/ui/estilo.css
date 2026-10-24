@@ -804,6 +804,9 @@ details.kjv p { padding: 0 1rem 0.9rem; font-style: italic; color: var(--tinta-2
 .titulo-colinas.c2 { height: 30%; background: linear-gradient(180deg, #7f9a55, #5f7a3e); left: 25%; right: -25%; bottom: -6%; }
 .titulo-colinas.c3 { height: 20%; background: linear-gradient(180deg, #5f7f3a, #3f5a26); bottom: -4%; }
 .com-titulo .tela-titulo.coberta { visibility: visible; }
+/* título sobre o vale 3D (o jogo desenha o mundo por trás): só uma vinheta quente para a leitura */
+.titulo-3d .titulo-cenario { background: radial-gradient(ellipse at 50% 46%, rgba(40, 24, 8, 0.05) 0%, rgba(40, 24, 8, 0.18) 45%, rgba(30, 18, 6, 0.55) 100%); }
+.titulo-3d .titulo-sol, .titulo-3d .titulo-colinas { display: none; }
 .com-titulo .tela-titulo.coberta .titulo-conteudo, .com-titulo .tela-titulo.coberta .titulo-versao { visibility: hidden; }
 .titulo-conteudo { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2rem; max-width: 94vw; }
 .titulo-logo { display: flex; flex-direction: column; align-items: center; text-align: center; }

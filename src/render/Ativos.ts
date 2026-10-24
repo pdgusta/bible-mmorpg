@@ -72,6 +72,8 @@ export function extrairPartes(raiz: THREE.Object3D, cacheMat: Map<string, THREE.
     const mascara = orig.alphaTest > 0 || orig.transparent;
     const folha = /leaf|leaves|grass|flower|fern|clover|plant/i.test(orig.name) || (mascara && !/bark|rock|trunk/i.test(orig.name));
     if (!novo) {
+      // a textura de folhas das TwistedTree vem vermelha (variante de outono do kit): vira verde-oliva
+      if (orig.map && /twisted/i.test(orig.name) && /lea/i.test(orig.name)) recolorirVerde(orig.map);
       const l = new THREE.MeshLambertMaterial({
         name: orig.name,
         map: orig.map,
@@ -86,4 +88,34 @@ export function extrairPartes(raiz: THREE.Object3D, cacheMat: Map<string, THREE.
     partes.push({ geometria: g, material: novo, folha });
   });
   return partes;
+}
+
+const recoloridas = new WeakSet<THREE.Texture>();
+
+/**
+ * Recolore (uma vez, na própria textura compartilhada) uma textura de folhas monocromática
+ * para verde-oliva, preservando o desenho (luminância) e o alfa.
+ */
+function recolorirVerde(t: THREE.Texture) {
+  if (recoloridas.has(t) || typeof document === 'undefined') return;
+  recoloridas.add(t);
+  const img = t.image as (CanvasImageSource & { width: number; height: number }) | null;
+  if (!img || !img.width) return;
+  const cv = document.createElement('canvas');
+  cv.width = img.width;
+  cv.height = img.height;
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return;
+  ctx.drawImage(img, 0, 0);
+  const dados = ctx.getImageData(0, 0, cv.width, cv.height);
+  const p = dados.data;
+  for (let i = 0; i < p.length; i += 4) {
+    const v = Math.max(p[i], p[i + 1], p[i + 2]) / 255 / 0.66;
+    p[i] = Math.min(255, v * 112);
+    p[i + 1] = Math.min(255, v * 150);
+    p[i + 2] = Math.min(255, v * 66);
+  }
+  ctx.putImageData(dados, 0, 0);
+  t.image = cv;
+  t.needsUpdate = true;
 }

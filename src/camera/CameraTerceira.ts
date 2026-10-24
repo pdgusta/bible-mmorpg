@@ -30,6 +30,14 @@ export class CameraTerceira {
   private tmpRaio = new THREE.Vector3();
   tremor = 0;
   tag?: string;
+  // efeitos aplicados por cima de qualquer controlador (jogo, cinemática, troca, transição)
+  private efTremor = { forca: 0, t: 0, dur: 0 };
+  private efBalanco = 0;
+  private efBalancoAlvo = 0;
+  private efFase = 0;
+  private efPos = new THREE.Vector3();
+  private efRolar = 0;
+  private efAplicado = false;
 
   constructor(aspecto: number) {
     this.camera = new THREE.PerspectiveCamera(55, aspecto, 0.1, 1200);
@@ -137,6 +145,55 @@ export class CameraTerceira {
       this.camera.position.y += (Math.random() - 0.5) * k;
     }
     this.camera.lookAt(pivo);
+  }
+
+  /**
+   * Tremor curto (trovão, tranco da arca): `intensidade` 0..1 (≈ 25 cm no máximo) por
+   * `segundos`, decaindo. Vale também em cinemáticas e trocas.
+   */
+  tremer(intensidade: number, segundos: number) {
+    const e = this.efTremor;
+    const restante = e.dur > 0 ? e.forca * (e.t / e.dur) : 0;
+    if (intensidade >= restante) {
+      e.forca = intensidade;
+      e.t = e.dur = Math.max(0.05, segundos);
+    }
+  }
+
+  /** Balanço contínuo (a arca no mar): `intensidade` 0..1; 0 desliga suavemente. */
+  balanco(intensidade: number) {
+    this.efBalancoAlvo = clamp(intensidade, 0, 1);
+  }
+
+  /** Tira os efeitos do quadro anterior (o Jogo chama no começo do quadro). */
+  desfazerEfeitos() {
+    if (!this.efAplicado) return;
+    this.efAplicado = false;
+    this.camera.position.sub(this.efPos);
+    if (this.efRolar) this.camera.rotateZ(-this.efRolar);
+  }
+
+  /** Aplica tremor e balanço depois de todos os controladores da câmera (o Jogo chama). */
+  aplicarEfeitos(dt: number) {
+    this.desfazerEfeitos();
+    this.efBalanco = damp(this.efBalanco, this.efBalancoAlvo, 1.2, dt);
+    const e = this.efTremor;
+    if (e.t > 0) e.t = Math.max(0, e.t - dt);
+    const tremor = e.dur > 0 ? e.forca * (e.t / e.dur) : 0;
+    const b = this.efBalanco < 0.002 ? 0 : this.efBalanco;
+    if (tremor <= 0.0005 && !b) return;
+    this.efFase += dt;
+    const f = this.efFase;
+    const k = tremor * 0.25;
+    this.efPos.set(
+      (Math.random() - 0.5) * k + Math.sin(f * 0.83) * 0.12 * b,
+      (Math.random() - 0.5) * k + Math.sin(f * 1.31) * 0.18 * b,
+      (Math.random() - 0.5) * k * 0.5,
+    );
+    this.efRolar = Math.sin(f * 0.9) * 0.045 * b + (Math.random() - 0.5) * tremor * 0.012;
+    this.camera.position.add(this.efPos);
+    if (this.efRolar) this.camera.rotateZ(this.efRolar);
+    this.efAplicado = true;
   }
 
   /** Direção "para frente" no plano, segundo a câmera (para mover o personagem). */

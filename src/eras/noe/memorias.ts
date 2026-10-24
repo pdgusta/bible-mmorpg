@@ -27,12 +27,12 @@ export const MEMORIAS_NOE: DefMemoria[] = [
   },
   {
     id: 'folhaOliveira', titulo: 'A folha de oliveira', ref: 'Gn 8:11', era: ERA, forca: 2,
-    descricao: 'Depois de esperar sete dias, a pomba voltou com uma folha verde no bico: sinal de que a terra vivia de novo.',
+    descricao: 'Noé esperou mais sete dias e soltou a pomba outra vez. À tarde ela voltou com uma folha de oliveira no bico: as águas tinham baixado.',
   },
   {
     id: 'arcoIris', titulo: 'O sinal da aliança', ref: 'Gn 9:13', era: ERA, forca: 3,
     descricao: 'Deus pôs o seu arco na nuvem como sinal do pacto com toda a terra. Esta memória atravessará as gerações.',
-    frase: 'Deus cumpriu a aliança com Noé. Ele cumprirá com você.',
+    frase: 'Deus guardou Noé, como tinha prometido. Ele também cumprirá o que prometeu a você.',
   },
   {
     id: 'enoque', titulo: 'Enoque caminhava com Deus', ref: 'Gn 5:24', era: ERA, forca: 1, segredo: true,

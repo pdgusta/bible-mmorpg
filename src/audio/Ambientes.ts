@@ -1,7 +1,7 @@
 // Ambientes sintetizados em camadas: vento, pássaros, água, chuva, trovões, cidade, fogueira,
 // grilos e o casco da arca. Os nomes pedidos pelo jogo ('vale', 'tempestade', 'interiorArca'...)
 // são misturas dessas camadas.
-import { estalo, sino, tocarEfeito, type CtxSom } from './Efeitos';
+import { estalo, ligar, sino, tocarEfeito, type CtxSom } from './Efeitos';
 
 export type NomeCamada = 'vento' | 'passaros' | 'agua' | 'chuva' | 'chuvaAbafada' | 'trovoes' | 'cidade' | 'fogueira' | 'grilos' | 'rangido';
 
@@ -71,10 +71,10 @@ export class Camada {
     }
   }
 
-  private g(v: number, destino: AudioNode = this.saida) {
+  private g(v: number, destino: AudioNode | AudioParam = this.saida) {
     const n = this.c.ctx.createGain();
     n.gain.value = v;
-    n.connect(destino);
+    ligar(n, destino);
     return n;
   }
 
@@ -100,7 +100,7 @@ export class Camada {
   private lfo(f: number, prof: number, alvo: AudioParam, t: number) {
     const o = this.c.ctx.createOscillator();
     o.frequency.value = f;
-    o.connect(this.g(prof, alvo as unknown as AudioNode));
+    o.connect(this.g(prof, alvo));
     o.start(t);
     return o;
   }

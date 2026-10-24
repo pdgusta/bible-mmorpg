@@ -66,6 +66,13 @@ export class Jogo {
   manual = false;
   /** Quando definido, a vegetação/grama/sombras seguem este ponto em vez do personagem ativo. */
   focoExterno: THREE.Vector3 | null = null;
+  /**
+   * Quando verdadeiro, o jogador não move o personagem nem a câmera (diálogo ou menu da UI
+   * abertos). O orquestrador (Partida) liga a `ui.bloqueado()`.
+   */
+  entradaBloqueada: () => boolean = () => false;
+  /** Em modo manual (testes), o laço renderiza a cada quadro do navegador? (falso acelera o e2e) */
+  renderizarManual = true;
   private bloqueios = new Map<string, number>();
   private semGiroCamera = 0;
 
@@ -200,6 +207,17 @@ export class Jogo {
     this.eventos.emit('controle', p);
   }
 
+  /** Ninguém sob controle do jogador (tela de título): o ativo volta à rotina. */
+  soltarControle() {
+    const a = this.ativo;
+    if (a) {
+      a.controlado = false;
+      if (!a.posto && !a.escalada) a.ia.voltarARotina();
+    }
+    this.ativo = null;
+    this.ctxIA.jogador = null;
+  }
+
   aCadaQuadro(fn: (dt: number) => void) {
     this.aoQuadro.add(fn);
     return () => this.aoQuadro.delete(fn);
@@ -209,8 +227,9 @@ export class Jogo {
     this.relogio.start();
     const laco = () => {
       requestAnimationFrame(laco);
-      if (this.manual) this.renderizar();
-      else this.passo();
+      if (this.manual) {
+        if (this.renderizarManual) this.renderizar();
+      } else this.passo();
     };
     requestAnimationFrame(laco);
   }
@@ -249,7 +268,7 @@ export class Jogo {
 
   private comandoJogador(): Comando | null {
     if (!this.controleLivre || !this.ativo || !this.ativo.controlado || this.ativo.emCena || this.transicao) return null;
-    if (this.controle.prendeMovimento) return { x: 0, z: 0, correr: false, pular: false, agachar: false, subir: 0 };
+    if (this.controle.prendeMovimento || this.entradaBloqueada()) return { x: 0, z: 0, correr: false, pular: false, agachar: false, subir: 0 };
     const e = this.entrada;
     let fx = (e.ativa('direita') ? 1 : 0) - (e.ativa('esquerda') ? 1 : 0) + e.eixoMovX;
     let fz = (e.ativa('frente') ? 1 : 0) - (e.ativa('tras') ? 1 : 0) - e.eixoMovY;
@@ -272,9 +291,10 @@ export class Jogo {
     GLOBAIS.uTempo.value = this.tempo;
     const m = this.mundo;
     if (!m) return;
+    this.cam.desfazerEfeitos();
     this.ctxIA.hora = this.ceu.hora;
     const menu = this.ui?.menuAberto() ?? false;
-    if (this.controleLivre && !this.cam.externo && !this.troca.rodaAberta && !menu) this.cam.entradaMouse(this.entrada, dt);
+    if (this.controleLivre && !this.cam.externo && !this.troca.rodaAberta && !menu && !this.entradaBloqueada()) this.cam.entradaMouse(this.entrada, dt);
     this.troca.atualizar(dt);
     this.controle.atualizar(dt);
     const cmd = this.comandoJogador();
@@ -297,6 +317,7 @@ export class Jogo {
     this.cam.atualizar(dt, this.focoCamera, m.fisica);
     this.cinematica.atualizar(dt);
     this.troca.camera.atualizar(dt);
+    this.cam.aplicarEfeitos(dt);
     this.ceu.atualizar(dt, this.focoCamera, this.tempo);
     this.troca.camera.ajustarNeblina(this.ceu.neblina);
     if (m.agua) m.agua.sincronizarLuz(this.ceu.direcaoSol, this.ceu.sol.color, this.ceu.corNeblinaBase, this.ceu.escuridao);

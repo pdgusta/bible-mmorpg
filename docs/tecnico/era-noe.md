@@ -1,0 +1,85 @@
+# Conteúdo da era 1 — Noé (Gn 6–9)
+
+**Arquivos de conteúdo:** `src/eras/noe/{personagens,memorias,cristo,interativos,missoes,servicos,atalhos,index}.ts` e `tests/era-noe.test.ts`. A especificação é `docs/ROTEIRO.md` (Prólogo, A1–A6).
+
+O mundo (`mapa.ts`, `construir.ts`/`MundoNoe`, `Arca.ts`) é do motor: veja `docs/tecnico/motor.md`.
+
+**Este é o modelo para toda era nova.** Copie a estrutura.
+
+## Arquivos
+
+| Arquivo | Conteúdo |
+|---|---|
+| `personagens.ts` | Os 4 jogáveis (Noé construtor, Sem sacerdote, Cam guerreiro, Jafé batedor) com as fichas do ROTEIRO. As 4 mulheres não têm nome inventado ("Mulher de Noé"…). 12 moradores da cidade com aparência própria. Rotinas por hora com `se`/`senao` por flag (`arcaPronta`, `dentroArca`, `depoisDiluvio`). Exporta `INICIO_NOE`. |
+| `memorias.ts` | 10 memórias (`DefMemoria`). `arcoIris` tem força 3 e é a ponte para a prova da dúvida em B4. `enoque`, `lameque` e `estacoes` são segredos. |
+| `cristo.ts` | Tipo `EntradaCristo` e entradas `semente`, `arca`, `tempestade`, `linhagem`. |
+| `interativos.ts` | Registra e remove os interativos de cada etapa, com os ids exatamente como no ROTEIRO, posicionados pelos pontos do mapa (há posições de reserva). `registrarSegredosNoe` registra os segredos válidos na era inteira. |
+| `missoes.ts` | `MISSOES_NOE` (prólogo, A1–A6) e `reconstruirMundoNoe(s, mundo, flags)`, que remonta o vale a partir das flags ao carregar. |
+| `servicos.ts` | `ServicosNoe`: tudo que as missões usam além do `CtxMissao`. Também `ligarServicosNoe` e `servicosNoe`. |
+| `atalhos.ts` | `ATALHOS_NOE`, `resolverEtapaNoe` e `jogarEraNoe(ambiente)`, que joga a era inteira pelas APIs do jogo (usado pelo e2e). |
+| `index.ts` | `ERA_NOE` (id `noe`, jogáveis, missões, memórias, cristo, missão inicial). `seguinte: {era: 'abraao', missao: 'b1'}`. |
+
+## Padrão de uma etapa
+
+```ts
+{ id: 'troncos', objetivo: 'Leve 4 troncos ao estaleiro (0/4)', async executar(c) {
+    const s = servicosNoe(c);                    // ServicosNoe da era
+    registrarInterativos(c, 'troncos');          // idempotente: remove e recria os da etapa
+    while (c.contador('troncos') < 4) { await c.interacao('entregaTroncos'); c.contador('troncos', c.contador('troncos') + 1); }
+    c.xp('grupo', 'cooperacao'); c.definirFlag('troncosEntregues', true);
+} }
+```
+
+Regras:
+- **Etapa idempotente.** Ao carregar, `reconstruirMundoNoe` restaura o mundo pelas flags, como o estágio da arca, o estado do vale e o interior. Depois a etapa atual roda do início. Abortada no meio, ela não deixa interativos para trás; há teste para isso.
+- **Falas:**
+  - Bíblicas: `{quem, ref, trecho?}`, conferidas pelos testes e pelo `npm run validar`.
+  - Ficção: `{quem, texto}`, curta e sem contradizer o texto bíblico.
+  - Deus só fala com versículos.
+- **Flags:** são o estado persistente do mundo. A1–A6 ficam em `missoes.ts`; procure por `definirFlag`.
+
+## O que `ServicosNoe` exige e de quem
+
+| Serviço | Implementação |
+|---|---|
+| Mundo do vale | `MundoNoe` direto: `arca.{estagio, grupo.position, definirEstagio, definirPorta, definirJanela}`, `vigaMestra.{altura, definirAltura}`, `definirEstado('antes'\|'diluvio'\|'depois')`, `animarAgua`, `definirInterior`, `pontoArca`, `moverArca`, `repousarArca`, `definirAguaInterna`, `definirVazamento`, `definirCaixasSoltas`, `definirAltar`, `cortarArvore` |
+| Céu | `Ceu`: `hora`, `tempestade`, `arco`, `gloria`, `pausado` |
+| Áudio | `Audio`: `ambiente`, `musica`, `efeito` (nomes de efeito do módulo de áudio: `clique`, `sopro`, `brilho`…) |
+| Animais | `animais.criar(e, x, z, o)` → `criarAnimal(e, mundo, x, z, o)` |
+| Progresso | `Progresso` (`temMemoria`, `memoria`, `ganharXP`) e `cristo(id)` (desbloqueia "Aponta para Cristo"; ligado pela integração) |
+| Troca/câmera | `controlar(id)`; `liberarPosto(idPosto)` → `controle.ocupante(id)` + `controle.liberarPosto(p)`; `camera.tremer(int, s)` e `camera.balanco(int)` (integração); `transicaoEra(nomes)` |
+| Integração | `removerPersonagem(id)`: os moradores somem quando a porta se fecha |
+
+## Desvios conscientes do ROTEIRO
+
+- `betumarCasco1..3` usa o verbo `usar` com o balde na mão, porque `reparar` é só do construtor e o ROTEIRO diz "Noé ou qualquer um".
+- A ordem da roda é Noé, Cam, Sem, Jafé, para a dica "Tab ou 2" de A1.
+- **A4:**
+  - As etapas "animais" e "mantimento" correm juntas.
+  - 7 pares chegam sozinhos; o 8º par fica na gruta.
+- **A3:**
+  - "Pregar" usa o verbo `falar` e exige que seja Noé.
+  - Cada pregação é seguida de uma zombaria curta.
+  - A tentação vence com 5 respostas.
+- **A5:**
+  - A arca sobe com as águas num fade no fim de `fontes` (Gn 7:17) e repousa no platô aos 150 dias.
+  - Quem está dentro é levado junto.
+- **Acréscimos:**
+  - Gn 7:7 na entrada da arca.
+  - 6 conversas opcionais de ficção em A6 (`conversa_<id>`).
+- A pose de oração usa o clipe `agachado` (`CLIPE_ORACAO`). O ideal é usar a pose procedural `humano.oracao`.
+
+## Testes (`npx vitest run tests/era-noe.test.ts`)
+
+- refs e trechos BKJ, tanto no código-fonte quanto nas falas registradas durante a execução;
+- ids únicos;
+- toda `proxima` existe;
+- fichas e memórias conforme o ROTEIRO;
+- cada missão do início ao fim com um `CtxMissao` falso que age sozinho;
+- a era inteira em sequência;
+- idempotência por etapa;
+- a era jogada só pelos atalhos.
+
+## Revisão
+
+O conteúdo passa pelo checklist de `docs/tecnico/revisao.md`. Os achados da revisão da era 1 estão listados lá.

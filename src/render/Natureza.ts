@@ -19,8 +19,23 @@ export interface OpcoesVariante {
   raioTronco?: number;
   /** Fração de cartões de folha mantida na versão de longe (padrão 0,32). */
   fracaoLonge?: number;
-  /** Reduz também a malha do tronco na versão de longe (fração de triângulos, ex.: 0,3). */
+  /** Reduz também a malha do tronco na versão de longe (fração de triângulos, ex.: 0,3). Árvores: 0,25. */
   reduzirTronco?: number;
+  /**
+   * Árvores (modelos com tronco e folhas): a partir desta distância viram uma silhueta low-poly
+   * (copa + tronco, ~100 triângulos). Padrão 105 m; Infinity desliga.
+   */
+  alcanceMedio?: number;
+  /** Fração de triângulos do tronco mantida também de perto (árvores: 0,5; 1 = malha original). */
+  reduzirTroncoPerto?: number;
+}
+
+interface Silhueta {
+  /** Centro e semi-eixos da copa (espaço do modelo). */
+  copa: [number, number, number, number, number, number];
+  /** Altura e raio do tronco. */
+  tronco: [number, number];
+  cone: boolean;
 }
 
 interface Modelo {
@@ -28,6 +43,7 @@ interface Modelo {
   perto: ParteModelo[];
   longe: ParteModelo[];
   raio: number;
+  sil: Silhueta | null;
 }
 
 interface Instancia {
@@ -49,6 +65,10 @@ interface Variante {
   instancias: Instancia[];
   malhasPerto: THREE.InstancedMesh[][]; // [modelo][parte]
   malhasLonge: THREE.InstancedMesh[][];
+  silCopa: THREE.InstancedMesh | null;
+  silTronco: THREE.InstancedMesh | null;
+  corCopa: THREE.Color;
+  corTronco: THREE.Color;
   uAlcance: { value: number };
 }
 
@@ -95,8 +115,21 @@ export class Natureza {
       raioTronco: op.raioTronco ?? 0,
       fracaoLonge: op.fracaoLonge ?? 0.32,
       reduzirTronco: op.reduzirTronco ?? 0,
+      reduzirTroncoPerto: op.reduzirTroncoPerto ?? 1,
+      alcanceMedio: op.alcanceMedio ?? 105,
     };
-    this.variantes.set(nome, { nome, op: opc, modelos, instancias: [], malhasPerto: [], malhasLonge: [], uAlcance });
+    // cores médias (para as silhuetas de longe)
+    const corCopa = new THREE.Color(0, 0, 0);
+    const corTronco = new THREE.Color(0, 0, 0);
+    let nc = 0, nt = 0;
+    for (const mod of modelos) for (const p of mod.perto) {
+      const mat = p.material as THREE.MeshLambertMaterial;
+      const c = corMedia(mat.map).multiply(mat.color);
+      if (p.folha) { corCopa.add(c); nc++; } else { corTronco.add(c); nt++; }
+    }
+    if (nc) corCopa.multiplyScalar(1 / nc);
+    if (nt) corTronco.multiplyScalar(1 / nt);
+    this.variantes.set(nome, { nome, op: opc, modelos, instancias: [], malhasPerto: [], malhasLonge: [], silCopa: null, silTronco: null, corCopa, corTronco, uAlcance });
   }
 
   temVariante(nome: string) {
@@ -110,6 +143,30 @@ export class Natureza {
     const perto: ParteModelo[] = [];
     const longe: ParteModelo[] = [];
     let raio = 0;
+    const temFolha = partesBase.some((p) => p.folha);
+    const temTronco = partesBase.some((p) => !p.folha);
+    const arvore = temFolha && temTronco;
+    const reduzir = op.reduzirTronco ?? (arvore ? 0.25 : 0);
+    const reduzirPerto = op.reduzirTroncoPerto ?? (arvore ? 0.5 : 1);
+    const caixaFolha = new THREE.Box3();
+    const caixaTronco = new THREE.Box3();
+    for (const p of partesBase) {
+      p.geometria.computeBoundingBox();
+      (p.folha ? caixaFolha : caixaTronco).union(p.geometria.boundingBox!);
+    }
+    let sil: Silhueta | null = null;
+    if (arvore && (op.alcanceMedio ?? 105) < 1e5) {
+      const c = caixaFolha.getCenter(new THREE.Vector3());
+      const t = caixaFolha.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+      const cone = /pine/i.test(nome);
+      const k = cone ? 0.92 : 0.82;
+      const tt = caixaTronco.getSize(new THREE.Vector3());
+      sil = {
+        copa: [c.x, c.y, c.z, t.x * k, t.y * (cone ? 1 : 0.85), t.z * k],
+        tronco: [Math.max(0.5, caixaFolha.min.y + t.y * 0.4), THREE.MathUtils.clamp(Math.min(tt.x, tt.z) * 0.12, 0.12, 0.5)],
+        cone,
+      };
+    }
     for (const p of partesBase) {
       const mat = p.material.clone() as THREE.MeshLambertMaterial;
       const tint = p.folha ? op.tintFolha : op.tintTronco;
@@ -118,13 +175,14 @@ export class Natureza {
       raio = Math.max(raio, p.geometria.boundingSphere!.radius + p.geometria.boundingSphere!.center.length());
       aplicarPatch(mat, { vento: p.folha ? (op.vento ?? 0.12) : (op.vento ?? 0.12) * 0.25, alturaRef: 6, alcance: uAlcance, semVerso: p.folha });
       mat.name = `${variante}_${mat.name}`;
-      perto.push({ ...p, material: mat });
+      const geoPerto = !p.folha && reduzirPerto < 0.99 ? simplificar(p.geometria, reduzirPerto) : p.geometria;
+      perto.push({ geometria: geoPerto, material: mat, folha: p.folha });
       const geoLonge = p.folha
         ? decimarCartoes(p.geometria, op.fracaoLonge ?? 0.32, 1 / Math.sqrt(op.fracaoLonge ?? 0.32) * 0.82)
-        : op.reduzirTronco ? simplificar(p.geometria, op.reduzirTronco) : p.geometria;
+        : reduzir ? simplificar(p.geometria, reduzir) : p.geometria;
       longe.push({ geometria: geoLonge, material: mat, folha: p.folha });
     }
-    return { nome, perto, longe, raio };
+    return { nome, perto, longe, raio, sil };
   }
 
   adicionar(variante: string, x: number, y: number, z: number, ry: number, s: number, aleatorio?: Aleatorio, rx = 0) {
@@ -167,13 +225,41 @@ export class Natureza {
     this.ultimoFoco.set(1e9, 0, 0);
   }
 
-  private construirVariante(v: Variante) {
+  private removerMalhas(v: Variante) {
     for (const lista of [...v.malhasPerto, ...v.malhasLonge]) for (const im of lista) {
+      this.grupo.remove(im);
+      im.dispose();
+    }
+    for (const im of [v.silCopa, v.silTronco]) if (im) {
       this.grupo.remove(im);
       im.dispose();
     }
     v.malhasPerto = [];
     v.malhasLonge = [];
+    v.silCopa = null;
+    v.silTronco = null;
+  }
+
+  private construirVariante(v: Variante) {
+    this.removerMalhas(v);
+    if (v.instancias.length && v.modelos.some((m) => m.sil)) {
+      const cone = v.modelos.some((m) => m.sil?.cone);
+      const n = v.instancias.length;
+      const criarSil = (geo: THREE.BufferGeometry, cor: THREE.Color, nome: string) => {
+        const mat = new THREE.MeshLambertMaterial({ color: cor, vertexColors: true });
+        aplicarPatch(mat, { alcance: v.uAlcance });
+        const im = new THREE.InstancedMesh(geo, mat, n);
+        im.count = 0;
+        im.visible = false;
+        im.frustumCulled = false;
+        im.receiveShadow = true;
+        im.name = `${v.nome}_${nome}`;
+        this.grupo.add(im);
+        return im;
+      };
+      v.silCopa = criarSil(cone ? geoCone() : geoCopa(), v.corCopa, 'silCopa');
+      v.silTronco = criarSil(geoTronco(), v.corTronco, 'silTronco');
+    }
     v.modelos.forEach((mod, mi) => {
       const total = v.instancias.filter((i) => i.m === mi).length;
       if (total === 0) {
@@ -203,12 +289,7 @@ export class Natureza {
   limpar(variantes?: string[]) {
     for (const v of this.variantes.values()) {
       if (variantes && !variantes.includes(v.nome)) continue;
-      for (const lista of [...v.malhasPerto, ...v.malhasLonge]) for (const im of lista) {
-        this.grupo.remove(im);
-        im.dispose();
-      }
-      v.malhasPerto = [];
-      v.malhasLonge = [];
+      this.removerMalhas(v);
       v.instancias = [];
     }
     this.ultimoFoco.set(1e9, 0, 0);
@@ -230,8 +311,10 @@ export class Natureza {
       v.uAlcance.value = alc;
       const alc2 = alc * alc;
       const perto2 = v.op.alcancePerto * v.op.alcancePerto;
+      const medio2 = v.silCopa ? v.op.alcanceMedio * v.op.alcanceMedio : Infinity;
       const contP: number[] = v.modelos.map(() => 0);
       const contL: number[] = v.modelos.map(() => 0);
+      let contS = 0;
       for (const inst of v.instancias) {
         if (inst.oculta) continue;
         const dx = inst.x - cx;
@@ -247,6 +330,21 @@ export class Natureza {
           _e.set(inst.rx, inst.ry, 0, 'YXZ');
           _q.setFromEuler(_e);
         } else _q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, inst.ry);
+        const sil = mod.sil;
+        if (d2 > medio2 && sil && !inst.rx) {
+          const [cx, cy, cz, rx, ry, rz] = sil.copa;
+          const c = Math.cos(inst.ry), sn = Math.sin(inst.ry);
+          _p.set(inst.x + (cx * c + cz * sn) * inst.s, inst.y + cy * inst.s, inst.z + (-cx * sn + cz * c) * inst.s);
+          _s.set(rx * inst.s, ry * inst.s, rz * inst.s);
+          _m.compose(_p, _q, _s);
+          v.silCopa!.setMatrixAt(contS, _m);
+          _p.set(inst.x, inst.y, inst.z);
+          _s.set(sil.tronco[1] * inst.s, sil.tronco[0] * inst.s, sil.tronco[1] * inst.s);
+          _m.compose(_p, _q, _s);
+          v.silTronco!.setMatrixAt(contS, _m);
+          contS++;
+          continue;
+        }
         _p.set(inst.x, inst.y, inst.z);
         _s.setScalar(inst.s);
         _m.compose(_p, _q, _s);
@@ -259,6 +357,7 @@ export class Natureza {
         for (const im of v.malhasPerto[mi] ?? []) { im.count = contP[mi]; im.visible = contP[mi] > 0; im.instanceMatrix.needsUpdate = true; }
         for (const im of v.malhasLonge[mi] ?? []) { im.count = contL[mi]; im.visible = contL[mi] > 0; im.instanceMatrix.needsUpdate = true; }
       });
+      for (const im of [v.silCopa, v.silTronco]) if (im) { im.count = contS; im.visible = contS > 0; im.instanceMatrix.needsUpdate = true; }
     }
   }
 
@@ -335,6 +434,93 @@ function decimarCartoes(g: THREE.BufferGeometry, fracao: number, aumento: number
   out.setAttribute('position', new THREE.BufferAttribute(novoPos, 3));
   out.setIndex(novoIdx);
   return out;
+}
+
+// ---------------------------------------------------------------- silhuetas de longe
+
+const coresMedias = new WeakMap<THREE.Texture, THREE.Color>();
+
+/** Cor média (linear) dos pixels opacos de uma textura; branco se não houver textura. */
+function corMedia(t: THREE.Texture | null): THREE.Color {
+  if (!t) return new THREE.Color(1, 1, 1);
+  const cache = coresMedias.get(t);
+  if (cache) return cache.clone();
+  const out = new THREE.Color(0.5, 0.6, 0.35);
+  const img = t.image as (CanvasImageSource & { width: number; height: number }) | null;
+  if (img && img.width && typeof document !== 'undefined') {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 16;
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    if (ctx) {
+      ctx.drawImage(img, 0, 0, 16, 16);
+      const d = ctx.getImageData(0, 0, 16, 16).data;
+      let r = 0, g = 0, b = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] < 128) continue;
+        r += d[i]; g += d[i + 1]; b += d[i + 2]; n++;
+      }
+      if (n) out.setRGB(r / n / 255, g / n / 255, b / n / 255, THREE.SRGBColorSpace);
+    }
+  }
+  coresMedias.set(t, out);
+  return out.clone();
+}
+
+/** Escurece a base (oclusão falsa) com cores por vértice: y de -0,5 (escuro) a 0,5. */
+function corPorAltura(g: THREE.BufferGeometry, base = 0.62) {
+  const p = g.attributes.position;
+  g.computeBoundingBox();
+  const b = g.boundingBox!;
+  const cor = new Float32Array(p.count * 3);
+  for (let i = 0; i < p.count; i++) {
+    const t = (p.getY(i) - b.min.y) / Math.max(1e-4, b.max.y - b.min.y);
+    const k = base + (1 - base) * Math.min(1, t * 1.3);
+    cor[i * 3] = cor[i * 3 + 1] = cor[i * 3 + 2] = k;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(cor, 3));
+  return g;
+}
+
+let _geoCopa: THREE.BufferGeometry | null = null;
+/** Copa: icosaedro "fofo" de raio 1. */
+function geoCopa() {
+  if (!_geoCopa) {
+    const g = new THREE.IcosahedronGeometry(1, 1);
+    const p = g.attributes.position;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+      const k = 1 + Math.sin(x * 5.1 + z * 2.3) * 0.08 + Math.cos(y * 4.7 + x * 1.9) * 0.07;
+      p.setXYZ(i, x * k, y * k, z * k);
+    }
+    g.computeVertexNormals();
+    _geoCopa = corPorAltura(g, 0.6);
+  }
+  return _geoCopa;
+}
+
+let _geoCone: THREE.BufferGeometry | null = null;
+/** Pinheiro: três cones empilhados, altura total 2 (de -1 a 1), raio 1. */
+function geoCone() {
+  if (!_geoCone) {
+    const partes = [
+      new THREE.ConeGeometry(1, 1.1, 7, 1, true).translate(0, -0.45, 0),
+      new THREE.ConeGeometry(0.78, 0.95, 7, 1, true).translate(0, 0.1, 0),
+      new THREE.ConeGeometry(0.52, 0.8, 7, 1, true).translate(0, 0.6, 0),
+    ];
+    const pos: number[] = [];
+    for (const g of partes) pos.push(...(g.toNonIndexed().attributes.position.array as Float32Array));
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.computeVertexNormals();
+    _geoCone = corPorAltura(g, 0.55);
+  }
+  return _geoCone;
+}
+
+let _geoTronco: THREE.BufferGeometry | null = null;
+function geoTronco() {
+  if (!_geoTronco) _geoTronco = corPorAltura(new THREE.CylinderGeometry(0.7, 1, 1, 6, 1, true).translate(0, 0.5, 0), 0.7);
+  return _geoTronco;
 }
 
 // o simplificador (WASM) fica pronto bem antes de o mundo ser montado; se não estiver, usa a malha cheia

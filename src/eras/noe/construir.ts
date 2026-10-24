@@ -88,6 +88,8 @@ export class MundoNoe {
       m.grupo.add(l);
     }
     m.aoAtualizar.add((dt, t, camera, foco) => this.atualizar(dt, t, camera, foco));
+    // depuração (fotos automáticas, console): window.vale
+    if (import.meta.env?.DEV && typeof window !== 'undefined') (window as unknown as { vale: MundoNoe }).vale = this;
   }
 
   get vigaMestra() {
@@ -484,7 +486,7 @@ function vegetacaoAntes(m: Mundo) {
   const r = m.ruido;
   // bosque de gofer a oeste
   espalhar(m, 'cipreste', {
-    espacamento: 6.0, escala: [0.95, 1.6], inclinacaoMax: 0.35,
+    espacamento: 7.0, escala: [0.95, 1.6], inclinacaoMax: 0.35,
     densidade: (x, z) => livre(x, z) * smoothstep(-95, -128, x) * (0.75 + r.ruido(x * 0.02, z * 0.02) * 0.25),
   });
   // ciprestes esparsos nas encostas baixas das montanhas (quebram a silhueta do horizonte)

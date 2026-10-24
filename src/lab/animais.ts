@@ -18,8 +18,9 @@ interface Exposto {
 
 export async function labAnimais(canvas: HTMLCanvasElement) {
   const P = new URLSearchParams(location.search);
+  if (P.get('mundo') === 'noe') return labVale(canvas, P);
   const vista = P.get('vista') ?? 'todos';
-  const r = new THREE.WebGLRenderer({ canvas, antialias: true });
+  const r = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
   r.setPixelRatio(Math.min(1.5, window.devicePixelRatio));
   r.setSize(window.innerWidth, window.innerHeight);
   r.outputColorSpace = THREE.SRGBColorSpace;
@@ -235,6 +236,12 @@ export async function labAnimais(canvas: HTMLCanvasElement) {
     passo(1 / 30);
     await Promise.resolve(); // deixa as promessas dos comportamentos (voos, esperas) andarem
   }
+  if (vista === 'rebanho') {
+    // o bando anda: enquadra o centro dele no momento da foto
+    const c = rebanho.centro();
+    cam.position.set(c.x - 3, 7, c.z + 11);
+    cam.lookAt(c.x - 1, 0.4, c.z - 1.5);
+  }
   Animal.camera = cam;
   desenhar();
   // informações para depuração/teste
@@ -363,4 +370,134 @@ async function criarNoe(ativos: Ativos) {
     console.warn('sem Noé', e);
     return null;
   }
+}
+
+/**
+ * Teste de integração no vale de Noé real (?lab=animais&mundo=noe&cena=rampa|baias|janela&t=20):
+ * pares vindos do curral entram pela rampa da arca (A4); animais agitados nas baias (A5); a pomba
+ * sai pela janela e volta ao parapeito (Gn 8:8-9).
+ */
+async function labVale(canvas: HTMLCanvasElement, P: URLSearchParams) {
+  const { MundoNoe } = await import('../eras/noe/construir');
+  let tSim = 0;
+  const esperas: { t: number; r: () => void }[] = [];
+  function esperarLab(s: number) {
+    return new Promise<void>((res) => esperas.push({ t: tSim + s, r: res }));
+  }
+  const r = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  r.setSize(window.innerWidth, window.innerHeight);
+  r.outputColorSpace = THREE.SRGBColorSpace;
+  r.toneMapping = THREE.ACESFilmicToneMapping;
+  r.shadowMap.enabled = true;
+  const cena = new THREE.Scene();
+  cena.background = new THREE.Color('#cfe2ec');
+  cena.fog = new THREE.Fog('#d8e4e6', 80, 300);
+  cena.add(new THREE.HemisphereLight('#e2eef8', '#8a7a58', 1.3));
+  const sol = new THREE.DirectionalLight('#fff0d8', 2.4);
+  sol.castShadow = true;
+  sol.shadow.mapSize.set(2048, 2048);
+  const sc = sol.shadow.camera;
+  sc.left = -40; sc.right = 40; sc.top = 40; sc.bottom = -40; sc.far = 120;
+  cena.add(sol, sol.target);
+  const ativos = new Ativos();
+  const nat = await ativos.carregar('natureza.glb');
+  const vale = new MundoNoe(nat.scene);
+  const mundo = vale.mundo;
+  cena.add(mundo.grupo);
+  vale.arca.definirEstagio(5);
+  const cenaNome = P.get('cena') ?? 'rampa';
+  const animais: Animal[] = [];
+  const cam = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 600);
+  const saida = vale.pontoArca('saida');
+  const porta = vale.pontoArca('porta');
+  let foco = saida.clone();
+  if (cenaNome === 'rampa') {
+    const [cx, cz] = mundo.ponto('curral');
+    const especies: Especie[] = ['camelo', 'leao', 'ovelha', 'cavalo', 'boi', 'jumento'];
+    const pares: Promise<void>[] = [];
+    for (let i = 0; i < especies.length; i++) {
+      const e = especies[i];
+      const x = cx - 30 + (i % 3) * 6;
+      const z = cz - 25 + Math.floor(i / 3) * 6;
+      const [m, f] = await Promise.all([
+        criarAnimal(e, mundo, x, z, { ativos, sexo: 'macho', semente: i * 2 }),
+        criarAnimal(e, mundo, x + 1.5, z + 1.5, { ativos, sexo: 'femea', semente: i * 2 + 1 }),
+      ]);
+      animais.push(m, f);
+      f.seguir(m, 2.2);
+      const atraso = i * 2.5;
+      pares.push((async () => {
+        await esperarLab(atraso);
+        await m.irPara(saida.x + (i % 2 ? 1.5 : -1.5), saida.z + 3);
+        if (e === 'leao' || e === 'camelo') {
+          m.agitar({ raio: 1.5 });
+          await esperarLab(4);
+          m.acalmar();
+        }
+        const pts: [number, number][] = [[saida.x, saida.z], [porta.x, porta.z], [porta.x - 3 + (i % 3) * 3, porta.z - 4]];
+        void f.entrar(pts);
+        await m.entrar(pts);
+      })());
+    }
+    foco = saida.clone().add(new THREE.Vector3(0, 0, 6));
+    cam.position.set(saida.x + 16, saida.y + 9, saida.z + 22);
+  } else if (cenaNome === 'baias') {
+    vale.definirInterior(true);
+    for (const [i, e] of (['boi', 'camelo', 'leao'] as Especie[]).entries()) {
+      const p = vale.pontoArca(`baia${i + 1}Animal`);
+      const a = await criarAnimal(e, mundo, p.x, p.z, { ativos, y: p.y + 0.3, semente: 50 + i });
+      a.agitar({ raio: 1 });
+      animais.push(a);
+    }
+    const b2 = vale.pontoArca('baia2Animal');
+    foco = b2.clone();
+    cam.position.set(b2.x - 6, b2.y + 2.4, b2.z - 7);
+  } else {
+    // janela: a pomba sai e volta ao parapeito
+    const pouso = vale.pontoArca('pombaPouso');
+    const janela = vale.pontoArca('janela');
+    const pomba = await criarAnimal('pomba', mundo, janela.x, janela.z, { ativos, y: janela.y + 0.2, semente: 77 });
+    pomba.pousarEm(janela.clone().add(new THREE.Vector3(0, 0.05, 0)));
+    animais.push(pomba);
+    const corvo = await criarAnimal('corvo', mundo, janela.x + 1, janela.z, { ativos, y: janela.y + 0.2, semente: 78 });
+    corvo.pousarEm(janela.clone().add(new THREE.Vector3(1, 0.05, 0)));
+    animais.push(corvo);
+    void (async () => {
+      await esperarLab(1);
+      void corvo.voarPor([pouso.clone().add(new THREE.Vector3(10, 6, 30)), pouso.clone().add(new THREE.Vector3(-40, 12, 80))], { pousar: false, sumir: true });
+      await esperarLab(2);
+      await pomba.voarPor([pouso.clone().add(new THREE.Vector3(-8, 5, 25)), pouso.clone().add(new THREE.Vector3(12, 8, 40))], { pousar: false });
+      await pomba.voarPara(pouso, { altura: 3 });
+    })();
+    foco = pouso.clone();
+    cam.position.set(pouso.x + 5, pouso.y + 1.5, pouso.z + 16);
+  }
+  cam.lookAt(foco);
+  sol.target.position.copy(foco);
+  sol.position.copy(foco).add(new THREE.Vector3(20, 35, 25));
+
+  const passo = (dt: number) => {
+    tSim += dt;
+    for (let i = esperas.length - 1; i >= 0; i--) if (esperas[i].t <= tSim) esperas.splice(i, 1)[0].r();
+    mundo.atualizar(dt, tSim, cam, foco);
+  };
+  const T = Number(P.get('t') ?? 20);
+  for (let k = 0; k < T * 30; k++) {
+    passo(1 / 30);
+    await Promise.resolve();
+  }
+  Animal.camera = cam;
+  r.render(cena, cam);
+  (window as any).animais = { animais, vale, Animal };
+  (window as any).infoAnimais = animais.map((a) => ({ e: a.especie, estado: a.estado, pos: a.posicao.toArray().map((v) => +v.toFixed(1)), visivel: a.visivel }));
+  (window as any).pronto = true;
+  let ultimo = performance.now();
+  const laco = () => {
+    const agora = performance.now();
+    passo(Math.min(0.05, (agora - ultimo) / 1000));
+    ultimo = agora;
+    r.render(cena, cam);
+    requestAnimationFrame(laco);
+  };
+  if (P.get('parar') !== '1') requestAnimationFrame(laco);
 }

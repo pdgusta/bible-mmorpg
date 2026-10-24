@@ -113,16 +113,16 @@ export const INTERATIVOS_NOE: Record<string, DefInterativoNoe[]> = {
   'a1.troncos': [
     { id: 'pilhaBosque', verbo: 'carregarPesado', rotulo: 'Pegar um tronco', lugar: 'pilhaBosque', carregando: null, dica: 'Cam pode carregar troncos pesados.', raio: 3 },
     { id: 'entregaTroncos', verbo: 'usar', rotulo: 'Entregar o tronco', lugar: 'entregaTroncos', carregando: 'tronco', raio: 4 },
-    ...n3('arvoreGofer', 3).map((id): DefInterativoNoe => ({ id, verbo: 'cortar', rotulo: 'Cortar o gofer', lugar: id, segurar: 3, animacao: 'cortar', dica: 'Noé pode cortar as árvores marcadas.' })),
+    ...n3('arvoreGofer', 3).map((id): DefInterativoNoe => ({ id, verbo: 'cortar', rotulo: 'Cortar a árvore de gofer', lugar: id, segurar: 3, animacao: 'cortar', dica: 'Noé pode cortar as árvores marcadas.' })),
   ],
   'a1.quilha': [
-    { id: 'quilha', verbo: 'construir', rotulo: 'Assentar a quilha', lugar: 'quilha', segurar: 4, animacao: 'consertar', dica: 'Noé é o construtor.', raio: 3 },
+    { id: 'quilha', verbo: 'construir', rotulo: 'Assentar a quilha', lugar: 'quilha', segurar: 4, animacao: 'consertar', dica: 'Noé pode assentar a quilha.', raio: 3 },
   ],
   'a2.erguer': [
     { id: 'guincho', verbo: 'segurar', rotulo: 'Segurar o guincho', lugar: 'guincho', dica: 'Cam pode segurar o guincho.', posto: { descricao: 'segurando o guincho', clipe: 'segurar', rotuloSair: 'Soltar o guincho' } },
     { id: 'ancoraCorda', verbo: 'amarrar', rotulo: 'Amarrar a corda', lugar: 'ancoraCorda', segurar: 3, dica: 'Jafé pode amarrar a corda no alto do andaime.' },
-    { id: 'encaixeViga1', verbo: 'construir', rotulo: 'Fixar a viga', lugar: 'encaixeViga1', segurar: 3, animacao: 'consertar', dica: 'Noé pode fixar a viga.' },
-    { id: 'encaixeViga2', verbo: 'construir', rotulo: 'Fixar a viga', lugar: 'encaixeViga2', segurar: 3, animacao: 'consertar', dica: 'Noé pode fixar a viga.' },
+    { id: 'encaixeViga1', verbo: 'construir', rotulo: 'Fixar a ponta da viga', lugar: 'encaixeViga1', segurar: 3, animacao: 'consertar', dica: 'Noé pode fixar a viga.' },
+    { id: 'encaixeViga2', verbo: 'construir', rotulo: 'Fixar a ponta da viga', lugar: 'encaixeViga2', segurar: 3, animacao: 'consertar', dica: 'Noé pode fixar a viga.' },
   ],
   'a2.betume': [
     { id: 'caldeirao', verbo: 'usar', rotulo: 'Encher o balde de betume', lugar: 'caldeirao', carregando: null, raio: 3 },
@@ -164,7 +164,7 @@ export const INTERATIVOS_NOE: Record<string, DefInterativoNoe[]> = {
   ],
   'a6.altar': [
     ...n3('pedraAltar', 6).map((id): DefInterativoNoe => ({ id, verbo: 'pegar', rotulo: 'Pegar a pedra', lugar: id })),
-    { id: 'altarPlato', verbo: 'construirAltar', rotulo: 'Construir o altar', lugar: 'altarPlato', segurar: 4, dica: 'Noé aprendeu a construir o altar.', raio: 3 },
+    { id: 'altarPlato', verbo: 'construirAltar', rotulo: 'Construir o altar', lugar: 'altarPlato', segurar: 4, dica: 'Noé pode construir o altar.', raio: 3 },
   ],
 };
 

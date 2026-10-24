@@ -373,12 +373,12 @@ const A1: DefMissao = {
     },
     {
       id: 'madeira',
-      objetivo: 'Vá até o bosque de gofer, onde Cam corta lenha.',
+      objetivo: 'Vá até o bosque de gofer, onde Cam corta madeira.',
       async executar(c) {
         const cam = c.personagem('cam');
         aproximarSeLonge(c, 'cam', lugar(c, 'corteLenha'), 40);
         if (!cam.controlado) cam.ia.esperar();
-        c.objetivo('Vá até o bosque de gofer, onde Cam corta lenha.', [{ personagem: 'cam' }]);
+        c.objetivo('Vá até o bosque de gofer, onde Cam corta madeira.', [{ personagem: 'cam' }]);
         await c.chegar('ativo', { personagem: 'cam' }, 6);
         await c.dialogo([ficcao('cam', 'Pai! Já derrubei estas. Mas carregar até o estaleiro é outra história.')]);
         const tecla = IDS_JOGAVEIS_NOE.indexOf('cam') + 1;
@@ -408,7 +408,7 @@ const A1: DefMissao = {
               s.audio.efeito('clique');
               if (!avisouFolego) {
                 avisouFolego = true;
-                c.dica('Carregando, o fôlego cai. Sem fôlego, anda-se devagar: descanse à sombra para recuperar mais rápido.');
+                c.dica('Carregar peso gasta fôlego. Quando ele acaba, você anda devagar: descanse à sombra para recuperar mais rápido.');
               }
             } else if (id === 'entregaTroncos') {
               if (p.carregando !== 'tronco') continue;
@@ -433,11 +433,11 @@ const A1: DefMissao = {
     },
     {
       id: 'quilha',
-      objetivo: 'Como Noé, assente a quilha.',
+      objetivo: 'Noé: assente a quilha.',
       async executar(c) {
         const s = sv();
         if (!feito(c, 'a1Quilha')) {
-          c.objetivo('Como Noé, assente a quilha.', ['quilha']);
+          c.objetivo('Noé: assente a quilha.', ['quilha']);
           c.dica('Só Noé sabe construir. Troque para ele e segure E na quilha.');
           const p = await comEtapa(c, 'a1.quilha', {}, () => c.interacao('quilha'));
           estagioArca(c, 1);
@@ -477,7 +477,7 @@ const A2: DefMissao = {
         c.objetivo('Fale com Sem, Cam e Jafé no estaleiro.', [{ personagem: 'cam' }]);
         await c.chegar('ativo', 'guincho', 9);
         await c.dialogo([
-          ficcao('noe', 'A viga mestra precisa subir até o alto das cavernas. Sozinho, ninguém a ergue.', 'firme'),
+          ficcao('noe', 'A viga mestra precisa subir até o alto do casco. Sozinho, ninguém a ergue.', 'firme'),
           ficcao('jafe', 'Eu subo o andaime e amarro a corda lá em cima.', 'alegre'),
           ficcao('cam', 'E eu seguro o guincho. Só não demorem!'),
         ]);
@@ -571,14 +571,14 @@ const A2: DefMissao = {
     },
     {
       id: 'betume',
-      objetivo: 'Betume por dentro e por fora (Gn 6:14).',
+      objetivo: 'Passe betume por dentro e por fora (Gn 6:14). Marcas no casco (0/3).',
       async executar(c) {
         const s = sv();
         const cascos = lista('betumarCasco', 3);
         const pronto = (id: string) => feito(c, `a2_${id}`);
         if (cascos.every(pronto)) return;
         const objetivo = () =>
-          c.objetivo(`Betume por dentro e por fora (Gn 6:14): ${cascos.filter(pronto).length}/3.`, ['caldeirao', ...cascos.filter((id) => !pronto(id))]);
+          c.objetivo(`Passe betume por dentro e por fora (Gn 6:14). Marcas no casco (${cascos.filter(pronto).length}/3).`, ['caldeirao', ...cascos.filter((id) => !pronto(id))]);
         objetivo();
         c.dica('Encha o balde no caldeirão e passe betume nas marcas do casco.');
         const ajustes: Record<string, AjusteInterativo> = {};
@@ -652,7 +652,7 @@ export const PROVA_TENTACAO_A3: DefProva = {
   id: 'a3_tentacao',
   tipo: 'tentacao',
   titulo: 'Desistir?',
-  instrucao: 'Responda às mentiras com Q — "Está escrito" —, com a Palavra que Deus já falou.',
+  instrucao: 'Responda às mentiras com Q ("Está escrito"), usando a Palavra que Deus já falou.',
   mentiras: MENTIRAS_A3,
   respostas: ['Gn 6:18', 'Gn 6:22'],
   alvo: 5,
@@ -738,7 +738,7 @@ const A3: DefMissao = {
         c.armadura('espada');
         c.receberVersiculo('Gn 6:18');
         c.receberVersiculo('Gn 6:22');
-        c.dica('Pressione Q — Está escrito');
+        c.dica('Pressione Q: "Está escrito".');
         s.audio.musica('prova');
         const r = await c.prova(PROVA_TENTACAO_A3);
         s.audio.musica('calmo');
@@ -846,7 +846,7 @@ async function levarMantimento(c: CtxMissao) {
           s.audio.efeito('clique');
           if (!feito(c, 'a4DicaMantimento')) {
             marcar(c, 'a4DicaMantimento');
-            c.dica('Leve até a porta da arca.');
+            c.dica('Leve o mantimento até a porta da arca.');
           }
         }
       }
@@ -926,8 +926,8 @@ const A4: DefMissao = {
             marcar(c, 'a4AchouPar');
             c.xp(quem.id, 'segredo');
           }
-          c.objetivo('O par está assustado. Traga Sem para acalmá-los.', [{ personagem: 'sem' }]);
-          c.dica('O par está assustado. Traga Sem para acalmá-los.');
+          c.objetivo('Os dois animais estão assustados. Traga Sem para acalmá-los.', [{ personagem: 'sem' }]);
+          c.dica('Os dois animais estão assustados. Traga Sem para acalmá-los.');
           const sem = await esperarAcalmar(c, PAR_PERDIDO, macho.posicao);
           macho.acalmar();
           femea.acalmar();
@@ -1020,7 +1020,7 @@ async function etapaFontes(c: CtxMissao) {
     }
   };
   reiniciar();
-  c.dica('Coloque Cam na bomba (E) e troque para Noé para tapar os vazamentos.');
+  c.dica('A viga mestra que vocês ergueram segura o casco. Coloque Cam na bomba (E) e troque para Noé para tapar os vazamentos.');
   try {
     await comEtapa(c, 'a5.fontes', ajustes, async () => {
       for (;;) {
@@ -1170,7 +1170,7 @@ const A5: DefMissao = {
         const objetivo = () => {
           const b = baias.filter(ok).length;
           const r = redes.filter(ok).length;
-          c.objetivo(`Convés dos animais: acalme as baias (${b}/3) e prenda as redes de carga (${r}/2).`, [...baias, ...redes].filter((id) => !ok(id)).map((id) => arca(id as NomePontoArca)));
+          c.objetivo(`Convés dos animais: acalme os animais das baias (${b}/3) e prenda as redes de carga (${r}/2).`, [...baias, ...redes].filter((id) => !ok(id)).map((id) => arca(id as NomePontoArca)));
         };
         objetivo();
         c.dica('A arca balança e as caixas deslizam. Sem acalma os animais; Jafé sobe e prende as redes.');
@@ -1260,9 +1260,9 @@ const A5: DefMissao = {
             c.memoria('deusLembrou');
             c.versiculo('Sl 56:3');
             s.cristo('tempestade');
-            await c.dialogo([narrador('Gn 7:24')]);
+            await c.dialogo([narrador('Gn 8:3-4')]);
             await c.fade(true, 1.5);
-            await c.titulo('Cento e cinquenta dias depois…');
+            await c.titulo('Ao fim dos cento e cinquenta dias…');
             s.ceu.tempestade = 0;
             s.audio.ambiente('chuva', 0);
             s.audio.ambiente('vento', 0.5);
@@ -1279,7 +1279,7 @@ const A5: DefMissao = {
     },
     {
       id: 'janela',
-      objetivo: 'A janela (Gn 8:6).',
+      objetivo: 'Abra a janela da arca (Gn 8:6).',
       async executar(c) {
         const s = sv();
         const pouso = () => arca('pombaPouso');
@@ -1334,14 +1334,14 @@ const A5: DefMissao = {
           await comEtapa(c, 'a5.soltarPomba', {}, () => noeSolta('soltarPomba'));
           await c.dialogo([narrador('Gn 8:8')]);
           await voltaDaPomba('Espere a pomba voltar…');
-          await c.dialogo([narrador('Gn 8:9', 'Então, ele estendeu sua mão e a tomou, e a puxou para si para dentro da arca.')]);
+          await c.dialogo([narrador('Gn 8:9')]);
           c.personagem('noe').carregar(null);
           marcar(c, 'a5Pomba1');
         }
         if (!feito(c, 'a5Pomba2')) {
           await c.cena(async () => {
             await c.fade(true, 1);
-            await c.titulo('Sete dias depois');
+            await c.titulo('Sete dias depois…');
             s.ceu.hora = 9;
             await c.fade(false, 1);
           });
@@ -1357,7 +1357,7 @@ const A5: DefMissao = {
         if (!feito(c, 'a5Pomba3')) {
           await c.cena(async () => {
             await c.fade(true, 1);
-            await c.titulo('Mais sete dias');
+            await c.titulo('Mais sete dias…');
             s.ceu.hora = 9;
             await c.fade(false, 1);
           });
@@ -1510,7 +1510,7 @@ const A6: DefMissao = {
           pose(c, 'sem', CLIPE_ORACAO);
           await c.dialogo([narrador('Gn 8:20')]);
           await vozDeDeus(c, [
-            deus('Gn 8:21', 'Eu não amaldiçoarei novamente a terra por causa do homem;'),
+            narrador('Gn 8:21'),
             deus('Gn 8:22'),
           ], 0.45);
           pose(c, 'sem', null);
@@ -1531,7 +1531,7 @@ const A6: DefMissao = {
         await c.cena(async () => {
           await vozDeDeus(c, [
             deus('Gn 9:1', 'Sede frutíferos e multiplicai-vos, e enchei a terra.'),
-            deus('Gn 9:9'),
+            deus('Gn 9:9-10'),
             deus('Gn 9:11'),
           ], 0.4);
           s.audio.musica('gloria');
@@ -1589,7 +1589,7 @@ const A6: DefMissao = {
         await c.cena(async () => {
           await c.dialogo([
             ficcao('sem', 'Pai, de nós sairão todas as famílias da terra?'),
-            ficcao('noe', 'Deus prometeu uma Semente. Guardemos a promessa, de geração em geração.', 'reverente'),
+            ficcao('noe', 'Sim, filho. E Deus prometeu uma Semente: guardemos a promessa, de geração em geração.', 'reverente'),
           ]);
           await s.transicaoEra(GENEALOGIA_NOE);
           s.cristo('linhagem');

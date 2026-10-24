@@ -182,7 +182,7 @@ export class Animal {
     this.raiz.add(corpo.raiz);
     corpo.raiz.scale.setScalar(this.escala);
     this.fisico = new CorpoFisico(this.info.raio * this.escala, Math.max(0.3, this.info.altura * this.escala * 0.8));
-    this.fisico.passo = clamp(this.info.altura * 0.35, 0.15, 0.5);
+    this.fisico.passo = this.info.altura < 0.45 ? 0.3 : 0.45; // como as pessoas: sobe rampas e degraus baixos
     const y0 = op.y ?? 1e5;
     const chao = mundo.fisica.chao(x, z, y0 + this.fisico.passo, this.fisico.raio).y;
     this.fisico.teleportar(x, chao, z);
@@ -335,7 +335,7 @@ export class Animal {
   agitar(op: { raio?: number } = {}) {
     if (this.estado !== 'agitado') this.guardarAnterior();
     this.mudar('agitado');
-    this.agitado = { raio: op.raio ?? 4, fase: 'tremer', t: this.rnd.entre(0.3, 1.2), ancora: this.raiz.position.clone() };
+    this.agitado = { raio: op.raio ?? 2.5, fase: 'tremer', t: this.rnd.entre(0.3, 1.2), ancora: this.raiz.position.clone() };
     this.tVoz = this.rnd.entre(0.2, 1.5);
   }
 
@@ -640,7 +640,15 @@ export class Animal {
     // preso atrás de algo: fora da tela, reposiciona; na tela, tenta a navegação
     if (this.travado(d, dt, 5)) {
       const fora = performance.now() - this.vistoEm > 1000;
-      if (fora) {
+      if (d < 2.5) {
+        // perto o bastante (alguém no caminho): considera alcançado
+        this.caminho.shift();
+        if (!this.caminho.length) {
+          this.desejo.set(0, 0, 0);
+          this.estado = 'parado';
+          this.concluir();
+        }
+      } else if (fora) {
         this.teleportar(alvo.x, alvo.z, this.raiz.position.y);
       } else if (this.mundo.nav && !this.opIr.direto) {
         const c = this.mundo.nav.caminho(this.raiz.position.x, this.raiz.position.z, alvo.x, alvo.z);

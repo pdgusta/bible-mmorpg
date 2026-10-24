@@ -123,6 +123,8 @@ export class MundoCanaa {
     m.finalizar();
     // a textura de folhas das árvores retorcidas é avermelhada (outono): recolore para oliveira/mato
     recolorirFolhas(m, /Leaves_TwistedTree$/, { oliveira: '#b4c0a2', arbusto: '#a9b583', arbustoVerde: '#86b860' });
+    // e as rochas do kit são verde-escuras: calcário claro
+    recolorirFolhas(m, /Rocks$/, { pedra: '#c9bea6' });
   }
 
   // ------------------------------------------------------------------ API
@@ -490,7 +492,7 @@ export class MundoCanaa {
         const x = sx + Math.cos(a) * d;
         const z = sz + Math.sin(a) * d;
         if (T.rota(x, z).d < 3.2) continue;
-        c.esfera(x, yTopo - 0.2, z, r.entre(0.6, 1.0), r.chance(0.5) ? CORES_CANAA.calcario : CORES_CANAA.calcarioEscuro, 1.3, r.entre(0.7, 1.3), 1.1, 0);
+        c.esfera(x, yTopo - 0.25, z, r.entre(0.45, 0.75), r.chance(0.5) ? CORES_CANAA.calcario : CORES_CANAA.calcarioEscuro, 1.3, r.entre(0.6, 1.1), 1.1, 1);
       }
     });
     void rocha;
@@ -804,7 +806,7 @@ function definirVariantes(m: Mundo) {
   n.definirVariante('cipreste', { modelos: ['Pine_5'], tintFolha: '#7fa070', vento: 0.07, raioTronco: 0.3, alcance: 220, alcancePerto: 45 });
   n.definirVariante('arbusto', { modelos: ['Bush_Common'], tintFolha: '#c7cf98', vento: 0.07, alcance: 130, alcancePerto: 38 });
   n.definirVariante('arbustoVerde', { modelos: ['Bush_Common'], tintFolha: '#a2d47c', vento: 0.08, alcance: 170, alcancePerto: 38 });
-  n.definirVariante('pedra', { modelos: ['Rock_Medium_1', 'Rock_Medium_3'], tintTronco: '#fbf2e2', vento: 0, raioTronco: 1.0, alcance: 190, alcancePerto: 60, reduzirTronco: 0.5 });
+  n.definirVariante('pedra', { modelos: ['Rock_Medium_1', 'Rock_Medium_3'], vento: 0, raioTronco: 1.0, alcance: 190, alcancePerto: 60, reduzirTronco: 0.5 });
   n.definirVariante('flores', { modelos: ['Flower_3_Group'], vento: 0.12, alcance: 48, alcancePerto: 48, sombra: false });
   n.definirVariante('capim', { modelos: ['Grass_Common_Tall'], tintFolha: '#f4dc98', vento: 0.2, alcance: 42, alcancePerto: 42, sombra: false });
 }
@@ -819,7 +821,7 @@ function zonasLivres(m: Mundo): [number, number, number][] {
     p('miranteJordao', 9), p('ceuEstrelas', 14), p('altarMore', 4), p('altarBetel', 4), p('altarManre', 6),
     p('segredo1', 4), p('segredo2', 4), p('segredo3', 4), p('segredo4', 5), p('more', 7), p('aliadosManre', 10),
     p('chegada', 6), p('caravana', 7), p('save', 6), p('da', 6), p('flancoOeste', 3), p('flancoLeste', 3), p('flancoSul', 4),
-    p('reuniaoServos', 7), p('altarSalem', 4),
+    p('reuniaoServos', 7), p('altarSalem', 4), p('topoMoria', MORIA.raioPlato + 3),
   ];
 }
 

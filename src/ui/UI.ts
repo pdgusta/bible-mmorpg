@@ -213,6 +213,16 @@ export class UI implements InterfaceUI {
     this.dialogoC.avancar();
   }
 
+  /** Fecha falas e escolhas na tela sem resposta (missão abortada, jogo carregado). */
+  cancelarDialogo() {
+    this.dialogoC.cancelar();
+  }
+
+  /** Tela de título sem a paisagem pintada: o mundo 3D aparece por trás (com uma vinheta). */
+  tituloSobre3D(sim: boolean) {
+    this.raiz.classList.toggle('titulo-3d', sim);
+  }
+
   /** Dados do Diário (parciais são mesclados aos atuais). */
   atualizarDiario(dados: Partial<DadosDiario>) {
     this.dados = { ...this.dados, ...dados };
