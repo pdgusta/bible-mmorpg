@@ -232,13 +232,13 @@ async function esperarAcalmar(c: CtxMissao, especie: string, pos: THREE.Vector3)
   const r = registrarDefs(c.mundo as MundoBase, sv(), [interativoAcalmar(especie, pos)]);
   try {
     const porE = c.interacao(r.ids[0]);
+    soltar(porE); // marcada logo: a chamada seguinte pode lançar se a missão for abortada
     const porQ = c
       .esperarEvento<{ personagem: string; classe: string }>('habilidade', (d) => {
         const p = d && d.classe === 'sacerdote' ? pessoa(c, d.personagem) : undefined;
         return !!p && p.posicao.distanceTo(pos) < 7;
       })
       .then((d) => c.personagem(d.personagem));
-    soltar(porE);
     soltar(porQ);
     return await Promise.race([porE, porQ]);
   } finally {

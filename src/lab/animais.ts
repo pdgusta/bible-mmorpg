@@ -178,7 +178,7 @@ export async function labAnimais(canvas: HTMLCanvasElement) {
     grandes2: [[9, 4.5, 11], [9, 1.2, -4]],
     pequenos: [[0, 2.6, 8.5], [0, 0.4, 0.5]],
     rebanho: [[cx - 2, 9, cz + 14], [cx, 0.4, cz - 1]],
-    aves: [[ax + 4, 3.2, az + 7], [ax + 1, 1.4, az - 1]],
+    aves: [[ax + 1.2, 1.7, az + 3.4], [ax - 0.3, 1.05, az]],
     carneiro: [[kx + 2.6, 1.4, kz + 2.2], [kx - 0.15, 0.75, kz + 0.45]],
   };
   let [cp, ca] = vistas[vista] ?? vistas.todos;
@@ -231,7 +231,10 @@ export async function labAnimais(canvas: HTMLCanvasElement) {
 
   // simulação antes da foto
   const T = Number(P.get('t') ?? 4);
-  for (let k = 0; k < T * 30; k++) passo(1 / 30);
+  for (let k = 0; k < T * 30; k++) {
+    passo(1 / 30);
+    await Promise.resolve(); // deixa as promessas dos comportamentos (voos, esperas) andarem
+  }
   Animal.camera = cam;
   desenhar();
   // informações para depuração/teste
@@ -354,7 +357,7 @@ async function criarNoe(ativos: Ativos) {
     return {
       raiz: h.raiz,
       atualizar: (dt: number) => h.atualizar(dt),
-      mao: () => h.posicaoOsso('hand_r', out).add(new THREE.Vector3(0, 0.06, 0)),
+      mao: () => h.posicaoOsso('hand_l', out).add(new THREE.Vector3(0, 0.06, 0)),
     };
   } catch (e) {
     console.warn('sem Noé', e);

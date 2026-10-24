@@ -95,6 +95,39 @@ export class AtalhosNoe {
     p.teleportar(v.x + 0.4, v.y + 0.05, v.z + 0.4);
   }
 
+  /** Função que diz se a etapa atual (de agora) já terminou. */
+  etapaMudou(): () => boolean {
+    const e = this.a.estado();
+    const id = e?.id;
+    const etapa = e?.etapa;
+    return () => {
+      const x = this.a.estado();
+      return !x || x.id !== id || x.etapa !== etapa || x.status === 'concluida';
+    };
+  }
+
+  /**
+   * Leva alguém a um lugar e o mantém lá até a condição (o começo da etapa pode reposicionar
+   * as pessoas depois do primeiro teleporte).
+   */
+  async manterAte(quem: string, l: LugarNoe, cond: () => boolean, oque: string, limite = this.a.limite ?? 300) {
+    let t = 0;
+    while (!cond()) {
+      if (t > limite) throw new Error(`atalho: tempo esgotado esperando ${oque}`);
+      this.chegar(quem, l);
+      await this.a.esperar(0.5);
+      t += 0.5;
+    }
+  }
+
+  /** Mantém alguém num lugar por alguns segundos. */
+  async manterPor(quem: string, l: LugarNoe, segundos: number) {
+    for (let t = 0; t < segundos; t += 0.5) {
+      this.chegar(quem, l);
+      await this.a.esperar(0.5);
+    }
+  }
+
   /** Usa um interativo com um personagem (espera ele aparecer e repete se o uso se perder). */
   async usar(id: string, quem: string) {
     await this.esperarAte(() => this.disponivel(id), `o interativo ${id}`);
@@ -155,11 +188,11 @@ export const ATALHOS_NOE: Record<string, Record<string, Atalho>> = {
   a1: {
     async orar(t) {
       t.controlar('noe');
-      t.chegar('noe', 'orarMonte');
+      await t.manterPor('noe', 'orarMonte', 1);
       await t.usar('orarMonte', 'noe');
     },
     async madeira(t) {
-      t.chegar('ativo', { personagem: 'cam' });
+      await t.manterAte('ativo', { personagem: 'cam' }, t.etapaMudou(), 'a conversa com Cam');
     },
     async troncos(t) {
       while (t.contador('troncos') < 4 && t.a.estado()?.id === 'a1') {
@@ -174,7 +207,7 @@ export const ATALHOS_NOE: Record<string, Record<string, Atalho>> = {
   },
   a2: {
     async planejar(t) {
-      t.chegar('ativo', 'guincho');
+      await t.manterAte('ativo', 'guincho', t.etapaMudou(), 'a conversa no estaleiro');
     },
     async erguer(t) {
       if (!t.flag('vigaAmarrada')) {
@@ -193,9 +226,9 @@ export const ATALHOS_NOE: Record<string, Record<string, Atalho>> = {
   a3: {
     async ir(t) {
       t.controlar('noe');
-      t.chegar('noe', 'entradaCidade');
-      await t.a.esperar(0.3);
-      t.chegar('noe', 'praca');
+      const fim = t.etapaMudou();
+      await t.manterPor('noe', 'entradaCidade', 1.5);
+      await t.manterAte('noe', 'praca', fim, 'a praça');
     },
     async pregar(t) {
       for (const [id, flag] of [['pregarPraca', 'a3Praca'], ['pregarMercado', 'a3Mercado'], ['pregarTorre', 'a3Torre']]) {
@@ -205,8 +238,9 @@ export const ATALHOS_NOE: Record<string, Record<string, Atalho>> = {
       }
     },
     async tentacao(t) {
-      t.chegar('noe', 'torre');
-      await t.prova();
+      const fim = t.etapaMudou();
+      await t.manterAte('noe', 'torre', () => t.a.emProva() || fim(), 'a tentação junto à torre');
+      if (!fim()) await t.prova();
     },
   },
   a4: {
@@ -217,12 +251,12 @@ export const ATALHOS_NOE: Record<string, Record<string, Atalho>> = {
     mantimento,
     async parPerdido(t) {
       if (!t.flag('a4AchouPar')) await t.usar('gruta', 'jafe');
+      const fim = t.etapaMudou();
       await t.usar(idAcalmar(PAR_PERDIDO), 'sem');
-      t.chegar('sem', 'portaArca');
+      await t.manterAte('sem', 'portaArca', fim, 'o par perdido na arca');
     },
     async entrar(t) {
-      await t.a.esperar(0.3);
-      t.chegar('ativo', { arca: 'porta' });
+      await t.manterAte('ativo', { arca: 'porta' }, t.etapaMudou(), 'a família na arca');
     },
   },
   a5: {
@@ -245,8 +279,9 @@ export const ATALHOS_NOE: Record<string, Record<string, Atalho>> = {
     async medo(t) {
       if (t.flag('a5Medo')) return;
       t.controlar('noe');
-      t.chegar('noe', { arca: 'familia' });
-      await t.prova();
+      const fim = t.etapaMudou();
+      await t.manterAte('noe', { arca: 'familia' }, () => t.a.emProva() || fim(), 'a prova do medo');
+      if (!fim()) await t.prova();
     },
     async janela(t) {
       if (!t.flag('janelaAberta')) await t.usar('janela', 'jafe');
@@ -291,18 +326,21 @@ export async function jogarEraNoe(a: AmbienteAtalhosNoe, opts: { ate?: string; a
     const e = a.estado();
     if (!e || !ATALHOS_NOE[e.id]) return;
     if (opts.ate && e.id === opts.ate) return;
-    const m = missaoNoe(e.id);
-    const etapa = m.etapas[e.etapa];
+    // o motor pode mudar o mesmo objeto de estado: guarda os valores de agora
+    const id = e.id;
+    const indice = e.etapa;
+    const m = missaoNoe(id);
+    const etapa = m.etapas[indice];
     if (e.status === 'concluida' || !etapa) {
       if (!m.proxima) return;
-      await t.esperarAte(() => a.estado()?.id !== e.id, `a missão seguinte a ${e.id}`);
+      await t.esperarAte(() => a.estado()?.id !== id, `a missão seguinte a ${id}`);
       continue;
     }
-    opts.aoEtapa?.(e.id, etapa.id);
-    await ATALHOS_NOE[e.id][etapa.id](t);
+    opts.aoEtapa?.(id, etapa.id);
+    await ATALHOS_NOE[id][etapa.id](t);
     await t.esperarAte(() => {
       const x = a.estado();
-      return !x || x.id !== e.id || x.etapa !== e.etapa || x.status === 'concluida';
-    }, `o fim da etapa ${e.id}.${etapa.id}`);
+      return !x || x.id !== id || x.etapa !== indice || x.status === 'concluida';
+    }, `o fim da etapa ${id}.${etapa.id}`);
   }
 }

@@ -121,6 +121,8 @@ export class MundoCanaa {
     this.definirAcampamentoInimigo(false);
     for (const a of ALTARES) this.definirAltar(a, 'oculto');
     m.finalizar();
+    // a textura de folhas das árvores retorcidas é avermelhada (outono): recolore para oliveira/mato
+    recolorirFolhas(m, /Leaves_TwistedTree$/, { oliveira: '#b4c0a2', arbusto: '#a9b583', arbustoVerde: '#86b860' });
   }
 
   // ------------------------------------------------------------------ API
@@ -665,6 +667,39 @@ export class MundoCanaa {
 }
 
 // ------------------------------------------------------------------ utilidades
+
+/**
+ * Troca a cor da textura de folhas pela cor dada (mantém o desenho e o recorte da textura, em tons
+ * de cinza). Só mexe nos materiais desta Natureza (clonados por variante).
+ */
+function recolorirFolhas(m: Mundo, material: RegExp, cores: Record<string, string>) {
+  const feitos = new Set<THREE.Material>();
+  m.natureza.grupo.traverse((o) => {
+    const im = o as THREE.InstancedMesh;
+    if (!im.isInstancedMesh) return;
+    const mat = im.material as THREE.MeshLambertMaterial;
+    if (feitos.has(mat) || !material.test(mat.name)) return;
+    const cor = cores[mat.name.split('_')[0]];
+    if (!cor) return;
+    feitos.add(mat);
+    mat.color.set(cor);
+    const anterior = mat.onBeforeCompile;
+    mat.onBeforeCompile = (sh, r) => {
+      anterior.call(mat, sh, r);
+      sh.fragmentShader = sh.fragmentShader.replace(
+        '#include <map_fragment>',
+        `#ifdef USE_MAP
+          vec4 _tex = texture2D( map, vMapUv );
+          float _lum = dot( _tex.rgb, vec3( 0.299, 0.587, 0.114 ) );
+          diffuseColor *= vec4( vec3( 0.55 + _lum * 1.6 ), _tex.a );
+        #endif`,
+      );
+    };
+    const chave = mat.customProgramCacheKey.bind(mat);
+    mat.customProgramCacheKey = () => `${chave()}_recolorido`;
+    mat.needsUpdate = true;
+  });
+}
 
 function materialPedras() {
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: '#000000' });

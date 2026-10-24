@@ -139,8 +139,8 @@ export const camelo: ConstrutorProcedural = (sexo) => {
   m.osso('pescoco', 'corpo', 0, 1.52, 0.56);
   m.osso('pescoco2', 'pescoco', 0, 1.42, 0.98);
   m.osso('cabeca', 'pescoco2', 0, 1.84, 1.2);
-  m.parte('pescoco', tubo(curva([[0, 1.6, 0.42], [0, 1.47, 0.78], [0, 1.43, 1.0]], 5), [0.21, 0.17, 0.14, 0.125, 0.115], 6), pelo);
-  m.parte('pescoco2', tubo(curva([[0, 1.43, 0.98], [0, 1.58, 1.14], [0, 1.86, 1.22]], 4), [0.11, 0.1, 0.095, 0.09], 6), pelo);
+  m.parte('pescoco', tubo(curva([[0, 1.6, 0.42], [0, 1.47, 0.78], [0, 1.43, 1.0]], 5), [0.21, 0.17, 0.14, 0.125, 0.115], 5), pelo);
+  m.parte('pescoco2', tubo(curva([[0, 1.43, 0.98], [0, 1.58, 1.14], [0, 1.86, 1.22]], 4), [0.11, 0.1, 0.095, 0.09], 5), pelo);
   // cabeça
   m.parte('cabeca', elipsoide([0, 1.95, 1.3], [0.105, 0.105, 0.15], 1), pelo);
   m.parte('cabeca', elipsoide([0, 1.9, 1.47], [0.08, 0.085, 0.13], 0), '#caa071');
@@ -179,7 +179,7 @@ export const leao: ConstrutorProcedural = (sexo) => {
   m.osso('cauda2', 'cauda', 0, 0.62, -0.84);
   m.parte('cauda', membro([0, 0.92, -0.62], [0, 0.62, -0.84], 0.035, 0.028, 4), pelo);
   m.parte('cauda2', membro([0, 0.62, -0.84], [0, 0.52, -1.06], 0.028, 0.022, 4), pelo);
-  m.parte('cauda2', elipsoide([0, 0.52, -1.1], [0.05, 0.05, 0.075], 0), '#5e3518');
+  m.parte('cauda2', octaedro([0, 0.52, -1.1], [0.055, 0.055, 0.08]), '#5e3518');
   m.osso('pescoco', 'corpo', 0, 0.96, 0.52);
   m.osso('cabeca', 'pescoco', 0, 1.04, 0.7);
   m.parte('pescoco', elipsoide([0, 0.98, 0.6], [0.17 * magro, 0.18, 0.17], 0), pelo);
@@ -187,9 +187,8 @@ export const leao: ConstrutorProcedural = (sexo) => {
   m.parte('cabeca', elipsoide([0, 1.07, 0.8], [0.18, 0.17, 0.19], 1), pelo);
   m.parte('cabeca', elipsoide([0, 0.99, 0.96], [0.11, 0.09, 0.1], 0), claro);
   m.parte('cabeca', octaedro([0, 1.03, 1.05], [0.04, 0.025, 0.025]), '#5a3424');
-  m.parte('cabeca', elipsoide([0, 0.94, 0.93], [0.07, 0.04, 0.06], 0), claro);
   olhos(m, 'cabeca', 0.085, 1.11, 0.95, 0.02);
-  for (const s of [1, -1]) m.parte('cabeca', elipsoide([0.12 * s, 1.21, 0.74], [0.05, 0.05, 0.03], 0), pelo);
+  for (const s of [1, -1]) m.parte('cabeca', octaedro([0.12 * s, 1.21, 0.74], [0.055, 0.055, 0.03]), pelo);
   if (sexo === 'macho') {
     // juba: anel desgrenhado em volta da cabeça e no peito
     const desgrenhado = (c: THREE.Vector3) => (ruido3(Math.round(c.x * 30), Math.round(c.y * 30), Math.round(c.z * 30)) > 0.5 ? '#8a4a1f' : juba);
@@ -215,7 +214,7 @@ export const elefante: ConstrutorProcedural = (sexo) => {
   m.osso('raiz', null, 0, 0, 0);
   m.osso('corpo', 'raiz', 0, 1.75, 0);
   pernas(m, {
-    ombro: 1.25, frente: 0.6, tras: -0.62, meia: 0.4, joelho: 0.5, lados: 6,
+    ombro: 1.25, frente: 0.6, tras: -0.62, meia: 0.4, joelho: 0.5, lados: 5,
     r: [0.25, 0.21, 0.22], cor: pele2, corPe: '#cfc6bb', pe: 0.1, tipoPe: 'casco',
   });
   m.parte('corpo', elipsoide([0, 1.78, -0.02], [0.72, 0.74, 1.1], 1), pele);
@@ -235,9 +234,9 @@ export const elefante: ConstrutorProcedural = (sexo) => {
   m.osso('tromba1', 'cabeca', 0, 2.02, 1.62);
   m.osso('tromba2', 'tromba1', 0, 1.5, 1.8);
   m.osso('tromba3', 'tromba2', 0, 1.0, 1.84);
-  m.parte('tromba1', tubo(curva([[0, 2.12, 1.55], [0, 1.82, 1.74], [0, 1.5, 1.8]], 4), [0.18, 0.15, 0.13, 0.12], 6), pele);
-  m.parte('tromba2', tubo(curva([[0, 1.5, 1.8], [0, 1.25, 1.83], [0, 1.0, 1.84]], 3), [0.12, 0.1, 0.085], 6), pele);
-  m.parte('tromba3', tubo(curva([[0, 1.0, 1.84], [0, 0.75, 1.88], [0, 0.6, 1.98]], 3), [0.085, 0.07, 0.06], 6), pele);
+  m.parte('tromba1', tubo(curva([[0, 2.12, 1.55], [0, 1.82, 1.74], [0, 1.5, 1.8]], 4), [0.18, 0.15, 0.13, 0.12], 5), pele);
+  m.parte('tromba2', tubo(curva([[0, 1.5, 1.8], [0, 1.25, 1.83], [0, 1.0, 1.84]], 3), [0.12, 0.1, 0.085], 5), pele);
+  m.parte('tromba3', tubo(curva([[0, 1.0, 1.84], [0, 0.75, 1.88], [0, 0.6, 1.98]], 3), [0.085, 0.07, 0.06], 5), pele);
   if (sexo === 'macho') {
     for (const s of [1, -1]) {
       m.parte('cabeca', tubo(curva([[0.2 * s, 1.88, 1.55], [0.25 * s, 1.62, 1.78], [0.23 * s, 1.58, 2.02]], 5), [0.065, 0.055, 0.042, 0.026, 0], 5), '#f2ead8');
@@ -351,27 +350,26 @@ export const carneiro: ConstrutorProcedural = (sexo) => {
   m.osso('corpo', 'raiz', 0, 0.62, 0);
   // pernas curtas: a parte de cima coberta de lã, canela castanha
   pernas(m, {
-    ombro: 0.42, frente: 0.25, tras: -0.27, meia: 0.13, joelho: 0.6, lados: 5,
+    ombro: 0.42, frente: 0.25, tras: -0.27, meia: 0.13, joelho: 0.6, lados: 4,
     r: [0.07, 0.034, 0.03], cor: rosto, corCoxa: la, corPe: '#3b2e26', pe: 0.045, tipoPe: 'casco',
   });
   // corpo de lã: volume principal e tufos arredondados que quebram a silhueta
   m.parte('corpo', elipsoide([0, 0.64, -0.02], [0.28, 0.26, 0.42], 1), la, { porFace: fofo });
   const tufos: [V3, V3][] = [
-    [[0, 0.84, 0.12], [0.19, 0.12, 0.2]], [[0, 0.84, -0.18], [0.2, 0.12, 0.2]], [[0.17, 0.72, -0.05], [0.13, 0.16, 0.26]],
-    [[-0.17, 0.72, -0.05], [0.13, 0.16, 0.26]], [[0, 0.64, 0.3], [0.22, 0.22, 0.16]], [[0, 0.68, -0.36], [0.21, 0.2, 0.14]],
+    [[0, 0.83, -0.02], [0.21, 0.14, 0.32]], [[0, 0.64, 0.3], [0.22, 0.22, 0.16]],
+    [[0, 0.68, -0.36], [0.21, 0.2, 0.14]],
   ];
   for (const [c, r] of tufos) m.parte('corpo', elipsoide(c, r, 0), la, { porFace: fofo });
   m.osso('cauda', 'corpo', 0, 0.72, -0.44);
-  m.parte('cauda', elipsoide([0, 0.62, -0.47], [0.07, 0.12, 0.05], 0), la);
   m.osso('pescoco', 'corpo', 0, 0.74, 0.32);
   m.osso('cabeca', 'pescoco', 0, 0.86, 0.44);
   m.parte('pescoco', elipsoide([0, 0.78, 0.38], [0.16, 0.17, 0.15], 0), la, { porFace: fofo });
   // cabeça: rosto castanho, focinho mais claro, topete de lã
-  m.parte('cabeca', elipsoide([0, 0.89, 0.5], [0.095, 0.1, 0.12], 1), rosto);
-  m.parte('cabeca', elipsoide([0, 0.82, 0.61], [0.068, 0.072, 0.095], 0), '#8f6f56');
+  m.parte('cabeca', elipsoide([0, 0.89, 0.5], [0.095, 0.1, 0.12], 0, [0.3, 0, 0]), rosto);
+  m.parte('cabeca', octaedro([0, 0.82, 0.6], [0.07, 0.075, 0.11]), '#8f6f56');
   m.parte('cabeca', octaedro([0, 0.82, 0.7], [0.03, 0.02, 0.012]), '#3a2a22');
-  m.parte('cabeca', elipsoide([0, 0.97, 0.47], [0.085, 0.06, 0.08], 0), la);
-  for (const s of [1, -1]) m.parte('cabeca', elipsoide([0.11 * s, 0.86, 0.47], [0.07, 0.022, 0.035], 0, [0, 0.3 * s, -0.35 * s]), rosto);
+  m.parte('cabeca', octaedro([0, 0.97, 0.47], [0.09, 0.065, 0.085]), la);
+  for (const s of [1, -1]) m.parte('cabeca', octaedro([0.11 * s, 0.86, 0.47], [0.075, 0.022, 0.04], [0, 0.3 * s, -0.35 * s]), rosto);
   olhos(m, 'cabeca', 0.074, 0.92, 0.56, 0.017);
   if (sexo === 'macho') {
     // chifres em espiral com sulcos: sobem, vão para trás, descem em volta da orelha e voltam à frente
@@ -379,7 +377,7 @@ export const carneiro: ConstrutorProcedural = (sexo) => {
     const chifre = '#d6bf92';
     const lados = 5;
     for (const s of [1, -1]) {
-      const n = 15;
+      const n = 11;
       const pts: THREE.Vector3[] = [];
       const raios: number[] = [];
       const cz = 0.4;
@@ -498,9 +496,8 @@ export const cervo: ConstrutorProcedural = (sexo) => {
   });
   m.parte('corpo', elipsoide([0, 0.88, 0], [0.18, 0.21, 0.45], 1), pelo);
   m.parte('corpo', elipsoide([0, 0.8, 0.02], [0.15, 0.14, 0.36], 0), claro);
-  m.parte('corpo', elipsoide([0, 0.91, -0.39], [0.13, 0.13, 0.08], 0), '#f1e7d6');
   m.osso('cauda', 'corpo', 0, 0.97, -0.46);
-  m.parte('cauda', elipsoide([0, 0.94, -0.48], [0.035, 0.065, 0.03], 0), '#f4ede2');
+  m.parte('cauda', octaedro([0, 0.94, -0.48], [0.04, 0.07, 0.035]), '#f4ede2');
   m.osso('pescoco', 'corpo', 0, 0.98, 0.34);
   m.osso('cabeca', 'pescoco', 0, 1.22, 0.52);
   m.parte('pescoco', membro([0, 0.94, 0.3], [0, 1.24, 0.52], 0.09, 0.065, 5), pelo);
