@@ -26,6 +26,8 @@ export class CameraTerceira {
   deslocLateral = 0.35;
   private tmpDir = new THREE.Vector3();
   private tmpOrig = new THREE.Vector3();
+  private tmpDir2 = new THREE.Vector3();
+  private tmpRaio = new THREE.Vector3();
   tremor = 0;
   tag?: string;
 
@@ -42,12 +44,71 @@ export class CameraTerceira {
     if (e.roda) this.distanciaAlvo = clamp(this.distanciaAlvo + e.roda * 0.8, this.min, this.max);
   }
 
-  /** Posiciona a câmera atrás do alvo instantaneamente. */
-  encaixar(alvo: THREE.Vector3, yawPersonagem?: number) {
+  /**
+   * Posiciona a câmera atrás do alvo instantaneamente. Com `fisica`, já começa na distância
+   * livre de colisão (sem o "pulo" de aproximação no primeiro quadro).
+   */
+  encaixar(alvo: THREE.Vector3, yawPersonagem?: number, fisica?: MundoFisico | null) {
     if (yawPersonagem !== undefined) this.yaw = yawPersonagem + Math.PI;
     this.foco.copy(alvo);
     this.focoSuave.copy(alvo);
     this.distReal = this.distancia = this.distanciaAlvo;
+    if (fisica) {
+      const pivo = this.pivo(alvo, this.distancia, this.yaw, new THREE.Vector3());
+      const dir = this.direcao(this.yaw, this.pitch, new THREE.Vector3());
+      this.distReal = this.distanciaLivre(pivo, dir, this.distancia, fisica);
+    }
+  }
+
+  /** Ponto que a câmera olha (ombro do personagem). */
+  pivo(foco: THREE.Vector3, distancia: number, yaw: number, out: THREE.Vector3) {
+    out.set(foco.x, foco.y + this.alturaOmbro, foco.z);
+    // deslocamento sobre o ombro
+    out.x += Math.cos(yaw) * this.deslocLateral * (distancia / 6);
+    out.z -= Math.sin(yaw) * this.deslocLateral * (distancia / 6);
+    return out;
+  }
+
+  /** Direção do pivô para a câmera. */
+  direcao(yaw: number, pitch: number, out: THREE.Vector3) {
+    return out.set(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+  }
+
+  /**
+   * Distância máxima sem atravessar terreno nem estruturas: um feixe de 5 raios (centro e as
+   * bordas do plano próximo), para a câmera não "espiar" através de paredes finas e quinas.
+   */
+  distanciaLivre(pivo: THREE.Vector3, dir: THREE.Vector3, d: number, fisica: MundoFisico, yaw = this.yaw) {
+    const dir2 = this.tmpDir2.copy(dir);
+    const dx = Math.cos(yaw) * 0.28;
+    const dz = -Math.sin(yaw) * 0.28;
+    let melhor = d;
+    for (let i = 0; i < 5; i++) {
+      const o = this.tmpRaio.copy(pivo);
+      if (i === 1) { o.x += dx; o.z += dz; }
+      else if (i === 2) { o.x -= dx; o.z -= dz; }
+      else if (i === 3) o.y += 0.22;
+      else if (i === 4) o.y -= 0.22;
+      const hit = fisica.raio(o, dir2, melhor + 0.3, this.tag);
+      if (hit >= 0) melhor = Math.min(melhor, Math.max(0.6, hit - 0.3));
+    }
+    return melhor;
+  }
+
+  /**
+   * Pose que a câmera de jogo teria agora para este alvo (sem suavização), usada para
+   * pousar trocas e cinemáticas exatamente onde o controle normal assume.
+   */
+  calcularPose(alvo: THREE.Vector3, fisica: MundoFisico | null, outPos: THREE.Vector3, outOlhar: THREE.Vector3, yaw = this.yaw, pitch = this.pitch, distancia = this.distanciaAlvo) {
+    const pivo = this.pivo(alvo, distancia, yaw, outOlhar);
+    const dir = this.direcao(yaw, pitch, this.tmpDir2);
+    const d = fisica ? this.distanciaLivre(pivo, dir.clone(), distancia, fisica, yaw) : distancia;
+    outPos.copy(pivo).addScaledVector(dir, d);
+    if (fisica) {
+      const chao = fisica.relevo.altura(outPos.x, outPos.z) + 0.4;
+      if (outPos.y < chao) outPos.y = chao;
+    }
+    return outPos;
   }
 
   atualizar(dt: number, alvo: THREE.Vector3, fisica: MundoFisico | null) {
@@ -58,16 +119,9 @@ export class CameraTerceira {
     this.focoSuave.z = damp(this.focoSuave.z, alvo.z, 14, dt);
     this.distancia = damp(this.distancia, this.distanciaAlvo, 8, dt);
 
-    const pivo = this.tmpOrig.set(this.focoSuave.x, this.focoSuave.y + this.alturaOmbro, this.focoSuave.z);
-    // deslocamento sobre o ombro
-    pivo.x += Math.cos(this.yaw) * this.deslocLateral * (this.distancia / 6);
-    pivo.z -= Math.sin(this.yaw) * this.deslocLateral * (this.distancia / 6);
-    const dir = this.tmpDir.set(Math.sin(this.yaw) * Math.cos(this.pitch), Math.sin(this.pitch), Math.cos(this.yaw) * Math.cos(this.pitch));
-    let d = this.distancia;
-    if (fisica) {
-      const hit = fisica.raio(pivo, dir, d + 0.3, this.tag);
-      if (hit >= 0) d = Math.max(0.6, hit - 0.3);
-    }
+    const pivo = this.pivo(this.focoSuave, this.distancia, this.yaw, this.tmpOrig);
+    const dir = this.direcao(this.yaw, this.pitch, this.tmpDir);
+    const d = fisica ? this.distanciaLivre(pivo, dir, this.distancia, fisica) : this.distancia;
     // aproxima rápido ao colidir, afasta devagar
     this.distReal = d < this.distReal ? damp(this.distReal, d, 25, dt) : damp(this.distReal, d, 3.5, dt);
     this.camera.position.copy(pivo).addScaledVector(dir, this.distReal);

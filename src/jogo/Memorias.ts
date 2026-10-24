@@ -1,7 +1,8 @@
 // Livro das Memórias: registro das memórias de fidelidade que atravessam as eras.
 // O conteúdo de cada era registra as suas (registrarMemorias) ao carregar; quais o jogador
 // já guardou fica em Progresso. Uma memória de uma era vira recurso de fé nas seguintes
-// (ex.: o arco-íris de Noé acende estrelas na noite de dúvida de Abrão).
+// (ex.: o arco-íris de Noé acende estrelas na noite de dúvida de Abrão). Força 0 = memória
+// que não serve como recurso nas provas (ex.: as que são o próprio resultado de uma prova).
 import type { DefMemoria } from './contratos';
 
 export class RegistroMemorias {
@@ -9,7 +10,7 @@ export class RegistroMemorias {
 
   registrar(defs: DefMemoria | DefMemoria[]) {
     for (const d of Array.isArray(defs) ? defs : [defs]) {
-      if (d.forca <= 0) throw new Error(`Memória "${d.id}" com força inválida (${d.forca})`);
+      if (!Number.isFinite(d.forca) || d.forca < 0) throw new Error(`Memória "${d.id}" com força inválida (${d.forca})`);
       this.defs.set(d.id, d);
     }
   }
@@ -35,6 +36,11 @@ export class RegistroMemorias {
 
   daEra(era: string): DefMemoria[] {
     return this.todas().filter((d) => d.era === era);
+  }
+
+  /** Memórias opcionais (segredos de exploração), de uma era ou de todas. */
+  segredos(era?: string): DefMemoria[] {
+    return this.todas().filter((d) => d.segredo && (era === undefined || d.era === era));
   }
 
   limpar() {

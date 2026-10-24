@@ -171,6 +171,19 @@ export class Humano {
         const dir = new THREE.Vector3(0.3 * lado, alto, 0.6).applyQuaternion(this.raiz.getWorldQuaternion(_q2)).normalize();
         this.girarOssoParaDirecao(braco, dir, this.pesoEscalada, ante);
       }
+      // pernas: cada joelho sobe em oposição ao braço do mesmo lado (apoio nos degraus)
+      for (const [b, a, f] of [['thigh_l', 'calf_l', Math.PI], ['thigh_r', 'calf_r', 0]] as const) {
+        const coxa = this.ossos.get(b);
+        const canela = this.ossos.get(a);
+        if (!coxa || !canela) continue;
+        const lado = b.endsWith('_l') ? 1 : -1;
+        const ergue = Math.max(0, Math.sin(this.faseEscalada + f)) * 0.75 + 0.15;
+        const qr = this.raiz.getWorldQuaternion(_q2);
+        const dirCoxa = new THREE.Vector3(0.1 * lado, -1 + ergue, ergue * 0.9).applyQuaternion(qr).normalize();
+        this.girarOssoParaDirecao(coxa, dirCoxa, this.pesoEscalada * 0.9, canela);
+        const dirCanela = new THREE.Vector3(0.04 * lado, -1, -0.15 - ergue * 0.2).applyQuaternion(qr).normalize();
+        this.girarOssoParaDirecao(canela, dirCanela, this.pesoEscalada * 0.8, this.ossos.get(lado > 0 ? 'foot_l' : 'foot_r'));
+      }
     }
   }
   private pesoOracao = 0;

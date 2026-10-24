@@ -106,6 +106,8 @@ export interface DefProva {
   personagem?: string;
   /** Dificuldade 0..1 (velocidade dos dardos/zombarias). */
   intensidade?: number;
+  /** Para 'medo': personagem que, por perto (≤ 6 m), faz a calma cair mais devagar (ex.: Isaque em B5). */
+  aliado?: string;
 }
 
 export interface ResultadoProva {
@@ -123,8 +125,12 @@ export interface DefMemoria {
   ref: Ref;
   era: string;
   descricao: string;
-  /** Força ao ser lembrada numa prova de dúvida (estrelas acesas). */
+  /** Força ao ser lembrada numa prova de dúvida (estrelas acesas). 0 = não serve nas provas. */
   forca: number;
+  /** Memória opcional (segredo de exploração): conta para o legado entre eras. */
+  segredo?: boolean;
+  /** Frase do jogo mostrada quando a memória é lembrada numa prova de dúvida. */
+  frase?: string;
 }
 
 export type PecaArmadura = 'cinturao' | 'couraca' | 'calcado' | 'escudo' | 'capacete' | 'espada';
@@ -290,7 +296,8 @@ export interface EstadoProvaUI {
   /** Versículo de "Está escrito" disponível (texto curto + ref) ou null. */
   palavra: { ref: string; texto: string; pronta: boolean } | null;
   escudo: boolean;
-  memorias?: { id: string; titulo: string; usada: boolean }[];
+  /** `tecla`: 1..5 para as ainda não usadas (atalho de teclado). */
+  memorias?: { id: string; titulo: string; usada: boolean; tecla?: number }[];
   mensagem?: string;
 }
 
@@ -332,7 +339,8 @@ export interface MarcadorTela {
  * 'armadura'         { peca: PecaArmadura }
  * 'unidade'          { valor: number; delta: number }
  * 'versiculo'        { ref: Ref }   — recebido (vai para o Diário)
- * 'prova:inicio'     { id: string } / 'prova:fim' { id: string; resultado: ResultadoProva }
+ * 'prova:inicio'     { id: string; tipo: TipoProva; livre: boolean }   — livre: o jogador ainda anda e interage (medo)
+ * 'prova:fim'        { id: string; resultado: ResultadoProva | null }  — null = prova cancelada
  * 'dialogo:inicio' / 'dialogo:fim'
  * 'area'             { id: string; personagem: string; dentro: boolean }
  * 'era:transicao'    { de: string; para: string }

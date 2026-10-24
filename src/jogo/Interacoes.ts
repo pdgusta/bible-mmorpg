@@ -23,6 +23,26 @@ export interface Interativo {
   animacao?: import('../entidades/humano/Animador').NomeClipe;
   /** Exige que o personagem esteja carregando algo (ou nada). */
   carregando?: string | null;
+  /**
+   * Posto de cooperação (guincho, porteira, bomba, mastro): quem usa fica no posto, continua
+   * lá depois da troca de personagem e sai apertando E de novo.
+   */
+  posto?: DefPosto;
+  /** Chamado quando o personagem sai do posto (E de novo, ou `Controle.liberarPosto`). */
+  aoSairPosto?(p: Personagem): void;
+}
+
+export interface DefPosto {
+  /** Atividade mostrada na roda de troca ("segurando o guincho"). */
+  descricao: string;
+  /** Animação de corpo inteiro no posto (padrão 'segurar'). */
+  clipe?: import('../entidades/humano/Animador').NomeClipe;
+  /** Onde o personagem fica (padrão: onde está ao interagir). */
+  pos?: THREE.Vector3;
+  /** Para onde fica virado (padrão: para `Interativo.pos`). */
+  yaw?: number;
+  /** Rótulo do prompt para sair (padrão "Soltar"). */
+  rotuloSair?: string;
 }
 
 export class Interativos {
@@ -49,10 +69,14 @@ export class Interativos {
     return typeof i.ativo === 'function' ? i.ativo() : i.ativo;
   }
 
-  /** O interativo mais próximo ao alcance do personagem (preferindo os que estão à frente). */
-  maisProximo(p: Personagem): { i: Interativo; pode: boolean } | null {
+  /**
+   * O interativo mais próximo ao alcance do personagem (preferindo os que estão à frente).
+   * `ignorar` descarta candidatos (ex.: postos ocupados por outra pessoa).
+   */
+  maisProximo(p: Personagem, ignorar?: (i: Interativo) => boolean): { i: Interativo; pode: boolean; distancia: number } | null {
     let melhor: Interativo | null = null;
     let melhorNota = Infinity;
+    let melhorD = 0;
     const pos = p.posicao;
     const frente = p.frente();
     for (const i of this.lista.values()) {
@@ -62,6 +86,7 @@ export class Interativos {
       const dy = i.pos.y - pos.y;
       const d = Math.hypot(dx, dz);
       if (d > i.raio || Math.abs(dy) > 3.5) continue;
+      if (ignorar?.(i)) continue;
       if (i.carregando !== undefined) {
         if (i.carregando === null && p.carregando) continue;
         if (i.carregando && p.carregando !== i.carregando) continue;
@@ -71,10 +96,11 @@ export class Interativos {
       if (nota < melhorNota) {
         melhorNota = nota;
         melhor = i;
+        melhorD = d;
       }
     }
     if (!melhor) return null;
-    return { i: melhor, pode: p.pode(melhor.verbo) };
+    return { i: melhor, pode: p.pode(melhor.verbo), distancia: melhorD };
   }
 }
 
