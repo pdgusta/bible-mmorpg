@@ -10,7 +10,6 @@ import {
 } from '../../eras/noe';
 import { criarAnimal, ESPECIES, type Especie } from '../../entidades/Animal';
 import { distPolilinha } from '../../mundo/Relevo';
-import { definirFlag } from '../Missoes';
 import type { Personagem } from '../Personagem';
 import type { ContextoEra, DefEra, EraAtiva, OpcoesAtalhos, VistaTitulo } from '../eras';
 import type { AmbienteEra, Superficie } from './audio';
@@ -242,10 +241,3 @@ export const ERA_NOE_JOGO: DefEra = {
   horaChegada: 9,
   criar: (ctx) => new EraNoe(ctx),
 };
-
-/** Para os testes e a depuração: liga um flag de Cristo como a missão faria. */
-export function flagCristo(id: string) {
-  return `cristo_${id}`;
-}
-
-export { definirFlag };

@@ -29,7 +29,8 @@ export class CameraTerceira {
   private tmpDir2 = new THREE.Vector3();
   private tmpRaio = new THREE.Vector3();
   tremor = 0;
-  tag?: string;
+  /** Tag de colisor que a câmera atravessa (paredes invisíveis do Moriá: 'invisivel'). */
+  tag: string | undefined = 'invisivel';
   // efeitos aplicados por cima de qualquer controlador (jogo, cinemática, troca, transição)
   private efTremor = { forca: 0, t: 0, dur: 0 };
   private efBalanco = 0;
