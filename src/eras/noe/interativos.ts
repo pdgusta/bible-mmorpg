@@ -171,7 +171,8 @@ export const INTERATIVOS_NOE: Record<string, DefInterativoNoe[]> = {
 
 /**
  * Espécies de A4 que chegam sozinhas (as agitadas param e esperam Sem). As limpas vêm de sete
- * em sete, as outras de dois em dois (Gn 7:2).
+ * em sete, as outras de dois em dois (Gn 7:2). Leitura do jogo: sete animais, três casais e um
+ * macho a mais, o que será oferecido no altar (Gn 8:20).
  */
 export const PARES_A4: { especie: string; chegada: string; agitado: boolean; atraso: number; limpo?: boolean }[] = [
   { especie: 'ovelha', chegada: 'chegadaAnimais1', agitado: false, atraso: 0, limpo: true },
@@ -184,8 +185,9 @@ export const PARES_A4: { especie: string; chegada: string; agitado: boolean; atr
 ];
 /** Quantos de cada espécie entram na arca (Gn 7:2). */
 export const quantosDaEspecie = (par: { limpo?: boolean }) => (par.limpo ? 7 : 2);
-/** O oitavo par, que se escondeu na gruta. */
-export const PAR_PERDIDO = 'cervo';
+/** A oitava espécie, que se escondeu na gruta: o cervo, limpo, vem de sete em sete (Gn 7:2). */
+export const ESPECIE_PERDIDA = 'cervo';
+export const QUANTOS_PERDIDOS = quantosDaEspecie({ limpo: true });
 export const TOTAL_PARES = PARES_A4.length + 1;
 /** Animais das baias do convés 2 (A5). */
 export const ANIMAIS_BAIAS = ['boi', 'camelo', 'leao'];
@@ -225,7 +227,7 @@ export function idsInterativosNoe(): string[] {
   return [
     ...Object.values(INTERATIVOS_NOE).flat().map((d) => d.id),
     ...PARES_A4.filter((p) => p.agitado).map((p) => idAcalmar(p.especie)),
-    idAcalmar(PAR_PERDIDO),
+    idAcalmar(ESPECIE_PERDIDA),
     ...ENCORAJAVEIS.map(idEncorajar),
     ...CONVERSAS_A6.map(idConversa),
     INTERATIVO_FALAR_SEM.id,

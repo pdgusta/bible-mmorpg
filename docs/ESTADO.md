@@ -98,15 +98,14 @@ Confira se `missoes.ts` termina em B5 completo; o agente parou logo depois de es
 
 ### 4. Ajustes de lógica da era 1 (pedidos pela revisão; aplicados na branch `frente/era-noe`)
 
-1. **Gn 7:2:** ✅ os animais limpos (ovelha, cabra, boi) chegam de 7 em 7 em A4; o objetivo conta espécies e o banner mostra Gn 7:2.
+1. **Gn 7:2:** ✅ os animais limpos (ovelha, cabra, boi e os cervos da gruta) chegam de 7 em 7 em A4: três casais e um macho para o altar (leitura registrada em `tecnico/era-noe.md`). O objetivo conta espécies e o banner mostra Gn 7:2.
 2. **Gn 8:6:** ✅ Jafé só solta as amarras (`a5Amarras`); Noé abre a janela em `soltarCorvo` (narrador Gn 8:6).
 3. **Ensinamento 9:** ✅ `segredoEstacoes` só fica ativo depois da flag `a6Altar` (`depoisDe` em `SEGREDOS_INTERATIVOS`).
 4. **Ensinamento 6:** ✅ forçados por quem não sabe acalmar, os agitados fogem (`Animal.fugirDe`, que agora mantém o susto) até Sem acalmá-los.
 5. ✅ Sem tem uma fala curta de ficção no planejamento de A2.
 
 Pendências:
-- `docs/ROTEIRO.md` (A4 "0/8 pares", A5 "Jafé abre a cobertura") e `docs/tecnico/revisao.md` §8 (pendências 1 a 4) ainda descrevem o estado antigo.
-- O cervo do par perdido está entre os animais limpos da lei de Moisés (Deuteronômio 14), mas vem em par. Decidir se troca de espécie.
+- `docs/ROTEIRO.md` (A4 "0/8 pares" e "par perdido", A5 "Jafé abre a cobertura") e `docs/tecnico/revisao.md` §8 (pendências 1 a 4) ainda descrevem o estado antigo.
 - Medir as draw calls de A4 no jogo integrado: no pior caso há cerca de 29 animais ao mesmo tempo.
 
 ## Problemas conhecidos (arte)

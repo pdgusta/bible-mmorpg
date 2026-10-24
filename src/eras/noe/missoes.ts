@@ -14,8 +14,8 @@ import type { NomeClipe } from '../../entidades/humano/Animador';
 import { NOE } from './mapa';
 import { servicosNoe, type AnimalNoe, type NomePontoArca, type OpcoesAnimalNoe, type ServicosNoe } from './servicos';
 import {
-  ANIMAIS_BAIAS, CONVERSAS_A6, ENCORAJAVEIS, INTERATIVO_FALAR_SEM, PARES_A4, PAR_PERDIDO, TOTAL_PARES,
-  garantirEscalada, idConversa, interativoAcalmar, interativoConversa, interativoEncorajar, ponto2, quantosDaEspecie, registrarDefs, registrarEtapa,
+  ANIMAIS_BAIAS, CONVERSAS_A6, ENCORAJAVEIS, INTERATIVO_FALAR_SEM, PARES_A4, ESPECIE_PERDIDA, TOTAL_PARES,
+  garantirEscalada, idConversa, interativoAcalmar, interativoConversa, interativoEncorajar, ponto2, quantosDaEspecie, QUANTOS_PERDIDOS, registrarDefs, registrarEtapa,
   resolverLugar, type AjusteInterativo, type LugarNoe, type MundoBase, type RegistroInterativos,
 } from './interativos';
 import {
@@ -766,7 +766,7 @@ const A3: DefMissao = {
 const FONTES_MANTIMENTO = [...lista('saco', 4), ...lista('fruta', 2)];
 const TOTAL_MANTIMENTO = FONTES_MANTIMENTO.length;
 const entregue = (c: CtxMissao, id: string) => feito(c, `a4Entregue_${id}`);
-const paresDentro = (c: CtxMissao) => contarFlags(c, [...PARES_A4.map((p) => `a4Par_${p.especie}`), `a4Par_${PAR_PERDIDO}`]);
+const paresDentro = (c: CtxMissao) => contarFlags(c, [...PARES_A4.map((p) => `a4Par_${p.especie}`), `a4Par_${ESPECIE_PERDIDA}`]);
 
 function objetivoA4(c: CtxMissao) {
   const m = FONTES_MANTIMENTO.filter((id) => entregue(c, id)).length;
@@ -913,7 +913,7 @@ async function levarMantimento(c: CtxMissao) {
 
 const A4: DefMissao = {
   id: 'a4', era: ERA, titulo: 'De dois em dois', tipos: ['servico', 'exploracao'],
-  resumo: 'Os animais vêm de dois em dois, e os limpos de sete em sete. Sem acalma os agitados, Cam e Jafé levam o mantimento, e um par perdido espera na gruta.',
+  resumo: 'Os animais vêm de dois em dois, e os limpos de sete em sete. Sem acalma os agitados, Cam e Jafé levam o mantimento, e os cervos perdidos esperam na gruta.',
   refs: ['Gn 6:19-21', 'Gn 7:1-3', 'Gn 7:9', 'Pv 12:10'],
   recompensa: { xp: 100 },
   proxima: 'a5',
@@ -965,41 +965,44 @@ const A4: DefMissao = {
     },
     {
       id: 'parPerdido',
-      objetivo: 'Falta um par: dizem que entrou na gruta a oeste.',
+      objetivo: 'Faltam os cervos: dizem que entraram na gruta a oeste.',
       async executar(c) {
         const s = sv();
-        if (feito(c, `a4Par_${PAR_PERDIDO}`)) return;
-        c.objetivo('Falta um par: dizem que entrou na gruta a oeste.', ['entradaGruta']);
+        if (feito(c, `a4Par_${ESPECIE_PERDIDA}`)) return;
+        c.objetivo('Faltam os cervos: dizem que entraram na gruta a oeste.', ['entradaGruta']);
         const fundo = lugar(c, 'fundoGruta');
-        const macho = await criarAnimal('perdido_m', PAR_PERDIDO, fundo.x, fundo.z, { sexo: 'macho' });
-        const femea = await criarAnimal('perdido_f', PAR_PERDIDO, fundo.x + 1.2, fundo.z + 0.6, { sexo: 'femea' });
+        // limpo: sete cervos (Gn 7:2)
+        const chaves = Array.from({ length: QUANTOS_PERDIDOS }, (_, i) => `perdido_${i}`);
         try {
-          macho.agitar();
-          femea.agitar();
+          const grupo = await Promise.all(chaves.map((chave, i) =>
+            criarAnimal(chave, ESPECIE_PERDIDA, fundo.x + (i % 3) * 1.2, fundo.z + Math.floor(i / 3) * 1.2, { sexo: i % 2 ? 'femea' : 'macho' })));
+          for (const a of grupo) a.agitar();
           if (!feito(c, 'a4AchouPar')) {
             const quem = await comEtapa(c, 'a4.parPerdido', {}, () => c.interacao('gruta'));
             marcar(c, 'a4AchouPar');
             c.xp(quem.id, 'segredo');
           }
-          c.objetivo('Os dois animais estão assustados. Traga Sem para acalmá-los.', [{ personagem: 'sem' }]);
-          c.dica('Os dois animais estão assustados. Traga Sem para acalmá-los.');
-          const sem = await esperarAcalmarGrupo(c, PAR_PERDIDO, [macho, femea], 3);
-          macho.acalmar();
-          femea.acalmar();
+          c.objetivo('Os cervos estão assustados. Traga Sem para acalmá-los.', [{ personagem: 'sem' }]);
+          c.dica('Os cervos estão assustados. Traga Sem para acalmá-los.');
+          const sem = await esperarAcalmarGrupo(c, ESPECIE_PERDIDA, grupo, 3);
+          for (const a of grupo) a.acalmar();
           c.treinar(sem.id, 'compaixao', 0.5);
-          macho.seguir(sem, 2.5);
-          femea.seguir(sem, 3.5);
-          c.objetivo('Leve o par até a arca.', ['portaArca']);
+          grupo.forEach((a, i) => a.seguir(sem, 2.5 + i * 0.8));
+          c.objetivo('Leve os cervos até a arca.', ['portaArca']);
           await c.chegar(sem.id, 'portaArca', 7);
           const rampa = lugar(c, 'entregaArca');
           const porta = arca('porta');
           const caminho = caminhoParaDentro(rampa, porta);
-          await Promise.all([macho.entrar(caminho), femea.entrar(caminho)]);
-          marcar(c, `a4Par_${PAR_PERDIDO}`);
+          // um atrás do outro pela rampa
+          await Promise.all(grupo.map(async (a, i) => {
+            if (i) await c.esperar(i * 0.5);
+            await a.entrar(caminho);
+          }));
+          marcar(c, `a4Par_${ESPECIE_PERDIDA}`);
           c.contador('pares', paresDentro(c));
           s.audio.efeito('conquista');
         } finally {
-          await Promise.all([removerAnimal('perdido_m', false), removerAnimal('perdido_f', false)]);
+          await Promise.all(chaves.map((chave) => removerAnimal(chave, false)));
         }
       },
     },

@@ -20,7 +20,7 @@ import type { Mundo } from '../src/mundo/Mundo';
 import { MAPA_NOE } from '../src/eras/noe/mapa';
 import {
   ERA_NOE, MISSOES_NOE, MEMORIAS_NOE, CRISTO_NOE, SEGREDOS_NOE, JOGAVEIS_NOE, NPCS_NOE, INICIO_NOE,
-  PROVA_TENTACAO_A3, PROVA_MEDO_A5, ZOMBARIAS_A3, CONVERSAS_RECOMECO, PARES_A4, esperarAcalmarGrupo, idAcalmar,
+  PROVA_TENTACAO_A3, PROVA_MEDO_A5, ZOMBARIAS_A3, CONVERSAS_RECOMECO, PARES_A4, ESPECIE_PERDIDA, esperarAcalmarGrupo, idAcalmar,
   PONTOS_RESERVA, idsInterativosNoe, pontosUsadosNoe, ligarServicosNoe, registrarSegredosNoe, reconstruirMundoNoe,
   jogarEraNoe, type AnimalNoe, type ServicosNoe, type NomePontoArca, type AmbienteAtalhosNoe,
 } from '../src/eras/noe';
@@ -643,7 +643,7 @@ describe('era de Noé — missões jogadas com CtxMissao falso', () => {
 describe('era de Noé — ajustes da revisão (docs/tecnico/revisao.md §8)', () => {
   const missao = (id: string) => MISSOES_NOE.find((m) => m.id === id)!;
 
-  it('Gn 7:2: os animais limpos de A4 chegam de sete em sete; os outros, de dois em dois', async () => {
+  it('Gn 7:2: os animais limpos de A4 (e os cervos da gruta) chegam de sete em sete; os outros, de dois em dois', async () => {
     const v = valeAtual;
     const criados = new Map<string, number>();
     const criar = v.servicos.animais.criar;
@@ -654,6 +654,7 @@ describe('era de Noé — ajustes da revisão (docs/tecnico/revisao.md §8)', ()
     await jogarMissao(v, missao('a4'));
     for (const par of PARES_A4) expect(criados.get(par.especie), par.especie).toBe(['ovelha', 'cabra', 'boi'].includes(par.especie) ? 7 : 2);
     expect(PARES_A4.filter((p) => p.limpo).map((p) => p.especie).sort()).toEqual(['boi', 'cabra', 'ovelha']);
+    expect(criados.get(ESPECIE_PERDIDA)).toBe(7);
     expect(v.reg.versiculos).toContain('Gn 7:2');
     expect(v.animais.size).toBe(0);
   });

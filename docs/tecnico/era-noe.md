@@ -56,8 +56,9 @@ Regras:
 - A ordem da roda é Noé, Cam, Sem, Jafé, para a dica "Tab ou 2" de A1.
 - **A4:**
   - As etapas "animais" e "mantimento" correm juntas.
-  - 7 espécies chegam sozinhas; a 8ª (um par) fica na gruta. As limpas (ovelha, cabra, boi; `limpo` em `PARES_A4`) vêm de sete em sete, as outras de dois em dois (Gn 7:2, banner na chegada do primeiro grupo limpo). Por isso o objetivo conta "espécies", não "pares".
-  - Ensinamento 6: enquanto um grupo agitado espera Sem (`esperarAcalmarGrupo`), se o personagem controlado não sabe acalmar e chega a menos de 2,5 m, os animais fogem (`fugirDe`) e continuam agitados, com a dica "Forçados, os animais fogem. Sem pode acalmá-los.". Na gruta, há 3 s de carência depois de achar o par.
+  - 7 espécies chegam sozinhas; a 8ª (`ESPECIE_PERDIDA`, os cervos) fica na gruta.
+  - **Leitura de Gn 7:2 (decisão do dono do projeto):** "de sete em sete" são **sete animais** por espécie limpa: três casais e um macho a mais, o que Noé oferece no altar (Gn 8:20). As limpas são ovelha, cabra, boi (`limpo` em `PARES_A4`) e o cervo da gruta, limpo pela lei de Moisés (Deuteronômio 14). As outras vêm de dois em dois. O banner de Gn 7:2 aparece na chegada do primeiro grupo limpo, e o objetivo conta "espécies", não "pares".
+  - Ensinamento 6: enquanto um grupo agitado espera Sem (`esperarAcalmarGrupo`), se o personagem controlado não sabe acalmar e chega a menos de 2,5 m, os animais fogem (`fugirDe`) e continuam agitados, com a dica "Forçados, os animais fogem. Sem pode acalmá-los.". Na gruta, há 3 s de carência depois de achar os cervos.
 - **A3:**
   - "Pregar" usa o verbo `falar` e exige que seja Noé.
   - Cada pregação é seguida de uma zombaria curta.
