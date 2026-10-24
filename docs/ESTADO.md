@@ -78,12 +78,19 @@ Confira se `missoes.ts` termina em B5 completo; o agente parou logo depois de es
 
 ### 3. Motor visual (`agentes/motor.md`)
 
-**Feito (branch `frente/motor`, detalhes em `tecnico/motor.md`):**
-- **Cor por variante:** `corFolha`/`corSolido` na `Natureza` (já existia do trabalho anterior; conferido nas fotos), usada no vale de Noé para oliveiras, arbustos, pedras e seixos.
-- **Arte:** neblina mais rala no alto (as montanhas do horizonte guardam o relevo), grama com a base na cor do chão e ponta clara, silhuetas de longe com normais macias (sem manchas escuras). As nuvens do commit anterior já estavam boas (brancas e fofas).
-- **Transição de era:** duas faixas encadeadas em `Shaders.ts` (a vegetação some antes de o chão afundar; terreno, estruturas e água afundam ou se apagam juntos); a sombra da vegetação encolhe junto (`customDepthMaterial`).
-- **Física:** a inclinação máxima vale também no ar (pular contra a encosta não vira escada); quem fica numa encosta íngreme escorrega e não pula (`CorpoFisico.naEncosta`). Testes em `src/mundo/Fisica.test.ts`.
-- **Desempenho:** simplificação dos troncos com solda de vértices (antes quase não reduzia), alcance perto e silhuetas limitados pelo preset, terreno em blocos de 96 m com meia resolução longe da câmera. Números em `tecnico/motor.md`.
+**O que o motor tem hoje** (branch `frente/motor`; API e detalhes em `tecnico/motor.md`):
+- **Vale de Noé completo:** relevo, rio com vau, cidade, estaleiro, bosque e platô. A `MundoNoe` tem estados do dilúvio (`definirEstado`), água animável, interior da arca, `pontoArca`, viga mestra, andaime, árvores de gofer e altar. A chuva (`Chuva.ts`) usa 1 draw call.
+- **Vegetação (`Natureza`):**
+  - três níveis de detalhe: perto com sombra, longe com folhagem reduzida e silhueta de ~100 triângulos com normais macias;
+  - perto e silhueta limitados pelo preset;
+  - troncos simplificados com solda de vértices;
+  - cor por variante (`corFolha`/`corSolido`), usada no vale para oliveiras, arbustos, pedras e seixos;
+  - sombras com vento e revelação (`customDepthMaterial`).
+- **Céu e luz:** ciclo do dia, nuvens brancas e fofas, tempestade, arco-íris e glória dourada. A neblina é suave e mais rala no alto, então as montanhas do horizonte guardam o relevo.
+- **Terreno:** blocos de 96 m com malha de 2 m perto e de 4 m longe, mais saias contra frestas; modos lama e molhado. A grama tem a base na cor do chão e a ponta clara.
+- **Transição de era:** duas faixas encadeadas em `Shaders.ts`. A vegetação e a grama somem primeiro; depois o terreno, as estruturas e a água afundam ou se apagam. Nada flutua.
+- **Física:** inclinação máxima a pé, que vale também no ar; quem fica numa encosta íngreme escorrega e não pula (`CorpoFisico.naEncosta`). Testes em `src/mundo/Fisica.test.ts`.
+- **Orçamento (preset médio, 7 vistas):** no máximo 128 draw calls e 579 mil triângulos. Tabela em `tecnico/motor.md`.
 
 **Para outras frentes (fora do escopo desta):**
 - **Canaã (`src/eras/abraao/construir.ts`):** trocar o `recolorirFolhas()` pela cor por variante em `definirVariantes`: `oliveira` com `corFolha: '#b4c0a2'` (sem `tintFolha`), `arbusto` com `corFolha: '#a9b583'`, `arbustoVerde` com `corFolha: '#86b860'` e `pedra` com `corSolido: '#c9bea6'`; depois apagar as duas chamadas e a função. Hoje as silhuetas de longe das oliveiras de Canaã saem avermelhadas, porque a cor média vem da textura original. A fórmula é outra (`0,45 + 0,55·lum/média` em vez de `0,55 + 1,6·lum`): confira as cores em `?lab=canaa`.
