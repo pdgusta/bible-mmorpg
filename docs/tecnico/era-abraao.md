@@ -57,6 +57,9 @@ Regras (as mesmas da era 1):
 
 ## Desvios conscientes do ROTEIRO
 
+Os itens de fala abaixo já foram aceitos e levados ao ROTEIRO (ver "Falas e textos alterados").
+
+
 - **Verbos:** os postos "qualquer jogável" (mastros, porteiras) usam `usar`, porque `segurar` é só do guerreiro. A corda do Moriá é o interativo `amarrarCorda` no ponto `cordaMoria`, porque `cordaMoria` já é a escalada do mundo.
 - **B1:** Gn 12:2-3 entra na chegada junto de Gn 12:1 (`narrador('Gn 12:1-3')`), e não como voz de Deus em Moré depois de Gn 12:7: as palavras foram ditas em Harã, antes da partida (checklist, ordem do texto). Depois do altar de Moré vem o trecho de Gn 12:7 "e ali ele edificou um altar…".
 - **B3, prova da tentação:** as respostas são `Gn 14:22-23` (Gn 14:22 sozinho termina em vírgula), `Gn 13:8` e `Gn 12:2`. Duas mentiras do ROTEIRO ("Você mereceu.", "Ninguém vai saber.") viraram "Isso é seu. Não divida com ninguém." e "Pegue tudo antes que outro pegue.", porque Gn 13:8 e Gn 12:2 não as respondiam (cada resposta tem de servir a todas as mentiras).
@@ -64,6 +67,33 @@ Regras (as mesmas da era 1):
 - **B5:** Gn 22:13 é dividido: o carneiro preso antes de o jogador agir; "e Abraão foi e tomou o carneiro…" depois, já com o fogo no altar.
 - **B5, `pe`:** `servosMoria` fica a 6,7 m de `peMoria` (raio 8), então a etapa termina assim que começa e funciona como cena.
 - A pose de oração usa o clipe `agachado` (`CLIPE_ORACAO`).
+
+## Falas e textos alterados na revisão (T-002)
+
+Aceitas pelo dono do projeto em 24/10/2026; o `docs/ROTEIRO.md` foi atualizado para bater com o código. Daqui em diante, mudança de fala ou de conteúdo definido no ROTEIRO é proposta antes (QUESTION ao Maestro).
+
+| Onde | Antes | Depois | Por quê |
+|---|---|---|---|
+| B1 `chegada` | narrador Gn 12:1 | narrador `Gn 12:1-3` | Gn 12:2-3 continua a fala de 12:1, dita em Harã antes da partida (checklist: ordem do texto). |
+| B1 `altarMore` | voz de Deus Gn 12:2 e Gn 12:3 depois do altar | narrador Gn 12:7 «e ali ele edificou um altar ao Senhor, que lhe apareceu.» | Deus não repete 12:2-3 em Moré; o trecho de 12:7 descreve o que o jogador acabou de fazer. |
+| B3 `MENTIRAS_B3` | "Você mereceu." | "Isso é seu. Não divida com ninguém." | As respostas se alternam; Gn 13:8 não respondia a esta mentira. Agora as três respondem (nem um fio; somos irmãos; tu serás uma bênção). |
+| B3 `MENTIRAS_B3` | "Ninguém vai saber." | "Pegue tudo antes que outro pegue." | Gn 13:8 e Gn 12:2 não a respondiam. |
+| B3 `PROVA_TENTACAO_B3.respostas` e `receberVersiculo` | `Gn 14:22` | `Gn 14:22-23` | Gn 14:22 termina em vírgula; com 14:23 a resposta inclui "nem um fio" (checklist: versículo no meio da frase). |
+| B3 `nemUmFio`, dica | `Pressione Q — Está escrito. Segure o botão direito, se tiver o escudo.` | `Pressione Q: "Está escrito".` | Formato das teclas do checklist; o escudo só vem em B4. |
+| B3 `melquisedeque`, objetivo | "No vale de Savé." | "Volte com os resgatados ao vale de Savé." | Objetivo não pode ser só um lugar (Gn 14:16-17). |
+| B2 `percorrer`, dica | "Foi a Abrão que Deus disse: caminha pela terra." | "Foi a Abrão que Deus mandou caminhar pela terra." | "caminha pela terra" é texto da BKJ digitado fora de `ref`/`trecho`. |
+| B5 `pe`, dica | "… Foram os dois juntos: não se afastem." | "… Subam juntos: não se afastem." | "foram os dois juntos" é texto da BKJ (Gn 22:6, 22:8). |
+| B5 `Juntos` (mecanicas.ts), dica | "Foram os dois juntos: espere por X." | "Subam juntos: espere por X." | Idem. |
+| B5 `subida`, objetivo | "O topo do monte." | "Chegue ao topo do monte." | Objetivo só com substantivo. |
+| B5 `carneiro` | narrador Gn 22:13 inteiro, antes de o jogador agir | trecho «E Abraão levantou seus olhos… preso pelos chifres em um arbusto;» antes; «e Abraão foi e tomou o carneiro, e o ofereceu como oferta queimada no lugar de seu filho.» depois do fogo no altar | O versículo inteiro narrava a oferta antes de ela acontecer (ordem do texto). |
+| Interativo do altar, dica | "Abrão aprendeu nos dias de Noé a construir altares." | "Abrão pode construir o altar." (B1–B2) / "Abraão pode construir o altar." (B5) | Formato "<Quem> pode <verbo>"; em B5 o nome já é Abraão. |
+| Memória `resgate` | "… Abrão não pensou na ofensa: …" | "… Abrão não o abandonou: …" | Ló não ofendeu Abrão: foi Abrão quem lhe deu a escolha (Gn 13:9). |
+| Memória `jeovaJire` | "… No monte do Senhor ele será visto." | "… Abraão deu ao lugar um nome que guarda isso: o Senhor proverá." | A frase era texto da BKJ (Gn 22:14) digitado. |
+| Cristo `bencaoNacoes` | refs Gn 12:3, Gl 3:8; "Em Cristo, descendente de Abraão, …" | refs + Gl 3:16; "Em Cristo, a Semente de Abraão, …" | Cristo como descendente não estava nas refs; Gl 3:16 diz que a Semente é Cristo. |
+| Cristo `melquisedeque` | "Ele aponta para Jesus, sacerdote para sempre, que nos abençoa e intercede por nós." | "A carta o compara ao Filho de Deus: ele aponta para Jesus, o sacerdote que permanece para sempre." | "Intercede" está fora de Hb 7:1-3; Hb 7:3 sustenta a comparação com o Filho de Deus. |
+| Cristo `justica` | refs Gn 15:6, Rm 4:3; "…somos justificados pela fé, não pelas obras. A mesma justiça é dada a quem crê naquele que ressuscitou Jesus dentre os mortos." | refs + Gl 3:8; "…é pela fé que Deus declara alguém justo. Esse é o evangelho anunciado de antemão a Abraão: em Cristo, a mesma justiça chega pela fé a gente de todas as nações." | As duas frases dependiam de versos de Romanos 4 fora das refs e ausentes do `versiculos.json`. |
+
+Fora da revisão, o ROTEIRO também passou a dizer o que o código já fazia: postos de mastro e porteira com o verbo `usar`, o interativo `amarrarCorda` no ponto `cordaMoria` e "quem manda aqui sou eu" (era "quem mandar").
 
 ## Testes (`npx vitest run tests/era-abraao.test.ts`)
 
@@ -91,5 +121,4 @@ Planilha: `node scripts/planilha-falas.mjs abraao e2e/saida/planilha-abraao` (34
 1. **Ensinamento 11** ("o caminho até a terra é revelado em trechos"): B1 não revela o mapa aos poucos; só há objetivos para Moré e Betel.
 2. **Ensinamento 15** ("o brilho desbota quando o jogador se afasta"): os despojos não brilham nas missões; depende da prova de tentação do sistema de provas.
 3. **Ensinamento 16** diz que o jogador entrega o dízimo antes da bênção, mas Gn 14:19-20 põe a bênção antes do dízimo, e o jogo segue o texto. Recomendação: corrigir a linha 16 de `docs/ENSINAMENTOS.md`.
-4. `docs/ROTEIRO.md` ainda lista as respostas e as mentiras antigas da prova de B3 e a voz de Deus com Gn 12:2-3 em Moré: atualizar com os desvios acima.
-5. Sara tem a descrição fixa "Mulher de Abrão." também em B5.
+4. Sara tem a descrição fixa "Mulher de Abrão." também em B5.
