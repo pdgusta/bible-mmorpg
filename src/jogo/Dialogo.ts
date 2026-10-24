@@ -1,6 +1,7 @@
 // Diálogos e escolhas. Antes de mostrar, confere cada fala bíblica contra versiculos.json
 // (referência existente e `trecho` substring exata: em desenvolvimento, erro). A interface
-// recebe as Linhas como estão e mostra o texto com Biblia.textoLinha().
+// recebe as Linhas como estão e mostra o texto com Biblia.textoLinha(). Toda fala bíblica
+// ouvida vira versículo recebido (Diário → Escrituras; "Está escrito" nas provas).
 // Escolhas: as opções com requisito de atributo (✦) só valem para o personagem ativo que o
 // cumpre; os efeitos vão para o Progresso (atributos, Unidade, XP) e para as flags.
 import type { Ficha, NomeAtributo } from './Atributos';
@@ -60,11 +61,17 @@ export class Dialogo {
     this.deps.eventos.emit('dialogo:fim');
   }
 
+  /** As falas bíblicas ouvidas vão para o Diário (e servem de "Está escrito" nas provas). */
+  private receber(linhas: (Linha | null | undefined)[]) {
+    for (const l of linhas) if (l && ehBiblica(l)) this.deps.progresso.receberVersiculo(l.ref);
+  }
+
   /** Mostra as falas em sequência; resolve quando o jogador avança a última. */
   async falar(linhas: Linha[]): Promise<void> {
     if (!linhas.length) return;
     await carregarBiblia();
     this.validar(linhas);
+    this.receber(linhas);
     const sessao = this.abrir();
     try {
       await this.deps.ui.dialogo(linhas);
@@ -93,9 +100,13 @@ export class Dialogo {
         i = valida >= 0 ? valida : 0;
       }
       const opcao = opcoes[i];
+      this.receber([pergunta]);
       this.aplicarEfeitos(opcao.efeitos);
       this.deps.progresso.contar('escolhas');
-      if (opcao.resposta?.length) await this.deps.ui.dialogo(opcao.resposta);
+      if (opcao.resposta?.length) {
+        this.receber(opcao.resposta);
+        await this.deps.ui.dialogo(opcao.resposta);
+      }
       return i;
     } finally {
       this.fechar(sessao);

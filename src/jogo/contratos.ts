@@ -341,6 +341,10 @@ export interface MarcadorTela {
  * 'versiculo'        { ref: Ref }   — recebido (vai para o Diário)
  * 'prova:inicio'     { id: string; tipo: TipoProva; livre: boolean }   — livre: o jogador ainda anda e interage (medo)
  * 'prova:fim'        { id: string; resultado: ResultadoProva | null }  — null = prova cancelada
+ * 'prova:relampago'  { id: string }                               — relâmpago na prova de medo (som/luz)
+ * 'prova:encorajar'  { id?: string }                              — encorajamento externo na prova de medo
+ *                    (usar um interativo 'encorajar_<id>' durante a prova já encoraja sozinho)
+ * 'missao:erro'      { id: string; etapa: number; erro: string }  — script de etapa lançou erro
  * 'dialogo:inicio' / 'dialogo:fim'
  * 'area'             { id: string; personagem: string; dentro: boolean }
  * 'era:transicao'    { de: string; para: string }
@@ -352,6 +356,7 @@ export const EVENTOS = [
   'interacao', 'controle', 'troca:inicio', 'troca:fim', 'missao:iniciada', 'missao:etapa', 'missao:concluida',
   'flag', 'xp', 'nivel', 'atributo', 'memoria', 'armadura', 'unidade', 'versiculo', 'prova:inicio', 'prova:fim',
   'dialogo:inicio', 'dialogo:fim', 'area', 'era:transicao', 'salvo', 'habilidade', 'oracao',
+  'prova:relampago', 'prova:encorajar', 'missao:erro',
 ] as const;
 
 // ------------------------------- Save ------------------------------------------------
@@ -380,6 +385,8 @@ export interface DadosSave {
   segredos: string[];
   estatisticas: Record<string, number>;
   tempoJogado: number;
+  /** Capítulos lidos no Diário ("Gn 6"). */
+  lidos?: string[];
 }
 
 export const VERSAO_SAVE = 1;

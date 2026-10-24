@@ -141,6 +141,8 @@ export class ControladorIA {
       case 'seguir': {
         const a = this.ordem.alvo.posicao;
         const d = Math.hypot(a.x - pos.x, a.z - pos.z);
+        // o líder está escalando: espera embaixo (não tenta atravessar a parede)
+        if (this.ordem.alvo.escalada) break;
         if (d > 45) {
           // ficou muito para trás: reaparece perto do líder
           const atras = this.ordem.alvo.frente().multiplyScalar(-2.5);

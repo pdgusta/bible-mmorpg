@@ -18,13 +18,13 @@ interface Paleta {
 const PALETAS: Paleta[] = [
   { h: 0, zenite: '#0b1630', horizonte: '#24365c', sol: '#8fa6e8', intSol: 0.35, hemiCeu: '#33477a', hemiChao: '#141a24', intHemi: 0.55, neblina: '#1c2a48' },
   { h: 4.8, zenite: '#1a2550', horizonte: '#4a4a78', sol: '#9fa8e0', intSol: 0.3, hemiCeu: '#3c4a80', hemiChao: '#1b1e2a', intHemi: 0.55, neblina: '#34365e' },
-  { h: 6, zenite: '#5874b8', horizonte: '#f4a98a', sol: '#ffab6e', intSol: 1.2, hemiCeu: '#8fa4d8', hemiChao: '#5a4a3a', intHemi: 0.8, neblina: '#d8a898' },
-  { h: 7.5, zenite: '#5f93d8', horizonte: '#ffd2a8', sol: '#ffd09a', intSol: 2.2, hemiCeu: '#b4cde8', hemiChao: '#6f6046', intHemi: 1.0, neblina: '#e6cdb4' },
-  { h: 10, zenite: '#4b8fe0', horizonte: '#cfe5f4', sol: '#fff2dc', intSol: 2.7, hemiCeu: '#cfe2f4', hemiChao: '#7a6f52', intHemi: 1.15, neblina: '#cfe0ea' },
-  { h: 14, zenite: '#4a8ee2', horizonte: '#d6eaf6', sol: '#fff4e2', intSol: 2.8, hemiCeu: '#d6e6f4', hemiChao: '#7e7254', intHemi: 1.15, neblina: '#d4e4ec' },
-  { h: 16.8, zenite: '#5d92d8', horizonte: '#ffe0b0', sol: '#ffd9a0', intSol: 2.5, hemiCeu: '#d8dcec', hemiChao: '#86704e', intHemi: 1.05, neblina: '#f0dcc0' },
-  { h: 18.3, zenite: '#556fae', horizonte: '#ffa874', sol: '#ff9a5a', intSol: 1.6, hemiCeu: '#b0a8cc', hemiChao: '#6a4e3c', intHemi: 0.85, neblina: '#e8a888' },
-  { h: 19.4, zenite: '#2c3a72', horizonte: '#a86a7a', sol: '#ff7a50', intSol: 0.6, hemiCeu: '#6a6a9c', hemiChao: '#2c2430', intHemi: 0.65, neblina: '#6a5274' },
+  { h: 6, zenite: '#5874b8', horizonte: '#f4a98a', sol: '#ffab6e', intSol: 1.2, hemiCeu: '#8fa4d8', hemiChao: '#5a4a3a', intHemi: 0.8, neblina: '#b49aa8' },
+  { h: 7.5, zenite: '#5f93d8', horizonte: '#ffd2a8', sol: '#ffd09a', intSol: 2.2, hemiCeu: '#b4cde8', hemiChao: '#6f6046', intHemi: 1.0, neblina: '#b8bccc' },
+  { h: 10, zenite: '#4b8fe0', horizonte: '#cfe5f4', sol: '#fff2dc', intSol: 2.7, hemiCeu: '#cfe2f4', hemiChao: '#7a6f52', intHemi: 1.15, neblina: '#a9c2dc' },
+  { h: 14, zenite: '#4a8ee2', horizonte: '#d6eaf6', sol: '#fff4e2', intSol: 2.8, hemiCeu: '#d6e6f4', hemiChao: '#7e7254', intHemi: 1.15, neblina: '#aec6de' },
+  { h: 16.8, zenite: '#5d92d8', horizonte: '#ffe0b0', sol: '#ffd9a0', intSol: 2.5, hemiCeu: '#d8dcec', hemiChao: '#86704e', intHemi: 1.05, neblina: '#b4bccf' },
+  { h: 18.3, zenite: '#556fae', horizonte: '#ffa874', sol: '#ff9a5a', intSol: 1.6, hemiCeu: '#b0a8cc', hemiChao: '#6a4e3c', intHemi: 0.85, neblina: '#a8899a' },
+  { h: 19.4, zenite: '#2c3a72', horizonte: '#a86a7a', sol: '#ff7a50', intSol: 0.6, hemiCeu: '#6a6a9c', hemiChao: '#2c2430', intHemi: 0.65, neblina: '#584a6e' },
   { h: 20.5, zenite: '#141e40', horizonte: '#33406a', sol: '#8fa6e8', intSol: 0.3, hemiCeu: '#34467a', hemiChao: '#161a26', intHemi: 0.55, neblina: '#253456' },
   { h: 24, zenite: '#0b1630', horizonte: '#24365c', sol: '#8fa6e8', intSol: 0.35, hemiCeu: '#33477a', hemiChao: '#141a24', intHemi: 0.55, neblina: '#1c2a48' },
 ];
@@ -43,7 +43,7 @@ void main() {
 const FRAG = /* glsl */ `
 uniform vec3 uZenite; uniform vec3 uHorizonte; uniform vec3 uSolCor; uniform vec3 uSolDir;
 uniform float uNoite; uniform float uTempo; uniform float uArco; uniform vec3 uArcoDir; uniform float uTempestade;
-uniform vec3 uDourado; uniform float uGloria;
+uniform vec3 uDourado; uniform float uGloria; uniform vec3 uNeblina;
 varying vec3 vDir;
 float hash13(vec3 p3){ p3 = fract(p3 * .1031); p3 += dot(p3, p3.zyx + 31.32); return fract((p3.x + p3.y) * p3.z); }
 vec3 hsv(float h){ vec3 k = vec3(1.0, 2.0/3.0, 1.0/3.0); vec3 p = abs(fract(vec3(h) + k) * 6.0 - 3.0); return clamp(p - 1.0, 0.0, 1.0); }
@@ -52,8 +52,9 @@ void main() {
   float alt = clamp(d.y, -1.0, 1.0);
   float t = pow(clamp(alt, 0.0, 1.0), 0.55);
   vec3 cor = mix(uHorizonte, uZenite, t);
-  // abaixo do horizonte: tom do horizonte escurecido
-  cor = mix(cor, uHorizonte * 0.75, smoothstep(0.0, -0.25, alt));
+  // faixa de bruma junto ao horizonte e, abaixo dele, a cor da neblina (funde com as montanhas)
+  cor = mix(cor, mix(uHorizonte, uNeblina, 0.35), (1.0 - smoothstep(0.0, 0.08, abs(alt))) * 0.5);
+  cor = mix(cor, uNeblina, smoothstep(0.0, -0.12, alt));
   // brilho do sol
   float cs = max(dot(d, uSolDir), 0.0);
   cor += uSolCor * (pow(cs, 9.0) * 0.32 + pow(cs, 90.0) * 0.6) * (1.0 - uNoite * 0.7) * (1.0 - uTempestade);
@@ -92,6 +93,8 @@ void main() {
  * Controla também as luzes e a neblina da cena.
  */
 export class Ceu {
+  /** Céu ativo (o jogo tem um só): permite que o conteúdo da era mude o clima sem acesso ao Jogo. */
+  static atual: Ceu | null = null;
   readonly grupo = new THREE.Group();
   readonly sol: THREE.DirectionalLight;
   readonly hemi: THREE.HemisphereLight;
@@ -115,6 +118,15 @@ export class Ceu {
   private tamSombra = 45;
   noite = 0;
   readonly corNeblinaBase = new THREE.Color();
+  /** 0 = ao ar livre, 1 = dentro de um interior (arca): neblina curta e luz morna. */
+  interior = 0;
+  interiorAlvo = 0;
+  private nebPerto = 20;
+  private nebLonge = 480;
+  private corInterior = new THREE.Color('#2a2119');
+  private hemiInterior = new THREE.Color('#d0a070');
+  private hemiChaoInterior = new THREE.Color('#3a2a1c');
+  private corTempestade = new THREE.Color('#4e565f');
 
   constructor(cena: THREE.Scene, tamanhoSombra: number) {
     this.mat = new THREE.ShaderMaterial({
@@ -125,6 +137,7 @@ export class Ceu {
         uSolCor: { value: new THREE.Color() }, uSolDir: { value: new THREE.Vector3(0, 1, 0) },
         uNoite: { value: 0 }, uTempo: { value: 0 }, uArco: { value: 0 }, uArcoDir: { value: new THREE.Vector3(0, -0.3, 1).normalize() },
         uTempestade: { value: 0 }, uDourado: { value: new THREE.Color('#ffe2a0') }, uGloria: { value: 0 },
+        uNeblina: { value: new THREE.Color() },
       },
       side: THREE.BackSide,
       depthWrite: false,
@@ -148,9 +161,10 @@ export class Ceu {
     cam.left = -this.tamSombra; cam.right = this.tamSombra; cam.top = this.tamSombra; cam.bottom = -this.tamSombra;
     this.grupo.add(this.sol, this.sol.target);
 
-    this.neblina = new THREE.Fog('#cfe0ea', 60, 260);
+    this.neblina = new THREE.Fog('#cfe0ea', 20, 480);
     cena.fog = this.neblina;
     cena.add(this.grupo);
+    Ceu.atual = this;
 
     // nuvens fofas: aglomerados de esferas achatadas, instanciados
     const geo = criarGeometriaNuvem();
@@ -166,9 +180,16 @@ export class Ceu {
     this.grupo.add(this.nuvens);
   }
 
+  /** A neblina usa uma curva suave (ver Shaders.ts): `dist` é o alcance da vegetação. */
   ajustarDistancia(dist: number) {
-    this.neblina.near = dist * 0.28;
-    this.neblina.far = dist;
+    this.nebPerto = dist * 0.09;
+    this.nebLonge = dist * 2.1;
+  }
+
+  /** Liga/desliga o modo de interior (transição suave). */
+  definirInterior(ativo: boolean, imediato = false) {
+    this.interiorAlvo = ativo ? 1 : 0;
+    if (imediato) this.interior = this.interiorAlvo;
   }
 
   private amostrarPaleta(h: number) {
@@ -187,6 +208,8 @@ export class Ceu {
 
   atualizar(dt: number, foco: THREE.Vector3, tempo: number) {
     if (!this.pausado) this.hora = (this.hora + dt * this.velocidade) % 24;
+    this.interior += clamp(this.interiorAlvo - this.interior, -dt * 1.5, dt * 1.5);
+    const ki = this.interior;
     const { a, b, t } = this.amostrarPaleta(this.hora);
     const u = this.mat.uniforms;
     (u.uZenite.value as THREE.Color).copy(a.cz).lerp(b.cz, t);
@@ -235,9 +258,19 @@ export class Ceu {
     }
 
     this.sol.color.copy(corSol);
-    this.sol.intensity = intSol;
-    this.neblina.color.copy(this.corNeblinaBase).lerp(new THREE.Color('#5a626c'), this.tempestade * 0.8);
+    this.sol.intensity = intSol * (1 - ki * 0.5);
+    this.neblina.color.copy(this.corNeblinaBase).lerp(this.corTempestade, this.tempestade * 0.85);
     if (this.gloria > 0) this.neblina.color.lerp(u.uDourado.value as THREE.Color, this.gloria);
+    (u.uNeblina.value as THREE.Color).copy(this.neblina.color);
+    const longe = this.nebLonge * (1 - this.tempestade * 0.6);
+    this.neblina.near = lerp(this.nebPerto * (1 - this.tempestade * 0.5), 4, ki);
+    this.neblina.far = lerp(longe, 70, ki);
+    if (ki > 0) {
+      this.neblina.color.lerp(this.corInterior, ki);
+      this.hemi.color.lerp(this.hemiInterior, ki);
+      this.hemi.groundColor.lerp(this.hemiChaoInterior, ki);
+      this.hemi.intensity *= 1 - ki * 0.45;
+    }
 
     // sombra acompanha o foco, com passo em texels para evitar tremulação
     const texel = (this.tamSombra * 2) / this.sol.shadow.mapSize.x;

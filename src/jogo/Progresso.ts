@@ -28,7 +28,7 @@ export interface DepsProgresso {
   memorias?: RegistroMemorias;
 }
 
-/** As seis peças da Armadura de Deus (Ef 6:13-17). */
+/** As seis peças da Armadura de Deus (Ef 6:14-17). */
 export const ARMADURA: Record<PecaArmadura, { nome: string; ref: Ref; efeito: string }> = {
   cinturao: { nome: 'Cinturão da verdade', ref: 'Ef 6:14', efeito: 'Revela as mentiras.' },
   couraca: { nome: 'Couraça da justiça', ref: 'Ef 6:14', efeito: 'Protege o Domínio próprio das acusações.' },
@@ -43,7 +43,12 @@ export const UNIDADE_INICIAL = 60;
 export const UNIDADE_ALTA = 75;
 export const BONUS_UNIDADE = 0.2;
 
-export type DadosProgresso = Pick<DadosSave, 'memorias' | 'armadura' | 'versiculos' | 'unidade' | 'segredos' | 'estatisticas' | 'tempoJogado'>;
+export type DadosProgresso = Pick<DadosSave, 'memorias' | 'armadura' | 'versiculos' | 'unidade' | 'segredos' | 'estatisticas' | 'tempoJogado' | 'lidos'>;
+
+/** Leitura mínima de um capítulo (s) para contar como lido e render XP de disciplina. */
+export const LEITURA_MINIMA = 60;
+/** Intervalo entre dois XP de disciplina por leitura (s de jogo). */
+export const INTERVALO_DISCIPLINA = 300;
 
 export class Progresso {
   unidade = UNIDADE_INICIAL;
@@ -56,6 +61,10 @@ export class Progresso {
   estatisticas: Record<string, number> = {};
   /** Segundos de jogo. */
   tempoJogado = 0;
+  /** Capítulos lidos no Diário ("Gn 6"). */
+  lidos: string[] = [];
+  private leitura: Record<string, number> = {};
+  private ultimaDisciplina = -Infinity;
   private readonly deps: DepsProgresso;
 
   constructor(deps: DepsProgresso) {
@@ -229,6 +238,29 @@ export class Progresso {
     return novo;
   }
 
+  // ------------------------------------------------------------------ meditar
+
+  /**
+   * Leitura no Diário (DESIGN §8): cresce a Sabedoria do ativo; um capítulo lido por
+   * LEITURA_MINIMA segundos conta como lido e rende XP de disciplina (com intervalo).
+   */
+  meditar(segundos: number, cap: { livro: string; capitulo: number }) {
+    if (!(segundos > 0)) return;
+    const nome = `${cap.livro} ${cap.capitulo}`;
+    const total = (this.leitura[nome] ?? 0) + segundos;
+    this.leitura[nome] = total;
+    this.contar('leitura', segundos);
+    const ativo = this.deps.ativo?.();
+    if (ativo) this.treinar(ativo, 'sabedoria', segundos / 240);
+    if (total >= LEITURA_MINIMA && !this.lidos.includes(nome)) {
+      this.lidos.push(nome);
+      if (ativo && this.tempoJogado - this.ultimaDisciplina >= INTERVALO_DISCIPLINA) {
+        this.ultimaDisciplina = this.tempoJogado;
+        this.ganharXP(ativo, 'disciplina');
+      }
+    }
+  }
+
   // ------------------------------------------------------------------ estatísticas e tempo
 
   contar(nome: string, n = 1) {
@@ -251,6 +283,7 @@ export class Progresso {
       segredos: [...this.segredos],
       estatisticas: { ...this.estatisticas },
       tempoJogado: this.tempoJogado,
+      lidos: [...this.lidos],
     };
   }
 
@@ -263,6 +296,9 @@ export class Progresso {
     this.segredos = [...(d.segredos ?? [])];
     this.estatisticas = { ...(d.estatisticas ?? {}) };
     this.tempoJogado = d.tempoJogado ?? 0;
+    this.lidos = [...(d.lidos ?? [])];
+    this.leitura = {};
+    this.ultimaDisciplina = -Infinity;
   }
 
   /** Novo jogo. */

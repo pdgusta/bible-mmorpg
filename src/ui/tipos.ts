@@ -56,8 +56,8 @@ export interface ServicosUI {
 
 // ------------------------------- Ações (callbacks) -----------------------------------
 
-/** Espaço de save: 0 = automático; 1..3 = manuais. */
-export type IdSlot = number;
+/** Espaço de save (igual a `Slot` de src/jogo/Salvamento.ts): 1..3 manuais e 'auto'. */
+export type IdSlot = 1 | 2 | 3 | 'auto';
 
 export interface InfoSlot {
   slot: IdSlot;
@@ -72,6 +72,10 @@ export interface InfoSlot {
   tempoJogado?: number;
   /** ISO 8601. */
   atualizadoEm?: string;
+  /** Memórias guardadas. */
+  memorias?: number;
+  /** Save ilegível (corrompido ou de versão mais nova). */
+  erro?: string;
 }
 
 export interface Configuracoes {
@@ -160,7 +164,6 @@ export interface CristoDiario {
 
 export interface MemoriaDiario extends DefMemoria {
   obtida: boolean;
-  segredo?: boolean;
 }
 
 export interface PersonagemDiario {

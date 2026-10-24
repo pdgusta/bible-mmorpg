@@ -124,7 +124,8 @@ export class CorpoFisico {
       nx = clamp(nx, -lim, lim);
       nz = clamp(nz, -lim, lim);
       // água funda: não entra
-      if (m.profundidade(nx, nz) > m.profundidadeMax && m.profundidade(nx, nz) > m.profundidade(antX, antZ)) {
+      // (quem está acima da água, sobre uma estrutura como a arca, anda livre)
+      if (this.pos.y < m.nivelAgua - 0.3 + m.profundidadeMax && m.profundidade(nx, nz) > m.profundidadeMax && m.profundidade(nx, nz) > m.profundidade(antX, antZ)) {
         nx = antX;
         nz = antZ;
         this.vel.x = 0;

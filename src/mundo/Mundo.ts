@@ -22,6 +22,8 @@ export interface DefMapa {
   corGrama: FuncaoCorGrama;
   nivelAgua?: number;
   pontos: Record<string, [number, number]>;
+  /** Quanto a grama copia a cor do chão onde nasce (0..1, padrão 0,7): evita emendas. */
+  gramaDoChao?: number;
 }
 
 export interface Area {
@@ -74,6 +76,8 @@ export class Mundo {
   readonly aleatorio: Aleatorio;
   /** Objetos atualizados todo quadro (animais, partículas, portões...). */
   readonly atualizaveis = new Set<{ atualizar(dt: number, t: number): void }>();
+  /** Atualizações que precisam da câmera (chuva, luzes que seguem o foco...). */
+  readonly aoAtualizar = new Set<(dt: number, t: number, camera: THREE.Camera, foco: THREE.Vector3) => void>();
 
   constructor(def: DefMapa, cenaNatureza: THREE.Object3D) {
     this.def = def;
@@ -85,7 +89,16 @@ export class Mundo {
     const cor: FuncaoCor = (x, z, h, inc, out) => def.cor(x, z, h, inc, out, r);
     this.terreno = new Terreno(this.relevo, cor);
     this.natureza = new Natureza(cenaNatureza);
-    this.grama = new Grama(this.relevo, def.densidadeGrama, def.corGrama);
+    const mixChao = def.gramaDoChao ?? 0.7;
+    const tmp = new THREE.Color();
+    const corGrama = (x: number, z: number, out: THREE.Color) => {
+      def.corGrama(x, z, out);
+      if (mixChao > 0) {
+        this.terreno.corEm(x, z, tmp).multiplyScalar(1.12);
+        out.lerp(tmp, mixChao);
+      }
+    };
+    this.grama = new Grama(this.relevo, def.densidadeGrama, corGrama);
     if (def.nivelAgua !== undefined) {
       this.agua = new Agua(this.relevo, def.nivelAgua);
       this.fisica.nivelAgua = def.nivelAgua;
@@ -137,17 +150,31 @@ export class Mundo {
 
   /** Finaliza a construção: colisões dos troncos de árvores e grade de navegação. */
   finalizar() {
-    for (const t of this.natureza.troncos()) {
-      this.colisoes.adicionar({ tipo: 'cilindro', x: t.x, z: t.z, r: t.r, y0: this.relevo.altura(t.x, t.z) - 1, y1: this.relevo.altura(t.x, t.z) + 4, piso: false, tag: 'arvore' });
-    }
+    this.colisoesArvores();
     this.natureza.construir();
     this.nav = new Navegacao(this.fisica, 1);
+  }
+
+  /** (Re)cria os colisores dos troncos a partir da vegetação atual (tag 'arvore'). */
+  colisoesArvores() {
+    this.colisoes.removerTag('arvore');
+    for (const t of this.natureza.troncos()) {
+      const y = this.relevo.altura(t.x, t.z);
+      this.colisoes.adicionar({ tipo: 'cilindro', x: t.x, z: t.z, r: t.r, y0: y - 1, y1: y + 4, piso: false, tag: 'arvore' });
+    }
+  }
+
+  /** Ponto nomeado em 3D, sobre o chão ou sobre a estrutura mais alta abaixo de `yMax`. */
+  ponto3Chao(nome: string, yMax = 1e6): THREE.Vector3 {
+    const [x, z] = this.ponto(nome);
+    return new THREE.Vector3(x, this.chao(x, z, yMax), z);
   }
 
   atualizar(dt: number, t: number, camera: THREE.Camera, foco: THREE.Vector3) {
     this.natureza.atualizar(dt, camera, camera.position);
     this.grama.atualizar(foco);
     for (const a of this.atualizaveis) a.atualizar(dt, t);
+    for (const f of this.aoAtualizar) f(dt, t, camera, foco);
   }
 
   /** Verifica áreas de gatilho para um personagem. */

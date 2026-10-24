@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { MeshoptSimplifier } from 'three/examples/jsm/libs/meshopt_simplifier.module.js';
 import { extrairPartes, type ParteModelo } from './Ativos';
 import { aplicarPatch } from './Shaders';
 import { Aleatorio } from '../core/aleatorio';
@@ -11,11 +12,15 @@ export interface OpcoesVariante {
   vento?: number;
   /** Distância máxima de desenho (m). */
   alcance?: number;
-  /** Até onde usa o modelo completo; depois disso, versão reduzida. */
+  /** Até onde usa o modelo completo (com sombra); depois disso, versão reduzida. */
   alcancePerto?: number;
   sombra?: boolean;
   /** Raio do tronco (para colisão); 0 = sem colisão. */
   raioTronco?: number;
+  /** Fração de cartões de folha mantida na versão de longe (padrão 0,32). */
+  fracaoLonge?: number;
+  /** Reduz também a malha do tronco na versão de longe (fração de triângulos, ex.: 0,3). */
+  reduzirTronco?: number;
 }
 
 interface Modelo {
@@ -25,26 +30,40 @@ interface Modelo {
   raio: number;
 }
 
+interface Instancia {
+  x: number;
+  y: number;
+  z: number;
+  ry: number;
+  s: number;
+  m: number;
+  /** Inclinação (rad) em torno do eixo x local — árvores caídas. */
+  rx: number;
+  oculta: boolean;
+}
+
 interface Variante {
   nome: string;
   op: Required<Omit<OpcoesVariante, 'tintFolha' | 'tintTronco'>>;
   modelos: Modelo[];
-  instancias: { x: number; y: number; z: number; ry: number; s: number; m: number }[];
+  instancias: Instancia[];
   malhasPerto: THREE.InstancedMesh[][]; // [modelo][parte]
   malhasLonge: THREE.InstancedMesh[][];
+  uAlcance: { value: number };
 }
 
 const _m = new THREE.Matrix4();
 const _q = new THREE.Quaternion();
+const _e = new THREE.Euler();
 const _p = new THREE.Vector3();
 const _s = new THREE.Vector3();
-const _up = new THREE.Vector3(0, 1, 0);
 const _esf = new THREE.Sphere();
 
 /**
  * Vegetação e rochas instanciadas a partir do Stylized Nature MegaKit.
  * A cada poucos quadros escolhe o que é visível (distância + frustum) e preenche os
  * InstancedMesh de perto (modelo completo, com sombra) e de longe (folhagem reduzida).
+ * Perto do alcance a instância encolhe no shader (sem "pop").
  */
 export class Natureza {
   readonly grupo = new THREE.Group();
@@ -55,6 +74,7 @@ export class Natureza {
   private tempoDesdeAtualizacao = 0;
   private frustum = new THREE.Frustum();
   private projTela = new THREE.Matrix4();
+  private construida = false;
   distanciaMax = 230;
 
   constructor(cenaNatureza: THREE.Object3D) {
@@ -63,19 +83,27 @@ export class Natureza {
   }
 
   definirVariante(nome: string, op: OpcoesVariante) {
-    const modelos: Modelo[] = op.modelos.map((nm) => this.prepararModelo(nm, op, nome));
+    if (this.variantes.has(nome)) return;
+    const uAlcance = { value: op.alcance ?? 230 };
+    const modelos: Modelo[] = op.modelos.map((nm) => this.prepararModelo(nm, op, nome, uAlcance));
     const opc = {
       modelos: op.modelos,
       vento: op.vento ?? 0.12,
       alcance: op.alcance ?? 230,
-      alcancePerto: op.alcancePerto ?? 60,
+      alcancePerto: op.alcancePerto ?? 45,
       sombra: op.sombra ?? true,
       raioTronco: op.raioTronco ?? 0,
+      fracaoLonge: op.fracaoLonge ?? 0.32,
+      reduzirTronco: op.reduzirTronco ?? 0,
     };
-    this.variantes.set(nome, { nome, op: opc, modelos, instancias: [], malhasPerto: [], malhasLonge: [] });
+    this.variantes.set(nome, { nome, op: opc, modelos, instancias: [], malhasPerto: [], malhasLonge: [], uAlcance });
   }
 
-  private prepararModelo(nome: string, op: OpcoesVariante, variante: string): Modelo {
+  temVariante(nome: string) {
+    return this.variantes.has(nome);
+  }
+
+  private prepararModelo(nome: string, op: OpcoesVariante, variante: string, uAlcance: { value: number }): Modelo {
     const no = this.fonte.getObjectByName(nome);
     if (!no) throw new Error(`Modelo de natureza ausente: ${nome}`);
     const partesBase = extrairPartes(no, this.cacheMat);
@@ -88,20 +116,44 @@ export class Natureza {
       if (tint) mat.color.multiply(new THREE.Color(tint));
       p.geometria.computeBoundingSphere();
       raio = Math.max(raio, p.geometria.boundingSphere!.radius + p.geometria.boundingSphere!.center.length());
-      aplicarPatch(mat, { vento: p.folha ? (op.vento ?? 0.12) : (op.vento ?? 0.12) * 0.25, alturaRef: 6 });
+      aplicarPatch(mat, { vento: p.folha ? (op.vento ?? 0.12) : (op.vento ?? 0.12) * 0.25, alturaRef: 6, alcance: uAlcance });
       mat.name = `${variante}_${mat.name}`;
       perto.push({ ...p, material: mat });
-      longe.push({ geometria: p.folha ? decimarCartoes(p.geometria, 0.32, 1.45) : simplificarTronco(p.geometria), material: mat, folha: p.folha });
+      const geoLonge = p.folha
+        ? decimarCartoes(p.geometria, op.fracaoLonge ?? 0.32, 1 / Math.sqrt(op.fracaoLonge ?? 0.32) * 0.82)
+        : op.reduzirTronco ? simplificar(p.geometria, op.reduzirTronco) : p.geometria;
+      longe.push({ geometria: geoLonge, material: mat, folha: p.folha });
     }
     return { nome, perto, longe, raio };
   }
 
-  adicionar(variante: string, x: number, y: number, z: number, ry: number, s: number, aleatorio?: Aleatorio) {
+  adicionar(variante: string, x: number, y: number, z: number, ry: number, s: number, aleatorio?: Aleatorio, rx = 0) {
     const v = this.variantes.get(variante);
     if (!v) throw new Error(`Variante não definida: ${variante}`);
     const m = aleatorio ? Math.floor(aleatorio.proximo() * v.modelos.length) : 0;
-    v.instancias.push({ x, y, z, ry, s, m });
+    v.instancias.push({ x, y, z, ry, s, m, rx, oculta: false });
+    if (this.construida) this.construirVariante(v);
     return v.instancias.length - 1;
+  }
+
+  /** Escolhe o modelo de uma instância já adicionada (índice dentro da variante). */
+  definirModelo(variante: string, indice: number, modelo: number) {
+    const v = this.variantes.get(variante);
+    if (!v || !v.instancias[indice]) return;
+    v.instancias[indice].m = modelo % v.modelos.length;
+    if (this.construida) this.construirVariante(v);
+  }
+
+  /** Esconde/mostra uma instância (árvore cortada, por exemplo). */
+  ocultar(variante: string, indice: number, oculta = true) {
+    const v = this.variantes.get(variante);
+    if (!v || !v.instancias[indice]) return;
+    v.instancias[indice].oculta = oculta;
+    this.ultimoFoco.set(1e9, 0, 0);
+  }
+
+  instancia(variante: string, indice: number): Readonly<Instancia> | null {
+    return this.variantes.get(variante)?.instancias[indice] ?? null;
   }
 
   raioTronco(variante: string) {
@@ -110,35 +162,62 @@ export class Natureza {
 
   /** Cria os InstancedMesh (chamar depois de adicionar todas as instâncias). */
   construir() {
-    for (const v of this.variantes.values()) {
-      v.modelos.forEach((mod, mi) => {
-        const total = v.instancias.filter((i) => i.m === mi).length;
-        if (total === 0) {
-          v.malhasPerto[mi] = [];
-          v.malhasLonge[mi] = [];
-          return;
-        }
-        const criar = (partes: ParteModelo[], sombra: boolean) =>
-          partes.map((p) => {
-            const im = new THREE.InstancedMesh(p.geometria, p.material, total);
-            im.count = 0;
-            im.frustumCulled = false;
-            im.castShadow = sombra && v.op.sombra;
-            im.receiveShadow = true;
-            im.name = `${v.nome}_${mod.nome}`;
-            this.grupo.add(im);
-            return im;
-          });
-        v.malhasPerto[mi] = criar(mod.perto, true);
-        v.malhasLonge[mi] = criar(mod.longe, false);
-      });
+    for (const v of this.variantes.values()) this.construirVariante(v);
+    this.construida = true;
+    this.ultimoFoco.set(1e9, 0, 0);
+  }
+
+  private construirVariante(v: Variante) {
+    for (const lista of [...v.malhasPerto, ...v.malhasLonge]) for (const im of lista) {
+      this.grupo.remove(im);
+      im.dispose();
     }
+    v.malhasPerto = [];
+    v.malhasLonge = [];
+    v.modelos.forEach((mod, mi) => {
+      const total = v.instancias.filter((i) => i.m === mi).length;
+      if (total === 0) {
+        v.malhasPerto[mi] = [];
+        v.malhasLonge[mi] = [];
+        return;
+      }
+      const criar = (partes: ParteModelo[], sombra: boolean, sufixo: string) =>
+        partes.map((p) => {
+          const im = new THREE.InstancedMesh(p.geometria, p.material, total);
+          im.count = 0;
+          im.visible = false;
+          im.frustumCulled = false;
+          im.castShadow = sombra && v.op.sombra;
+          im.receiveShadow = true;
+          im.name = `${v.nome}_${mod.nome}${sufixo}`;
+          this.grupo.add(im);
+          return im;
+        });
+      v.malhasPerto[mi] = criar(mod.perto, true, '');
+      v.malhasLonge[mi] = criar(mod.longe, false, '_longe');
+    });
+    this.ultimoFoco.set(1e9, 0, 0);
+  }
+
+  /** Remove todas as instâncias (mantém as variantes definidas). Depois: adicionar(...) e construir(). */
+  limpar(variantes?: string[]) {
+    for (const v of this.variantes.values()) {
+      if (variantes && !variantes.includes(v.nome)) continue;
+      for (const lista of [...v.malhasPerto, ...v.malhasLonge]) for (const im of lista) {
+        this.grupo.remove(im);
+        im.dispose();
+      }
+      v.malhasPerto = [];
+      v.malhasLonge = [];
+      v.instancias = [];
+    }
+    this.ultimoFoco.set(1e9, 0, 0);
   }
 
   atualizar(dt: number, camera: THREE.Camera, foco: THREE.Vector3, forcar = false) {
     this.tempoDesdeAtualizacao += dt;
     const moveu = foco.distanceToSquared(this.ultimoFoco) > 4;
-    if (!forcar && !moveu && this.tempoDesdeAtualizacao < 0.2) return;
+    if (!forcar && !moveu && this.tempoDesdeAtualizacao < 0.25) return;
     this.tempoDesdeAtualizacao = 0;
     this.ultimoFoco.copy(foco);
     camera.updateMatrixWorld();
@@ -148,20 +227,26 @@ export class Natureza {
     const cz = camera.position.z;
     for (const v of this.variantes.values()) {
       const alc = Math.min(v.op.alcance, this.distanciaMax);
+      v.uAlcance.value = alc;
       const alc2 = alc * alc;
       const perto2 = v.op.alcancePerto * v.op.alcancePerto;
       const contP: number[] = v.modelos.map(() => 0);
       const contL: number[] = v.modelos.map(() => 0);
       for (const inst of v.instancias) {
+        if (inst.oculta) continue;
         const dx = inst.x - cx;
         const dz = inst.z - cz;
         const d2 = dx * dx + dz * dz;
         if (d2 > alc2) continue;
         const mod = v.modelos[inst.m];
+        if (!v.malhasPerto[inst.m]) continue;
         _esf.center.set(inst.x, inst.y + mod.raio * inst.s * 0.5, inst.z);
         _esf.radius = mod.raio * inst.s;
         if (d2 > 100 && !this.frustum.intersectsSphere(_esf)) continue;
-        _q.setFromAxisAngle(_up, inst.ry);
+        if (inst.rx) {
+          _e.set(inst.rx, inst.ry, 0, 'YXZ');
+          _q.setFromEuler(_e);
+        } else _q.setFromAxisAngle(THREE.Object3D.DEFAULT_UP, inst.ry);
         _p.set(inst.x, inst.y, inst.z);
         _s.setScalar(inst.s);
         _m.compose(_p, _q, _s);
@@ -171,17 +256,21 @@ export class Natureza {
         for (const im of malhas) im.setMatrixAt(k, _m);
       }
       v.modelos.forEach((_, mi) => {
-        for (const im of v.malhasPerto[mi] ?? []) { im.count = contP[mi]; im.instanceMatrix.needsUpdate = true; }
-        for (const im of v.malhasLonge[mi] ?? []) { im.count = contL[mi]; im.instanceMatrix.needsUpdate = true; }
+        for (const im of v.malhasPerto[mi] ?? []) { im.count = contP[mi]; im.visible = contP[mi] > 0; im.instanceMatrix.needsUpdate = true; }
+        for (const im of v.malhasLonge[mi] ?? []) { im.count = contL[mi]; im.visible = contL[mi] > 0; im.instanceMatrix.needsUpdate = true; }
       });
     }
   }
 
   /** Lista de troncos para colisão. */
-  *troncos(): Generator<{ x: number; z: number; r: number }> {
+  *troncos(): Generator<{ x: number; z: number; r: number; variante: string; indice: number }> {
     for (const v of this.variantes.values()) {
       if (!v.op.raioTronco) continue;
-      for (const i of v.instancias) yield { x: i.x, z: i.z, r: v.op.raioTronco * i.s };
+      for (let k = 0; k < v.instancias.length; k++) {
+        const i = v.instancias[k];
+        if (i.oculta || i.rx) continue;
+        yield { x: i.x, z: i.z, r: v.op.raioTronco * i.s, variante: v.nome, indice: k };
+      }
     }
   }
 
@@ -248,7 +337,23 @@ function decimarCartoes(g: THREE.BufferGeometry, fracao: number, aumento: number
   return out;
 }
 
-/** O tronco de longe usa a mesma malha (já é leve na maioria dos modelos). */
-function simplificarTronco(g: THREE.BufferGeometry) {
-  return g;
+// o simplificador (WASM) fica pronto bem antes de o mundo ser montado; se não estiver, usa a malha cheia
+let simplificadorPronto = false;
+MeshoptSimplifier.ready.then(() => { simplificadorPronto = true; });
+
+/** Simplifica uma malha indexada (troncos de longe, árvores secas) mantendo os atributos. */
+function simplificar(g: THREE.BufferGeometry, fracao: number): THREE.BufferGeometry {
+  const idx = g.index;
+  if (!simplificadorPronto || !idx) return g;
+  const pa = g.attributes.position;
+  const pos = new Float32Array(pa.count * 3);
+  for (let i = 0; i < pa.count; i++) { pos[i * 3] = pa.getX(i); pos[i * 3 + 1] = pa.getY(i); pos[i * 3 + 2] = pa.getZ(i); }
+  const ind = new Uint32Array(idx.count);
+  for (let i = 0; i < idx.count; i++) ind[i] = idx.getX(i);
+  const alvo = Math.max(3, Math.floor((idx.count * fracao) / 3) * 3);
+  const [novo] = MeshoptSimplifier.simplify(ind, pos, 3, alvo, 0.05, ['LockBorder']);
+  if (novo.length < 3) return g;
+  const out = g.clone();
+  out.setIndex(new THREE.BufferAttribute(novo, 1));
+  return out;
 }

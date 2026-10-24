@@ -12,6 +12,8 @@ export interface PlanoTroca {
   para: () => THREE.Vector3;
   /** Yaw da câmera de jogo ao pousar (normalmente atrás do personagem de destino). */
   yawFinal: number;
+  /** Chamado no quadro do pouso, antes de a promessa resolver (passa o controle). */
+  aoPousar?: () => void;
 }
 
 /** Duração de cada salto (movimento rápido + pausa curta). */
@@ -33,6 +35,8 @@ export class CameraTroca {
   aoFase?: (fase: FaseTroca) => void;
   /** Quanto o filtro frio está aplicado (0..1). */
   filtro = 0;
+  /** Ponto do chão que a câmera está olhando (vegetação, grama e sombras seguem este foco). */
+  readonly foco = new THREE.Vector3();
 
   private plano: PlanoTroca | null = null;
   private resolver: (() => void) | null = null;
@@ -45,13 +49,13 @@ export class CameraTroca {
   private faseAnterior: FaseTroca | null = null;
   private readonly inicioPos = new THREE.Vector3();
   private readonly inicioOlhar = new THREE.Vector3();
-  private readonly finalPos = new THREE.Vector3();
-  private readonly finalOlhar = new THREE.Vector3();
   private readonly a = new THREE.Vector3();
   private readonly b = new THREE.Vector3();
   private readonly oa = new THREE.Vector3();
   private readonly ob = new THREE.Vector3();
   private overlay: HTMLDivElement | null = null;
+  /** 0 no chão, 1 na altura máxima da viagem. */
+  private alto = 0;
 
   constructor(
     private cam: CameraTerceira,
@@ -166,6 +170,8 @@ export class CameraTroca {
       this.terminar();
       return;
     }
+    this.fase = fase;
+    this.foco.copy(this.oa);
     if (fase !== this.faseAnterior) {
       this.faseAnterior = fase;
       this.saltoAnterior = -1;
@@ -175,6 +181,17 @@ export class CameraTroca {
     c.updateProjectionMatrix();
     c.lookAt(this.oa);
     this.aplicarFiltro(filtro);
+    this.alto = clamp((c.position.y - this.oa.y) / this.alturas[3], 0, 1);
+  }
+
+  /**
+   * No alto, a neblina se abre para o vale aparecer lá embaixo. Chamado pelo Jogo depois de o
+   * céu definir a neblina do quadro (o céu a recalcula a cada quadro, então é só multiplicar).
+   */
+  ajustarNeblina(nb: THREE.Fog) {
+    if (!this.ativa || this.alto <= 0) return;
+    nb.near *= 1 + this.alto * 2;
+    nb.far *= 1 + this.alto * 1.2;
   }
 
   /** Movimento rápido com frenagem (ease-out exponencial) e depois uma pausa curta. */
@@ -199,9 +216,11 @@ export class CameraTroca {
     this.cam.externo = false;
     this.cam.encaixar(pl.para(), undefined, this.fisica());
     this.aplicarFiltro(0);
+    this.alto = 0;
     this.ativa = false;
     this.fase = null;
     this.plano = null;
+    pl.aoPousar?.();
     const r = this.resolver;
     this.resolver = null;
     r?.();
@@ -213,7 +232,7 @@ export class CameraTroca {
     this.terminar();
   }
 
-  /** Dessaturação e tom frio: filtro CSS no canvas + um véu azulado em "soft-light". */
+  /** Dessaturação e tom frio: filtro CSS no canvas + um véu azulado em "multiply". */
   aplicarFiltro(k: number) {
     k = clamp(k, 0, 1);
     this.filtro = k;
@@ -222,14 +241,14 @@ export class CameraTroca {
       if (this.overlay) this.overlay.style.opacity = '0';
       return;
     }
-    this.canvas.style.filter = `saturate(${lerp(1, 0.38, k).toFixed(3)}) contrast(${lerp(1, 1.08, k).toFixed(3)}) brightness(${lerp(1, 0.94, k).toFixed(3)})`;
+    this.canvas.style.filter = `saturate(${lerp(1, 0.45, k).toFixed(3)}) contrast(${lerp(1, 1.16, k).toFixed(3)}) brightness(${lerp(1, 0.98, k).toFixed(3)})`;
     if (!this.overlay) {
       const o = document.createElement('div');
       o.id = 'filtro-troca';
-      o.style.cssText = 'position:fixed;inset:0;pointer-events:none;mix-blend-mode:soft-light;opacity:0;background:linear-gradient(180deg,#5d8fd0 0%,#3d6aa6 60%,#2c4f80 100%)';
+      o.style.cssText = 'position:fixed;inset:0;pointer-events:none;mix-blend-mode:multiply;opacity:0;background:linear-gradient(180deg,#b4c8e6 0%,#c4d4ec 55%,#a9bedf 100%)';
       this.canvas.insertAdjacentElement('afterend', o);
       this.overlay = o;
     }
-    this.overlay.style.opacity = (k * 0.75).toFixed(3);
+    this.overlay.style.opacity = (k * 0.85).toFixed(3);
   }
 }

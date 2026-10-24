@@ -90,7 +90,8 @@ export class CameraTerceira {
       else if (i === 3) o.y += 0.22;
       else if (i === 4) o.y -= 0.22;
       const hit = fisica.raio(o, dir2, melhor + 0.3, this.tag);
-      if (hit >= 0) melhor = Math.min(melhor, Math.max(0.6, hit - 0.3));
+      // um raio lateral que já nasce dentro de uma parede (personagem encostado) não conta
+      if (hit >= 0 && (i === 0 || hit > 0.35)) melhor = Math.min(melhor, Math.max(0.6, hit - 0.3));
     }
     return melhor;
   }

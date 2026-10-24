@@ -10,6 +10,10 @@ import { CorpoBase } from '../entidades/humano/CorpoBase';
 import type { Mundo } from '../mundo/Mundo';
 import { Personagem, type Comando, type DefPersonagem } from './Personagem';
 import type { ContextoIA } from './IA';
+import type { InterfaceUI, TipoProva } from './contratos';
+import { Troca } from './Troca';
+import { Controle } from './Controle';
+import { Cinematica } from '../camera/Cinematica';
 import { clamp } from '../core/util';
 
 export interface Corpos {
@@ -44,6 +48,26 @@ export class Jogo {
   private ctxIA: ContextoIA;
   readonly focoCamera = new THREE.Vector3();
   quadro = 0;
+  /** Camada de interface (opcional: o jogo funciona sem ela). O orquestrador faz `jogo.ui = ui`. */
+  ui?: InterfaceUI;
+  /** Troca de personagem (teclas 1–5, Tab, câmera aérea). */
+  readonly troca: Troca;
+  /** Interações, postos, escalada, oração, habilidade e comandos (por quadro). */
+  readonly controle: Controle;
+  /** Câmera de cinemática (serviço dos scripts de missão). */
+  readonly cinematica: Cinematica;
+  /** Prova espiritual em andamento (eventos 'prova:inicio'/'prova:fim'). */
+  prova: { id: string; tipo?: TipoProva; livre: boolean } | null = null;
+  /** Transição entre eras em andamento (TransicaoEra). */
+  transicao = false;
+  /** Multiplicador do tempo de jogo (câmera lenta com a roda de personagens aberta). */
+  escalaTempo = 1;
+  /** Testes: o laço só renderiza; a lógica avança por `avancar()`. */
+  manual = false;
+  /** Quando definido, a vegetação/grama/sombras seguem este ponto em vez do personagem ativo. */
+  focoExterno: THREE.Vector3 | null = null;
+  private bloqueios = new Map<string, number>();
+  private semGiroCamera = 0;
 
   constructor(canvas: HTMLCanvasElement, qualidade: Qualidade) {
     this.canvas = canvas;
@@ -63,6 +87,51 @@ export class Jogo {
       nav: null,
       jogador: null,
     };
+    this.cinematica = new Cinematica(this.cam, () => this.mundo?.fisica ?? null, () => this.ativo?.posicao ?? null);
+    this.troca = new Troca(this);
+    this.controle = new Controle(this);
+    // diálogos e provas bloqueiam a troca sozinhos (os sistemas só emitem os eventos)
+    this.eventos.on('dialogo:inicio', () => this.bloquear('dialogo'));
+    this.eventos.on('dialogo:fim', () => this.liberar('dialogo'));
+    this.eventos.on<{ id: string; tipo?: TipoProva; livre?: boolean }>('prova:inicio', (d) => {
+      this.prova = { id: d?.id ?? 'prova', tipo: d?.tipo, livre: !!d?.livre };
+    });
+    this.eventos.on('prova:fim', () => {
+      this.prova = null;
+    });
+  }
+
+  /**
+   * Bloqueia a troca de personagem (e o que mais depender de `podeTrocar`) por um motivo.
+   * Devolve a função que libera. Motivos repetidos se acumulam (cada bloquear pede um liberar).
+   */
+  bloquear(motivo: string): () => void {
+    this.bloqueios.set(motivo, (this.bloqueios.get(motivo) ?? 0) + 1);
+    let feito = false;
+    return () => {
+      if (feito) return;
+      feito = true;
+      this.liberar(motivo);
+    };
+  }
+
+  /** Libera um bloqueio por motivo (sem a função devolvida por `bloquear`). */
+  liberar(motivo: string) {
+    const n = (this.bloqueios.get(motivo) ?? 0) - 1;
+    if (n > 0) this.bloqueios.set(motivo, n);
+    else this.bloqueios.delete(motivo);
+  }
+
+  bloqueado(motivo?: string) {
+    return motivo ? this.bloqueios.has(motivo) : this.bloqueios.size > 0;
+  }
+
+  /** Pode trocar de personagem agora? (fora de diálogos, cinemáticas, provas e menus) */
+  get podeTrocar(): boolean {
+    return !!this.mundo && !!this.ativo && this.controleLivre && !this.pausado && this.bloqueios.size === 0 && !this.prova
+      && !this.troca.emAndamento && !this.cinematica.ativa && !this.transicao && !this.ativo.emCena
+      // a própria roda conta como "menu aberto" na UI: ela não impede a troca
+      && (this.troca.rodaAberta || !(this.ui?.menuAberto() ?? false));
   }
 
   async carregarBase(progresso?: (f: number, nome: string) => void) {
@@ -81,6 +150,12 @@ export class Jogo {
       this.cena.remove(this.mundo.grupo);
       this.mundo.dispose();
     }
+    if (this.ativo && m.personagens.get(this.ativo.id) !== this.ativo) {
+      this.ativo = null;
+      this.ctxIA.jogador = null;
+    }
+    this.troca.camera.cancelar();
+    this.controle.reiniciar();
     this.mundo = m;
     this.cena.add(m.grupo);
     m.natureza.distanciaMax = this.render.preset.distancia;
@@ -104,10 +179,20 @@ export class Jogo {
     return p;
   }
 
-  controlar(p: Personagem) {
-    if (this.ativo) {
-      this.ativo.controlado = false;
-      if (!this.ativo.posto) this.ativo.ia.esperar();
+  /**
+   * Passa o controle do jogador para `p`. O anterior volta à IA: por padrão espera onde está
+   * ('rotina' devolve à rotina; 'manter' não mexe na ordem). Quem está num posto ou escalando
+   * continua lá.
+   */
+  controlar(p: Personagem, opcoes: { anterior?: 'esperar' | 'rotina' | 'manter' } = {}) {
+    const ant = this.ativo;
+    if (ant && ant !== p) {
+      ant.controlado = false;
+      const modo = opcoes.anterior ?? 'esperar';
+      if (!ant.posto && !ant.escalada) {
+        if (modo === 'esperar') ant.ia.esperar();
+        else if (modo === 'rotina') ant.ia.voltarARotina();
+      }
     }
     this.ativo = p;
     p.controlado = true;
@@ -124,7 +209,8 @@ export class Jogo {
     this.relogio.start();
     const laco = () => {
       requestAnimationFrame(laco);
-      this.passo();
+      if (this.manual) this.renderizar();
+      else this.passo();
     };
     requestAnimationFrame(laco);
   }
@@ -132,17 +218,38 @@ export class Jogo {
   /** Um quadro (exposto para os testes automáticos avançarem o tempo). */
   passo(dtForcado?: number) {
     const dtReal = this.relogio.getDelta();
-    const dt = clamp(dtForcado ?? dtReal, 0, 1 / 20);
+    const dt = clamp(dtForcado ?? dtReal, 0, 1 / 20) * this.escalaTempo;
     this.render.medir(dtReal);
     this.entrada.lerControle();
     if (!this.pausado) this.atualizar(dt);
-    this.render.gl.render(this.cena, this.cam.camera);
+    this.renderizar();
     this.entrada.fimDoQuadro();
     this.quadro++;
   }
 
+  renderizar() {
+    this.render.gl.render(this.cena, this.cam.camera);
+  }
+
+  /**
+   * Testes: avança a lógica `segundos` em passos fixos, sem renderizar, cedendo ao event loop
+   * entre os quadros (promessas e tarefas assíncronas continuam andando).
+   */
+  async avancar(segundos: number, dt = 1 / 30) {
+    let t = 0;
+    while (t < segundos - 1e-6) {
+      this.entrada.lerControle();
+      if (!this.pausado) this.atualizar(dt * this.escalaTempo);
+      this.entrada.fimDoQuadro();
+      this.quadro++;
+      t += dt;
+      await new Promise((r) => setTimeout(r, 0));
+    }
+  }
+
   private comandoJogador(): Comando | null {
-    if (!this.controleLivre || !this.ativo || this.ativo.emCena) return null;
+    if (!this.controleLivre || !this.ativo || !this.ativo.controlado || this.ativo.emCena || this.transicao) return null;
+    if (this.controle.prendeMovimento) return { x: 0, z: 0, correr: false, pular: false, agachar: false, subir: 0 };
     const e = this.entrada;
     let fx = (e.ativa('direita') ? 1 : 0) - (e.ativa('esquerda') ? 1 : 0) + e.eixoMovX;
     let fz = (e.ativa('frente') ? 1 : 0) - (e.ativa('tras') ? 1 : 0) - e.eixoMovY;
@@ -156,6 +263,7 @@ export class Jogo {
       correr: e.ativa('correr'),
       pular: e.pressionou('pular'),
       agachar: e.ativa('agachar'),
+      subir: clamp(fz, -1, 1),
     };
   }
 
@@ -165,21 +273,43 @@ export class Jogo {
     const m = this.mundo;
     if (!m) return;
     this.ctxIA.hora = this.ceu.hora;
-    if (this.controleLivre && !this.cam.externo) this.cam.entradaMouse(this.entrada, dt);
+    const menu = this.ui?.menuAberto() ?? false;
+    if (this.controleLivre && !this.cam.externo && !this.troca.rodaAberta && !menu) this.cam.entradaMouse(this.entrada, dt);
+    this.troca.atualizar(dt);
+    this.controle.atualizar(dt);
     const cmd = this.comandoJogador();
     const camPos = this.cam.camera.position;
     for (const p of m.personagens.values()) {
       const d = p.posicao.distanceTo(camPos);
-      p.atualizar(dt, m.fisica, p === this.ativo ? (cmd ?? { x: 0, z: 0, correr: false, pular: false, agachar: false }) : null, d, this.ctxIA);
+      const jogador = p === this.ativo && p.controlado;
+      p.atualizar(dt, m.fisica, jogador ? (cmd ?? { x: 0, z: 0, correr: false, pular: false, agachar: false }) : null, d, this.ctxIA);
     }
+    this.controle.depoisDoMovimento(dt);
     for (const fn of this.aoQuadro) fn(dt);
     if (this.ativo) {
       m.verificarAreas(this.ativo);
       this.focoCamera.copy(this.ativo.posicao);
     }
+    if (this.focoExterno) this.focoCamera.copy(this.focoExterno);
+    else if (this.troca.camera.ativa) this.focoCamera.copy(this.troca.camera.foco);
+    else if (this.cinematica.ativa) this.focoCamera.copy(this.cinematica.olhar);
+    this.seguirComControle(dt);
     this.cam.atualizar(dt, this.focoCamera, m.fisica);
+    this.cinematica.atualizar(dt);
+    this.troca.camera.atualizar(dt);
     this.ceu.atualizar(dt, this.focoCamera, this.tempo);
+    this.troca.camera.ajustarNeblina(this.ceu.neblina);
     if (m.agua) m.agua.sincronizarLuz(this.ceu.direcaoSol, this.ceu.sol.color, this.ceu.corNeblinaBase, this.ceu.escuridao);
     m.atualizar(dt, this.tempo, this.cam.camera, this.focoCamera);
+  }
+
+  /** Com controle (gamepad), a câmera volta devagar para trás do personagem quando ele anda. */
+  private seguirComControle(dt: number) {
+    const e = this.entrada;
+    const a = this.ativo;
+    if (Math.abs(e.eixoCamX) + Math.abs(e.eixoCamY) > 0.01 || e.mouseDX || e.mouseDY) this.semGiroCamera = 0;
+    else this.semGiroCamera += dt;
+    if (!a || !e.usandoControle || this.cam.externo || !this.controleLivre) return;
+    if (this.semGiroCamera > 1.2 && a.velocidade > 1.5 && !a.posto && !a.escalada) this.cam.girarPara(a.yaw + Math.PI, dt, 0.9);
   }
 }

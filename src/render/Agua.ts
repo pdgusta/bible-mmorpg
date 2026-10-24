@@ -37,17 +37,22 @@ export class Agua {
           uCorSol: { value: new THREE.Color('#fff') },
           uTurva: { value: 0 },
           uLuz: { value: 1 },
+          uOnda: { value: 1 },
+          // retângulo (centro x,z; meia-extensão x,z) onde a água não é desenhada (dentro do casco da arca)
+          uRecorte: { value: new THREE.Vector4(0, 0, -1, -1) },
+          uRecorteYaw: { value: 0 },
         },
       ]),
       vertexShader: /* glsl */ `
         #include <common>
         #include <fog_pars_vertex>
         uniform float uTempo;
+        uniform float uOnda;
         varying vec3 vMundo;
         void main() {
           vec3 transformed = position;
           vec4 mp = modelMatrix * vec4(transformed, 1.0);
-          mp.y += sin(uTempo * 0.9 + mp.x * 0.12) * 0.04 + cos(uTempo * 0.7 + mp.z * 0.1) * 0.04;
+          mp.y += (sin(uTempo * 0.9 + mp.x * 0.12) * 0.04 + cos(uTempo * 0.7 + mp.z * 0.1) * 0.04) * uOnda;
           vMundo = mp.xyz;
           vec4 mvPosition = viewMatrix * mp;
           gl_Position = projectionMatrix * mvPosition;
@@ -58,12 +63,19 @@ export class Agua {
         #include <fog_pars_fragment>
         uniform sampler2D uAlturas; uniform float uTamRelevo; uniform float uNivel;
         uniform vec3 uRasa; uniform vec3 uFunda; uniform vec3 uCeu; uniform vec3 uSol; uniform vec3 uCorSol;
-        uniform float uTempo; uniform float uTurva; uniform float uLuz;
+        uniform float uTempo; uniform float uTurva; uniform float uLuz; uniform float uOnda;
+        uniform vec4 uRecorte; uniform float uRecorteYaw;
         varying vec3 vMundo;
         float h12(vec2 p){ vec3 p3 = fract(vec3(p.xyx) * .1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
         float vn(vec2 p){ vec2 i = floor(p); vec2 f = fract(p); f = f*f*(3.0-2.0*f);
           return mix(mix(h12(i), h12(i+vec2(1,0)), f.x), mix(h12(i+vec2(0,1)), h12(i+vec2(1,1)), f.x), f.y); }
         void main() {
+          if (uRecorte.z > 0.0) {
+            vec2 d = vMundo.xz - uRecorte.xy;
+            float c = cos(uRecorteYaw), s = sin(uRecorteYaw);
+            vec2 l = vec2(d.x * c - d.y * s, d.x * s + d.y * c);
+            if (abs(l.x) < uRecorte.z && abs(l.y) < uRecorte.w) discard;
+          }
           vec2 uv = (vMundo.xz + uTamRelevo * 0.5) / uTamRelevo;
           float chao = texture2D(uAlturas, uv).r;
           if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) chao = uNivel - 30.0;
@@ -73,9 +85,9 @@ export class Agua {
           cor = mix(cor, vec3(0.42, 0.36, 0.26), uTurva);
           // ondas: normal perturbada por ruído animado
           vec2 q = vMundo.xz * 0.35;
-          float n1 = vn(q + vec2(uTempo * 0.25, uTempo * 0.12));
-          float n2 = vn(q * 2.3 - vec2(uTempo * 0.18, -uTempo * 0.21));
-          vec3 nor = normalize(vec3((n1 - 0.5) * 0.35 + (n2 - 0.5) * 0.2, 1.0, (n2 - 0.5) * 0.35));
+          float n1 = vn(q + vec2(uTempo * 0.25, uTempo * 0.12) * uOnda);
+          float n2 = vn(q * 2.3 - vec2(uTempo * 0.18, -uTempo * 0.21) * uOnda);
+          vec3 nor = normalize(vec3(((n1 - 0.5) * 0.35 + (n2 - 0.5) * 0.2) * uOnda, 1.0, (n2 - 0.5) * 0.35 * uOnda));
           vec3 v = normalize(cameraPosition - vMundo);
           float fres = pow(1.0 - max(dot(nor, v), 0.0), 3.0);
           cor = mix(cor, uCeu, fres * 0.55);
@@ -100,6 +112,18 @@ export class Agua {
     this.malha.position.y = nivel;
     this.malha.name = 'agua';
     this.malha.renderOrder = 2;
+  }
+
+  /** Água barrenta (0..1) e agitação das ondas (1 = rio calmo). */
+  definirTurbidez(turva: number, onda = 1) {
+    this.material.uniforms.uTurva.value = turva;
+    this.material.uniforms.uOnda.value = onda;
+  }
+
+  /** Não desenha a água dentro de um retângulo (casco da arca). meiaX/meiaZ <= 0 desliga. */
+  definirRecorte(cx: number, cz: number, meiaX: number, meiaZ: number, yaw = 0) {
+    (this.material.uniforms.uRecorte.value as THREE.Vector4).set(cx, cz, meiaX, meiaZ);
+    this.material.uniforms.uRecorteYaw.value = yaw;
   }
 
   definirNivel(n: number) {

@@ -33,7 +33,7 @@ const P: Record<string, string> = {
   fechar: '<path d="M6 6l12 12M18 6L6 18"/>',
   voltar: '<path d="M15 5l-7 7 7 7"/>',
   folha: '<path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19l8-8"/>',
-  semente: '<path d="M12 21c0-6 2.5-9.5 7-11-4.5 0-7 2.5-7 5.5 0-3.5-2.5-7-7-8 3.5 2 7 5.5 7 13.5z"/>',
+  semente: '<path d="M12 20.5v-8.5"/><path d="M12 13.5C7.6 13.5 5 11 5 6.6c4.4 0 7 2.5 7 6.9z"/><path d="M12 11.5c0-4.2 2.5-6.8 7-6.8 0 4.2-2.6 6.8-7 6.8z"/><path d="M7.5 20.5h9"/>',
   mouseDireito: '<rect x="6" y="3" width="12" height="18" rx="6"/><path d="M12 3v7.5M6 10.5h12"/><path d="M12.6 3.6c2.6.4 4.8 2.6 4.8 5.4v1H12.6z" fill="currentColor" stroke="none"/>',
   cadeado: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
