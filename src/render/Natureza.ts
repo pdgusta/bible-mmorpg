@@ -199,7 +199,10 @@ export class Natureza {
       raio = Math.max(raio, p.geometria.boundingSphere!.radius + p.geometria.boundingSphere!.center.length());
       const vento = p.folha ? (op.vento ?? 0.12) : (op.vento ?? 0.12) * 0.25;
       aplicarPatch(mat, { vento, alturaRef: 6, alcance: uAlcance, semVerso: p.folha, luminancia: lum });
-      sombras.push(aplicarPatch(new THREE.MeshDepthMaterial(), { vento, alturaRef: 6, alcance: uAlcance }));
+      // sem o fade por alcance: na passada de sombra o cameraPosition é a câmera da luz, e a sombra
+      // encolheria pela distância ao sol. Não faz falta: só as partes de perto projetam sombra, e o
+      // perto (≤ 16% da distanciaMax) fica sempre antes dos últimos 15% do alcance.
+      sombras.push(aplicarPatch(new THREE.MeshDepthMaterial(), { vento, alturaRef: 6 }));
       if (lum) mat.userData.luminancia = lum;
       mat.name = `${variante}_${mat.name}`;
       const geoPerto = !p.folha && reduzirPerto < 0.99 ? simplificar(p.geometria, reduzirPerto) : p.geometria;

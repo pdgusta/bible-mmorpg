@@ -28,7 +28,7 @@ THREE.ShaderChunk.fog_pars_vertex = /* glsl */ `
 THREE.ShaderChunk.fog_vertex = /* glsl */ `
 #ifdef USE_FOG
   vFogDepth = - mvPosition.z;
-  vFogAlt = cameraPosition.y + dot( vec3( viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1] ), mvPosition.xyz );
+  vFogAlt = cameraPosition.y + dot( viewMatrix[1].xyz, mvPosition.xyz ); // linha 1 de Rᵀ = coluna 1 de R
 #endif
 `;
 THREE.ShaderChunk.fog_pars_fragment = /* glsl */ `
