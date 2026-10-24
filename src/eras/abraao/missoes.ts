@@ -15,7 +15,7 @@ import type { Personagem } from '../../jogo/Personagem';
 import type { NomeClipe } from '../../entidades/humano/Animador';
 import { ATRIBUTOS } from '../../jogo/Atributos';
 import { MEMORIAS_NOE } from '../noe/memorias';
-import { CURRAIS, ROTAS_FLANCO, ROTAS_SENTINELAS, localCurral } from './mapa';
+import { CURRAIS, ROTAS_FLANCO, ROTAS_SENTINELAS, TRILHA_BETEL, localCurral } from './mapa';
 import type { EstadoAltar, LugarAcampamento, NomeAltar, NomeCurral, NomePorteira, NomeTenda } from './construir';
 import { servicosAbraao, type AnimalAbraao, type OpcoesAnimalAbraao, type RebanhoAbraao, type ServicosAbraao } from './servicos';
 import {
@@ -27,7 +27,7 @@ import {
   IDS_JOGAVEIS_ABRAAO, IDS_PASTORES_LO, INIMIGOS_B3, NPCS_CENA_ABRAAO, SENTINELAS_B3, SERVOS_ABRAAO, SERVOS_MORIA,
   ALIADOS_ABRAAO,
 } from './personagens';
-import { Batalha, Furtividade, Juntos, type GrupoFurtivo, type Ponto2, type SentinelaRonda } from './mecanicas';
+import { Batalha, Furtividade, Juntos, caminhoFe, trechoRevelado, type GrupoFurtivo, type Ponto2, type SentinelaRonda } from './mecanicas';
 
 const ERA = 'abraao';
 /** Pose de oração / ajoelhado (o Animador ainda não tem um clipe próprio de oração). */
@@ -297,6 +297,15 @@ function montarTenda(c: CtxMissao, t: NomeTenda, montada: boolean) {
   marcar(c, `tendaMontada_${t}`, montada);
 }
 
+/** Os despojos de Savé (B3) e o brilho sobre eles, guardados nas flags para o carregar. */
+function mostrarDespojos(c: CtxMissao, visivel: boolean, aceso = false) {
+  const k = sv().canaa;
+  k.definirDespojos(visivel);
+  k.acenderDespojos(visivel && aceso);
+  marcar(c, 'despojosSave', visivel);
+  marcar(c, 'despojosAcesos', visivel && aceso);
+}
+
 function mudarAcampamento(c: CtxMissao, l: LugarAcampamento) {
   const s = sv();
   if (s.canaa.acampamento !== l) s.canaa.definirAcampamento(l);
@@ -437,6 +446,8 @@ export function reconstruirMundoAbraao(s: ServicosAbraao, m: MundoBase, flags: R
   }
   for (const a of ALTARES) k.definirAltar(a, (flags[`altar_${a}`] as EstadoAltar | undefined) ?? 'oculto');
   k.definirAcampamentoInimigo(!!flags.inimigoVisivel);
+  k.definirDespojos(!!flags.despojosSave);
+  k.acenderDespojos(!!flags.despojosAcesos);
   k.amarrarCordaMoria(!!flags.cordaAmarrada);
   for (const p of ['porteiraAbrao', 'porteiraLo'] as NomePorteira[]) k.abrirPorteira(p, false, true);
   k.revelarPedras(0);
@@ -553,8 +564,20 @@ const B1: DefMissao = {
         if (MASTROS.every(montada)) return;
         if (!feito(c, 'b1NoMonte')) {
           seguirLider(c, ['sara', 'lo', 'eliezer'], 'abraao');
-          c.objetivo('Siga para o monte entre Betel e Ai.', ['acampamentoBetel']);
-          await c.chegar('ativo', 'acampamentoBetel', 18);
+          // Sair pela fé (ensinamento 11, Hb 11:8): a bússola mostra só o fim do trecho revelado;
+          // o destino aparece quando se chega ao último trecho
+          const caminho = caminhoFe([...TRILHA_BETEL, ponto2(c.mundo as MundoBase, 'acampamentoBetel')]);
+          const ultimo = caminho.pontos.length - 1;
+          let trecho = 0;
+          const revelar = () => {
+            const a = c.ativo().posicao;
+            const k = trechoRevelado(caminho, a.x, a.z, trecho);
+            if (k === trecho) return;
+            trecho = k;
+            c.objetivo('Siga para o monte entre Betel e Ai.', [k === ultimo ? 'acampamentoBetel' : caminho.pontos[k]]);
+          };
+          revelar();
+          await comQuadro(revelar, () => c.chegar('ativo', 'acampamentoBetel', 18));
           marcar(c, 'b1NoMonte');
         }
         const acamp = lugar(c, 'acampamentoBetel');
@@ -1350,6 +1373,8 @@ const B3: DefMissao = {
             marcar(c, 'b3Noite', false);
             s.ceu.hora = 9;
             s.audio.ambiente('noite', 0);
+            // os bens de Sodoma trazidos de volta (Gn 14:16)
+            mostrarDespojos(c, true);
             marcar(c, 'b3EmSave');
             await c.fade(false, 0.1);
             await c.fade(true, 0);
@@ -1403,6 +1428,9 @@ const B3: DefMissao = {
           const ab = c.personagem('abraao').posicao;
           aproximarSeLonge(c, 'reiSodoma', ab, 4, 2);
           controlarSe(c, 'abraao');
+          // Não amar as riquezas (ensinamento 15): os despojos brilham e o brilho desbota sozinho
+          // conforme o jogador se afasta. Nada prende o jogador ali: a recusa é a prova.
+          mostrarDespojos(c, true, true);
           await c.dialogo([reiSodomaDiz('Gn 14:21', 'Dá-me as pessoas, e toma os bens para ti.')]);
           // a resposta de Abrão (Gn 14:22) é a Palavra que vence a cobiça
           c.receberVersiculo('Gn 14:22-23');
@@ -1412,6 +1440,7 @@ const B3: DefMissao = {
           s.audio.musica('prova');
           await c.prova(PROVA_TENTACAO_B3);
           s.audio.musica('calmo');
+          // a recusa vale XP.prova (60, "resistir a uma tentação" no DESIGN §6): mais que qualquer achado
           c.xp('abraao', 'prova');
           c.treinar('abraao', 'dominio', 0.6);
           c.treinar('abraao', 'humildade', 0.4);
@@ -1463,12 +1492,15 @@ const B4: DefMissao = {
         aplicarElenco(c, 'b4');
         mudarAcampamento(c, 'manre');
         if (feito(c, 'b4Visao')) {
+          mostrarDespojos(c, false);
           s.ceu.hora = 21.5;
           s.ceu.pausado = true;
           return;
         }
         await c.cena(async () => {
           await c.fade(true, 1);
+          // o rei de Sodoma levou os seus bens (Gn 14:24)
+          mostrarDespojos(c, false);
           s.ceu.hora = 21.5;
           s.ceu.pausado = true;
           marcar(c, 'b4Noite');

@@ -8,12 +8,13 @@ import { aplicarPatch } from '../../render/Shaders';
 import { Aleatorio } from '../../core/aleatorio';
 import { smoothstep } from '../../core/util';
 import type { Personagem } from '../../jogo/Personagem';
+import { brilhoDespojos } from './mecanicas';
 import {
   MAPA_CANAA, CANAA, MORIA, ROTA_MORIA, RIO_JORDAO, TRILHAS, CURRAIS, ACAMPAMENTOS, ROTAS_FLANCO,
   localCurral, ligarRelevo, terreno, distTrilha, fatorRaioMoria, type TerrenoCanaa, type DefCurral,
 } from './mapa';
 import {
-  CORES_CANAA, Fogueiras, Porteira, aldeia, alforje, casaPedra, cavaleteLancas, cercadoCativos, cocho,
+  BrilhoDespojos, CORES_CANAA, Fogueiras, Porteira, aldeia, alforje, casaPedra, cavaleteLancas, cercadoCativos, cocho,
   despojos, marcoMirante, muroPedra, pedraMemorial, tear, tendaDesmontada, tendaPelos, utensilios,
 } from './estruturas';
 
@@ -60,6 +61,9 @@ export interface PedraFosso {
  *   `dentroCurral('curralAbrao' | 'curralLo', x, z)`: B2.
  * - `definirAltar(nome, 'oculto' | 'construido' | 'aceso')`: altares de Moré, Betel, Manre e Moriá.
  * - `definirAcampamentoInimigo(visivel)`: B3 (tendas, fogueiras, cativos e despojos em Dã).
+ * - `definirDespojos(visivel)`: B3, os bens trazidos de volta no vale de Savé (Gn 14:16).
+ *   `acenderDespojos(sim)`: o brilho dourado sobre eles, que desbota sozinho conforme o foco
+ *   (o jogador) se afasta (ensinamento 15, `brilhoDespojos` em mecanicas.ts).
  * - `amarrarCordaMoria(sim)`: mostra a corda e ativa a escalada 'cordaMoria' (B5).
  * - `revelarPedras(0..1)`: pedras firmes em dourado, soltas em vermelho (discernir, B5).
  *   Cair no fosso devolve o personagem ativo ao 'estreitoMoria' e chama `aoCairFosso`.
@@ -74,6 +78,8 @@ export class MundoCanaa {
   acampamento: LugarAcampamento | null = null;
   readonly tendasMontadas: Record<NomeTenda, boolean> = { tendaAbrao: true, tendaSara: true };
   inimigoVisivel = false;
+  despojosVisiveis = false;
+  despojosAcesos = false;
   cordaAmarrada = false;
   readonly porteiras = new Map<NomePorteira, Porteira>();
   readonly pedrasMoria: PedraFosso[] = [];
@@ -85,6 +91,8 @@ export class MundoCanaa {
   private altares = new Map<NomeAltar, { peca: Peca; fogo: number; estado: EstadoAltar }>();
   private inimigo: { peca: Peca; fogos: number[] } = { peca: { malha: null, colisores: [] }, fogos: [] };
   private corda: Peca = { malha: null, colisores: [] };
+  private despojosSave: Peca = { malha: null, colisores: [] };
+  private brilho!: BrilhoDespojos;
   private matFirmes = materialPedras();
   private matSoltas = materialPedras();
 
@@ -104,6 +112,7 @@ export class MundoCanaa {
     construirSalem(m);
     construirSodoma(m, this.fogueiras);
     this.construirInimigo();
+    this.construirDespojosSave();
     this.construirMoria();
     construirSegredos(m);
     this.construirAltares();
@@ -114,10 +123,14 @@ export class MundoCanaa {
       this.fogueiras.noite = this.ceu ? this.ceu.noite : this.noiteManual;
       this.fogueiras.focar(foco);
       this.fogueiras.atualizar(dt, t);
+      const [dx, dz] = this.mundo.ponto('despojosSave');
+      this.brilho.forca = this.despojosVisiveis && this.despojosAcesos ? brilhoDespojos(Math.hypot(foco.x - dx, foco.z - dz)) : 0;
+      this.brilho.atualizar(t);
     });
     // estado inicial (antes da navegação, para ela já nascer certa)
     this.definirAcampamento('betel');
     this.definirAcampamentoInimigo(false);
+    this.definirDespojos(false);
     for (const a of ALTARES) this.definirAltar(a, 'oculto');
     m.finalizar();
   }
@@ -195,6 +208,16 @@ export class MundoCanaa {
     this.refazerNav(CANAA.valeDa, 34);
   }
 
+  definirDespojos(visivel: boolean) {
+    this.despojosVisiveis = visivel;
+    mostrar(this.despojosSave, visivel);
+    this.refazerNav(this.mundo.ponto('despojosSave'), 8);
+  }
+
+  acenderDespojos(sim: boolean) {
+    this.despojosAcesos = sim;
+  }
+
   amarrarCordaMoria(sim: boolean) {
     this.cordaAmarrada = sim;
     mostrar(this.corda, sim);
@@ -206,6 +229,19 @@ export class MundoCanaa {
   revelarPedras(t: number) {
     this.matFirmes.emissive.set('#ffc24a').multiplyScalar(0.75 * t);
     this.matSoltas.emissive.set('#ff3a20').multiplyScalar(0.75 * t);
+  }
+
+  /** Os bens de Sodoma trazidos de volta (Gn 14:16): duas pilhas no vale de Savé e o brilho sobre elas. */
+  private construirDespojosSave() {
+    const m = this.mundo;
+    const [x, z] = m.ponto('despojosSave');
+    const r = new Aleatorio(1416);
+    this.despojosSave = zona(m, 'despojosSave', 1416, (c) => {
+      em(c, m, x, z, 0, () => despojos(c, r));
+      em(c, m, x + 3.4, z - 2.4, 0.5, () => despojos(c, r));
+    });
+    this.brilho = new BrilhoDespojos(x + 1.4, m.relevo.altura(x, z), z - 1, 3.4, 2, new Aleatorio(1417));
+    m.estruturas.add(this.brilho.grupo);
   }
 
   private refazerNav(c: Ponto2, r: number) {
@@ -803,7 +839,7 @@ function zonasLivres(m: Mundo): [number, number, number][] {
     p('miranteJordao', 9), p('ceuEstrelas', 14), p('altarMore', 4), p('altarBetel', 4), p('altarManre', 6),
     p('segredo1', 4), p('segredo2', 4), p('segredo3', 4), p('segredo4', 5), p('more', 7), p('aliadosManre', 10),
     p('chegada', 6), p('caravana', 7), p('save', 6), p('da', 6), p('flancoOeste', 3), p('flancoLeste', 3), p('flancoSul', 4),
-    p('reuniaoServos', 7), p('altarSalem', 4), p('topoMoria', MORIA.raioPlato + 3),
+    p('reuniaoServos', 7), p('altarSalem', 4), p('despojosSave', 5), p('topoMoria', MORIA.raioPlato + 3),
   ];
 }
 

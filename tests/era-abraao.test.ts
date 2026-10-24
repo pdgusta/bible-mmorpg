@@ -11,14 +11,15 @@ import srcCristo from '../src/eras/abraao/cristo.ts?raw';
 import srcPersonagens from '../src/eras/abraao/personagens.ts?raw';
 import { Interativos, type Interativo } from '../src/jogo/Interacoes';
 import { temVerbo, type Verbo } from '../src/jogo/Classes';
-import { ORDEM_ATRIBUTOS, type NomeAtributo } from '../src/jogo/Atributos';
+import { ORDEM_ATRIBUTOS, XP, type FonteXP, type NomeAtributo } from '../src/jogo/Atributos';
 import type {
   Alvo, CtxMissao, DefMissao, DefProva, EstadoMissao, Linha, LinhaBiblica, OpcaoEscolha, PecaArmadura, ResultadoProva,
 } from '../src/jogo/contratos';
 import { ehBiblica } from '../src/jogo/contratos';
 import type { DefPersonagem, Personagem } from '../src/jogo/Personagem';
 import type { Mundo } from '../src/mundo/Mundo';
-import { ACAMPAMENTOS, CURRAIS, MAPA_CANAA } from '../src/eras/abraao/mapa';
+import { ACAMPAMENTOS, CURRAIS, MAPA_CANAA, TRILHA_BETEL } from '../src/eras/abraao/mapa';
+import { CAMINHO_FE, DESPOJOS, brilhoDespojos, caminhoFe, trechoRevelado } from '../src/eras/abraao/mecanicas';
 import type { EstadoAltar, LugarAcampamento, NomeAltar, NomeCurral, NomePorteira, NomeTenda } from '../src/eras/abraao/construir';
 import { MEMORIAS_NOE } from '../src/eras/noe/memorias';
 import {
@@ -176,6 +177,8 @@ class CanaaFalsa implements CanaaAbraao {
   cordaAmarrada = false;
   aoCairFosso: ((p: Personagem) => void) | null = null;
   inimigoVisivel = false;
+  despojosVisiveis = false;
+  despojosAcesos = false;
   pedras = 0;
   readonly tendas: Record<NomeTenda, boolean> = { tendaAbrao: true, tendaSara: true };
   readonly porteiras: Record<NomePorteira, boolean> = { porteiraAbrao: false, porteiraLo: false };
@@ -215,6 +218,12 @@ class CanaaFalsa implements CanaaAbraao {
   definirAcampamentoInimigo(v: boolean) {
     this.inimigoVisivel = v;
   }
+  definirDespojos(v: boolean) {
+    this.despojosVisiveis = v;
+  }
+  acenderDespojos(s: boolean) {
+    this.despojosAcesos = s;
+  }
   amarrarCordaMoria(s: boolean) {
     this.cordaAmarrada = s;
   }
@@ -234,11 +243,12 @@ interface Registro {
   alvos: Alvo[];
   avisos: string[];
   atributos: [string, NomeAtributo, number][];
+  xp: [string, FonteXP, number | undefined][];
   creditos: number;
 }
 
 function novoRegistro(): Registro {
-  return { linhas: [], versiculos: [], recebidos: [], memorias: [], armadura: [], provas: [], cristo: [], alvos: [], avisos: [], atributos: [], creditos: 0 };
+  return { linhas: [], versiculos: [], recebidos: [], memorias: [], armadura: [], provas: [], cristo: [], alvos: [], avisos: [], atributos: [], xp: [], creditos: 0 };
 }
 
 const CENA_NPC = new Set(Object.keys(NPCS_CENA_ABRAAO));
@@ -525,7 +535,9 @@ class CtxFalso implements CtxMissao {
   async animar() {}
   async fade() {}
   async titulo() {}
-  xp() {}
+  xp(alvo: string, fonte: FonteXP, qtd?: number) {
+    this.v.reg.xp.push([alvo, fonte, qtd]);
+  }
   treinar(id: string) {
     expect(this.v.personagens.get(id)?.def.jogavel, `treinar um não jogável: ${id}`).toBe(true);
   }

@@ -59,10 +59,13 @@ export const RIO_JORDAO: Ponto2[] = [
   [172, -265], [166, -205], [176, -150], [163, -95], [171, -40], [158, 15], [168, 70], [157, 125], [165, 180], [158, 265],
 ];
 
+/** Trilha de Moré, por Betel, até o acampamento no monte (B1: o caminho que se revela em trechos). */
+export const TRILHA_BETEL: Ponto2[] = [[-146, -110], [-128, -100], [-100, -94], [-72, -88], [-44, -84]];
+
 /** Trilhas de terra batida entre os lugares. */
 export const TRILHAS: Ponto2[][] = [
   [[-122, -250], [-128, -195], [-140, -150], [-148, -122]], // do norte (Harã) até Moré
-  [[-146, -110], [-128, -100], [-100, -94], [-72, -88], [-44, -84]], // Moré → Betel → acampamento
+  TRILHA_BETEL, // Moré → Betel → acampamento
   [[-16, -82], [14, -78], [44, -72]], // acampamento → Ai
   [[-30, -68], [-29, -42], [-25, -12]], // acampamento → poço
   [[-17, -6], [18, -14], [52, -24], [74, -30]], // poço → mirante do Jordão
@@ -312,6 +315,8 @@ export const MAPA_CANAA: DefMapa = {
     altarSalem: [3, 85],
     melquisedeque: [-2, 88],
     dizimo: [-6, 90],
+    // os bens de Sodoma trazidos de volta (Gn 14:16), que Abrão recusa (Gn 14:23)
+    despojosSave: [-16, 107],
     chegadaSodoma: [30, 104],
     // B4 — a noite das estrelas (junto da tenda em Manre)
     ceuEstrelas: CANAA.ceuEstrelas,

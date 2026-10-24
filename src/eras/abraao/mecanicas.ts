@@ -4,8 +4,10 @@
 // - Batalha (B3): aparar (botão direito) e golpear com o cajado (clique). Ninguém morre nem
 //   sangra: um inimigo desarmado cai, levanta-se e foge para o norte (Gn 14:15, "os perseguiu").
 // - Juntos (B5, "foram os dois juntos", Gn 22:6, 22:8): pai e filho não se separam na subida.
+// - Sair pela fé (B1, Hb 11:8, ensinamento 11): o caminho se revela em trechos conforme se anda.
+// - Nem um fio (B3, Gn 14:23, ensinamento 15): o brilho dos despojos desbota com a distância.
 // Tudo anda por `atualizar(dt)`, chamado a cada quadro pela missão (servicos.aCadaQuadro).
-import { wrapAngle } from '../../core/util';
+import { smoothstep, wrapAngle } from '../../core/util';
 import type { Personagem } from '../../jogo/Personagem';
 import type { EntradaAbraao } from './servicos';
 
@@ -535,4 +537,84 @@ export class Juntos {
     this.b.modVelocidade = 1;
     this.seguindo = null;
   }
+}
+
+// ================================================================================ sair pela fé
+
+export const CAMINHO_FE = {
+  /** Comprimento de cada trecho revelado (m). */
+  passo: 24,
+  /** A esta distância do fim do trecho (ou já além dele no caminho), o seguinte se abre. */
+  revelar: 7,
+};
+
+/** Caminho reamostrado em trechos: `pontos[0]` é o início, o último é o destino; `s` é o arco até cada ponto. */
+export interface CaminhoFe {
+  pontos: Ponto2[];
+  s: number[];
+}
+
+/** Divide a polilinha em trechos de `passo` metros (o último fica entre meio e um passo e meio). */
+export function caminhoFe(linha: Ponto2[], passo = CAMINHO_FE.passo): CaminhoFe {
+  const acum = [0];
+  for (let i = 1; i < linha.length; i++) acum.push(acum[i - 1] + Math.hypot(linha[i][0] - linha[i - 1][0], linha[i][1] - linha[i - 1][1]));
+  const total = acum[acum.length - 1];
+  const pontos: Ponto2[] = [linha[0]];
+  const s = [0];
+  let i = 1;
+  for (let arco = passo; arco < total - passo / 2; arco += passo) {
+    while (acum[i] < arco) i++;
+    const t = (arco - acum[i - 1]) / (acum[i] - acum[i - 1]);
+    pontos.push([linha[i - 1][0] + (linha[i][0] - linha[i - 1][0]) * t, linha[i - 1][1] + (linha[i][1] - linha[i - 1][1]) * t]);
+    s.push(arco);
+  }
+  pontos.push(linha[linha.length - 1]);
+  s.push(total);
+  return { pontos, s };
+}
+
+/** Arco do ponto do caminho mais próximo de (x, z). */
+export function avancoNoCaminho(c: CaminhoFe, x: number, z: number): number {
+  let melhor = Infinity;
+  let arco = 0;
+  for (let i = 1; i < c.pontos.length; i++) {
+    const [ax, az] = c.pontos[i - 1];
+    const [bx, bz] = c.pontos[i];
+    const dx = bx - ax;
+    const dz = bz - az;
+    const l2 = dx * dx + dz * dz || 1;
+    const t = Math.min(1, Math.max(0, ((x - ax) * dx + (z - az) * dz) / l2));
+    const d = Math.hypot(x - (ax + dx * t), z - (az + dz * t));
+    if (d < melhor) {
+      melhor = d;
+      arco = c.s[i - 1] + (c.s[i] - c.s[i - 1]) * t;
+    }
+  }
+  return arco;
+}
+
+/**
+ * Índice (≥ 1) do ponto que a bússola mostra: o fim do trecho revelado. Só avança, nunca volta:
+ * quando o jogador chega perto dele ou já passou dele ao longo do caminho.
+ */
+export function trechoRevelado(c: CaminhoFe, x: number, z: number, atual: number, revelar = CAMINHO_FE.revelar): number {
+  const ultimo = c.pontos.length - 1;
+  let k = Math.min(ultimo, Math.max(1, atual));
+  const s = avancoNoCaminho(c, x, z);
+  while (k < ultimo && (s >= c.s[k] - revelar || distP({ x, z }, c.pontos[k]) < revelar)) k++;
+  return k;
+}
+
+// ================================================================================ nem um fio
+
+export const DESPOJOS = {
+  /** Até aqui o brilho é pleno (m). */
+  perto: 4,
+  /** Daqui em diante o brilho se apagou: Abrão deixou os bens (m). */
+  longe: 18,
+};
+
+/** Força do brilho dos despojos (0..1) pela distância: desbota conforme o jogador se afasta. */
+export function brilhoDespojos(d: number): number {
+  return 1 - smoothstep(DESPOJOS.perto, DESPOJOS.longe, d);
 }
