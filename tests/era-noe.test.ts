@@ -57,7 +57,7 @@ const POS_ARCA: Record<string, [number, number, number]> = {
   porta: [20, 0.6, 9.5], saida: [20, 0, 15], conves1: [0, 0.6, 0], conves2: [0, 4.9, 0], conves3: [0, 9.2, 0],
   rampa12: [30, 0.6, 0], rampa23: [-30, 4.9, 0], bomba: [10, 0.6, -4],
   vazamento1: [-40, 0.6, 9], vazamento2: [-10, 0.6, -9], vazamento3: [25, 0.6, 9], vazamento4: [45, 0.6, -9],
-  baia1: [-20, 4.9, 6], baia2: [0, 4.9, 6], baia3: [20, 4.9, 6], corredor2: [0, 4.9, 0], escadaRedes: [5, 4.9, -3],
+  baia1: [-20, 4.9, 6], baia2: [0, 4.9, 6], baia3: [20, 4.9, 6], baia1Animal: [-20, 4.9, 8], baia2Animal: [0, 4.9, 8], baia3Animal: [20, 4.9, 8], corredor2: [0, 4.9, 0], escadaRedes: [5, 4.9, -3],
   rede1: [-15, 8, -3], rede2: [15, 8, -3], familia: [0, 9.2, 0], familia1: [2, 9.2, 2], familia2: [-2, 9.2, 2],
   familia3: [2, 9.2, -2], familia4: [-2, 9.2, -2], escadaJanela: [0, 9.2, 4], janela: [0, 12.4, 4.5], pombaPouso: [0, 13, 6],
 };

@@ -212,6 +212,12 @@ async function removerAnimal(chave: string, suave = true) {
   }
 }
 
+/** Rampa → porta → alguns metros para dentro (a porta fica na lateral +z local da arca). */
+function caminhoParaDentro(rampa: THREE.Vector3, porta: THREE.Vector3): [number, number][] {
+  const dentro = new THREE.Vector3(0, 0, -4).applyAxisAngle(new THREE.Vector3(0, 1, 0), sv().vale.arca.grupo.rotation?.y ?? 0).add(porta);
+  return [[rampa.x, rampa.z], [porta.x, porta.z], [dentro.x, dentro.z]];
+}
+
 /** Promessa que ninguém espera: nunca vira rejeição solta. */
 function soltar(p: Promise<unknown>) {
   p.catch(() => {});
@@ -803,7 +809,7 @@ async function conduzirPar(c: CtxMissao, par: (typeof PARES_A4)[number], indice:
     }
     const rampa = lugar(c, 'entregaArca');
     const porta = arca('porta');
-    const caminho: [number, number][] = [[rampa.x, rampa.z], [porta.x, porta.z]];
+    const caminho = caminhoParaDentro(rampa, porta);
     await Promise.all([macho.entrar(caminho), femea.entrar(caminho)]);
     marcar(c, flag);
     c.contador('pares', paresDentro(c));
@@ -938,7 +944,7 @@ const A4: DefMissao = {
           await c.chegar(sem.id, 'portaArca', 7);
           const rampa = lugar(c, 'entregaArca');
           const porta = arca('porta');
-          const caminho: [number, number][] = [[rampa.x, rampa.z], [porta.x, porta.z]];
+          const caminho = caminhoParaDentro(rampa, porta);
           await Promise.all([macho.entrar(caminho), femea.entrar(caminho)]);
           marcar(c, `a4Par_${PAR_PERDIDO}`);
           c.contador('pares', paresDentro(c));
@@ -1162,8 +1168,8 @@ const A5: DefMissao = {
         s.vale.definirCaixasSoltas(!redes.every(ok));
         const animais: AnimalNoe[] = [];
         for (let i = 0; i < baias.length; i++) {
-          const p = arca(`baia${i + 1}` as NomePontoArca);
-          const a = await criarAnimal(`baia${i + 1}`, ANIMAIS_BAIAS[i], p.x, p.z, { y: p.y });
+          const p = arca(`baia${i + 1}Animal` as NomePontoArca);
+          const a = await criarAnimal(`baia${i + 1}`, ANIMAIS_BAIAS[i], p.x, p.z, { y: p.y + 0.3 });
           if (!ok(baias[i])) a.agitar();
           animais.push(a);
         }

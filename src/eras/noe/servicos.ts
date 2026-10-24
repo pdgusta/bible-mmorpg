@@ -11,14 +11,14 @@ export type EstadoValeNoe = 'antes' | 'diluvio' | 'depois';
 export type NomePontoArca =
   | 'porta' | 'saida' | 'conves1' | 'conves2' | 'conves3' | 'rampa12' | 'rampa23'
   | 'bomba' | 'vazamento1' | 'vazamento2' | 'vazamento3' | 'vazamento4'
-  | 'baia1' | 'baia2' | 'baia3' | 'corredor2' | 'escadaRedes' | 'rede1' | 'rede2'
+  | 'baia1' | 'baia2' | 'baia3' | 'baia1Animal' | 'baia2Animal' | 'baia3Animal' | 'corredor2' | 'escadaRedes' | 'rede1' | 'rede2'
   | 'familia' | 'familia1' | 'familia2' | 'familia3' | 'familia4'
   | 'escadaJanela' | 'janela' | 'pombaPouso';
 
 /** A arca (src/eras/noe/Arca.ts — agente motor). */
 export interface ArcaNoe {
   readonly estagio: number;
-  readonly grupo: { readonly position: THREE.Vector3 };
+  readonly grupo: { readonly position: THREE.Vector3; readonly rotation?: { readonly y: number } };
   definirEstagio(e: EstagioArca): void;
   /** Aberta cria a rampa (estágio ≥ 4). */
   definirPorta(aberta: boolean): void;
