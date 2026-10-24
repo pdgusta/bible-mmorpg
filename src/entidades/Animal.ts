@@ -25,7 +25,8 @@ export { ESPECIES };
  * - `vagar(raio)` / `vagar(cx, cz, raio)`: passeia e pasta em volta de um ponto.
  * - `seguir(alvo, dist)`: segue qualquer coisa com `posicao` (Personagem, outro Animal).
  * - `irPara(x, z)` / `entrar(pontos)`: anda até o ponto (ou pelos pontos) — `entrar` some com fade no fim.
- * - `fugirDe(pos)`: corre para longe por alguns segundos e volta ao que fazia.
+ * - `fugirDe(pos)`: corre para longe por alguns segundos e volta ao que fazia (se estava agitado,
+ *   continua agitado onde parar).
  * - `agitar()` / `acalmar()`: assustado (dispara, para e treme, berra); acalmar volta ao comportamento anterior.
  * - `voarPara(x, y, z)` / `voarPara(alvo)` / `voarPor(pontos)` (aves): decola, voa e pousa (num ponto,
  *   num objeto ou numa função que devolve a posição — ex.: a mão de Noé).
@@ -161,7 +162,9 @@ export class Animal {
   private anterior: { estado: EstadoAnimal; alvo: { posicao: THREE.Vector3 } | null; dist: number; raio: number; centro: THREE.Vector3 } | null = null;
   private fugirDePos = new THREE.Vector3();
   private fugirT = 0;
-  private agitado: { raio: number; fase: 'disparar' | 'tremer'; t: number; ancora: THREE.Vector3 } | null = null;
+  /** Raio do susto a retomar quando a fuga acabar (fugiu agitado), ou null. */
+  private reagitar: number | null = null;
+  private agitado:{ raio: number; fase: 'disparar' | 'tremer'; t: number; ancora: THREE.Vector3 } | null = null;
   private voo: { pontos: AlvoVoo[]; i: number; op: OpcoesVoo; decolar: number } | null = null;
   private poleiro: AlvoVoo | null = null;
   private desvio = 0;
@@ -325,6 +328,9 @@ export class Animal {
   }
 
   fugirDe(pos: THREE.Vector3, segundos = 3) {
+    // agitado e forçado: foge e continua agitado onde parar (só acalmar() o acalma)
+    if (this.estado === 'agitado') this.reagitar = this.agitado?.raio ?? 2.5;
+    else if (this.estado !== 'fugir') this.reagitar = null;
     this.guardarAnterior();
     this.mudar('fugir');
     this.fugirDePos.copy(pos);
@@ -349,6 +355,7 @@ export class Animal {
     const a = this.anterior;
     this.anterior = null;
     this.agitado = null;
+    this.reagitar = null;
     this.alarme = 0;
     if (!a || a.estado === 'agitado' || a.estado === 'fugir') return this.parar();
     if (a.estado === 'vagar') return this.vagar(a.centro.x, a.centro.z, a.raio);
@@ -670,7 +677,8 @@ export class Animal {
     this.alarme = 1;
     if (this.fugirT <= 0) {
       this.alarme = 0;
-      this.acalmar();
+      if (this.reagitar !== null) this.agitar({ raio: this.reagitar });
+      else this.acalmar();
     }
   }
 

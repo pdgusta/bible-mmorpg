@@ -284,7 +284,7 @@ export const ATALHOS_NOE: Record<string, Record<string, Atalho>> = {
       if (!fim()) await t.prova();
     },
     async janela(t) {
-      if (!t.flag('janelaAberta')) await t.usar('janela', 'jafe');
+      if (!t.flag('a5Amarras') && !t.flag('janelaAberta')) await t.usar('janela', 'jafe');
       if (!t.flag('a5Corvo')) await t.usar('soltarCorvo', 'noe');
       for (const [flag, volta] of [['a5Pomba1', true], ['a5Pomba2', true], ['a5Pomba3', false]] as const) {
         if (t.flag(flag)) continue;
