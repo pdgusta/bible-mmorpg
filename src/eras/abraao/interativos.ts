@@ -106,9 +106,10 @@ export interface AjusteInterativo {
 
 const n3 = (prefixo: string, n: number) => Array.from({ length: n }, (_, i) => `${prefixo}${i + 1}`);
 
-const ALTAR = (id: string): DefInterativoAbraao => ({
+/** `quem`: o nome exibido na era do altar (Abrão em B1–B2, Abraão em B5, Gn 17:5). */
+const ALTAR = (id: string, quem = 'Abrão'): DefInterativoAbraao => ({
   id, verbo: 'construirAltar', rotulo: 'Construir um altar ao Senhor', lugar: id, segurar: 4, animacao: 'consertar', raio: 3,
-  dica: 'Abrão aprendeu nos dias de Noé a construir altares.',
+  dica: `${quem} pode construir o altar.`,
 });
 
 /**
@@ -164,7 +165,7 @@ export const INTERATIVOS_ABRAAO: Record<string, DefInterativoAbraao[]> = {
   'b5.subida': [
     { id: ID_AMARRAR_CORDA, verbo: 'amarrar', rotulo: 'Amarrar a corda', lugar: 'cordaMoria', segurar: 3, raio: 3, dica: 'Isaque pode subir a parede e amarrar a corda.' },
   ],
-  'b5.altar': [ALTAR('altarMoria')],
+  'b5.altar': [ALTAR('altarMoria', 'Abraão')],
   'b5.carneiro': [
     { id: 'carneiro', verbo: 'usar', rotulo: 'Tomar o carneiro', lugar: 'arbustoCarneiro', raio: 3.5 },
   ],

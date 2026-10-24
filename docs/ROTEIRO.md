@@ -104,9 +104,9 @@ Mulheres: casa, trigal, poço, fogueira.
 | arca | Uma só porta | 1Pe 3:20-21; Jo 10:9; Mt 24:37-39 | A5 |
 | tempestade | Paz, aquieta-te | Mc 4:39-40 | A5 |
 | linhagem | De Noé a Jesus | Lc 3:34; Lc 3:36 | transição de era |
-| bencaoNacoes | Todas as famílias da terra | Gn 12:3; Gl 3:8 | B1 |
+| bencaoNacoes | Todas as famílias da terra | Gn 12:3; Gl 3:8; Gl 3:16 | B1 |
 | melquisedeque | Rei de justiça e de paz | Hb 7:1-3 | B3 |
-| justica | Creu, e foi justiça | Gn 15:6; Rm 4:3 | B4 |
+| justica | Creu, e foi justiça | Gn 15:6; Rm 4:3; Gl 3:8 | B4 |
 | cordeiro | Deus proverá o cordeiro | Gn 22:8; Jo 1:29; Rm 8:32; Jo 8:56 | B5 |
 
 Cada entrada tem 2–4 frases (texto do jogo, marcado como nota) ligando o texto do AT ao de Cristo, sem inventar versículos.
@@ -355,7 +355,7 @@ Tipos: tutorial. Refs: Gn 12:1-8; Hb 11:8.
 
 1. **chegada**
    - A caravana chega ao carvalho de Moré.
-   - narrador: Gn 12:1 (o versículo começa "Ora, o Senhor havia dito…", então usar como narrador)
+   - narrador: Gn 12:1-3 (o versículo 1 começa "Ora, o Senhor havia dito…": as palavras de Gn 12:1-3 foram ditas em Harã, antes da partida, então vêm juntas, como narrador, e não depois em Moré)
    - narrador: Gn 12:4, Gn 12:5, Gn 12:6
    - Memória `chamado`. Banner: Hb 11:8.
    - Legado aplicado: aviso "Legado de Noé: +X Fé".
@@ -363,10 +363,11 @@ Tipos: tutorial. Refs: Gn 12:1-8; Hb 11:8.
 2. **altarMore**
    - deus: Gn 12:7 «À tua semente eu darei esta terra;»
    - [altarMore] `construirAltar` (Abrão; dica "Aprendido nos dias de Noé").
-   - Aponta para Cristo `bencaoNacoes`: deus: Gn 12:2, Gn 12:3
+   - Depois do altar: narrador: Gn 12:7 «e ali ele edificou um altar ao Senhor, que lhe apareceu.»
+   - Aponta para Cristo `bencaoNacoes`.
 3. **acampar** — "Siga para o monte entre Betel e Ai e arme as tendas."
    - Puzzle simples de dupla: cada tenda precisa de alguém segurando o mastro e outro amarrando.
-   - [mastroTenda1..2] `segurar` (qualquer jogável, posto).
+   - [mastroTenda1..2] `usar` (qualquer jogável, posto; o verbo `segurar` é só do guerreiro).
    - [amarrarTenda1..2] `usar` (outro personagem).
    - Ensina a troca e os postos nesta era.
 4. **invocar**
@@ -389,15 +390,15 @@ Tipos: cooperativo, escolha. Refs: Gn 13:1-18; Fp 2:3; Mt 5:9; 2Co 5:7; Sl 133:1
    - O rebanho é um bando (boids) que foge do pastor.
    - Ló (pastor) conduz andando atrás do rebanho e usa Q (assobio) para juntar.
    - Os currais têm porteiras que só ficam abertas com alguém no posto:
-     - [porteiraAbrao] `segurar` (qualquer jogável).
-     - [porteiraLo] `segurar`.
+     - [porteiraAbrao] `usar` (qualquer jogável, posto).
+     - [porteiraLo] `usar` (posto).
    - Ovelhas no curral errado escapam quando a porteira abre. O jogador precisa trocar entre Ló e quem segura a porteira.
    - Objetivo: "Ovelhas de Abrão no curral de Abrão (0/10) e de Ló no de Ló (0/10)."
    - Ao concluir: XP cooperação; treina compaixão e paciência.
 3. **pastores** — Escolha moral. Abrão fala com os pastores (escolha):
    - a) "Irmãos não brigam por água. Deixem os rebanhos de Ló beberem primeiro." → humildade +1, Unidade +10, flag `b2Cedeu`.
    - b) "Vamos dividir os dias do poço, com justiça para todos." ✦ requer sabedoria 6 → sabedoria +1, Unidade +6.
-   - c) "Basta! O poço é meu, e quem mandar aqui sou eu." → Unidade −10; os pastores obedecem calados. Não é proibido: é o caminho do orgulho, sem castigo além da Unidade e da fala. Os versículos seguintes acontecem igual, porque o texto bíblico não muda.
+   - c) "Basta! O poço é meu, e quem manda aqui sou eu." → Unidade −10; os pastores obedecem calados. Não é proibido: é o caminho do orgulho, sem castigo além da Unidade e da fala. Os versículos seguintes acontecem igual, porque o texto bíblico não muda.
    - Resposta de ficção conforme a escolha.
 4. **abraoELo** — Cena junto ao mirante:
    - abraao: Gn 13:8 «Que não haja contenda, eu te suplico, entre mim e ti, e entre meus pastores e teus pastores, pois somos irmãos.»
@@ -455,11 +456,11 @@ Tipos: físico, batalha, cooperativo. Refs: Gn 14:12-24; Hb 7:1-3; Mt 6:21.
 6. **nemUmFio**
    - rei de Sodoma: Gn 14:21 «Dá-me as pessoas, e toma os bens para ti.»
    - Prova `tentacao`. Os despojos brilham e o sussurro insiste (ficção):
-     - "Você mereceu."
-     - "Ninguém vai saber."
+     - "Isso é seu. Não divida com ninguém."
+     - "Pegue tudo antes que outro pegue."
      - "Com isso você nunca mais precisará de ninguém."
      - "Ló escolheu a melhor terra. Pegue a sua parte."
-   - respostas: ['Gn 14:22', 'Gn 13:8', 'Gn 12:2'].
+   - respostas: ['Gn 14:22-23', 'Gn 13:8', 'Gn 12:2'] (Gn 14:22 sozinho termina em vírgula). As respostas se alternam entre as mentiras, então cada uma responde a todas.
    - Ao vencer:
      - abraao: Gn 14:22 «Eu levanto a minha mão ao Senhor, o Deus Altíssimo, o possuidor do céu e da terra,»
      - abraao: Gn 14:23, Gn 14:24
@@ -514,7 +515,7 @@ Tipos: masmorra, cooperativo, espiritual. Refs: Gn 17:5, 17:15; Gn 21:1-6; Gn 22
    - Isaque leva o `feixe` de lenha nas costas; Abraão leva o `fogo`.
    - Banner: Jo 19:17 (Aponta para Cristo: "carregando ele a sua cruz").
 4. **subida** — Masmorra em 3–4 trechos. Regra **"foram os dois juntos"**: se se afastarem mais de 12 m, o que está à frente espera e a dica lembra.
-   - Trecho 1, degraus de rocha: Isaque (batedor) escala a parede baixa (`mundo.escaladas`) e desce uma corda: [cordaMoria] `amarrar` (Isaque). Ela vira uma escalada para Abraão (escalada liberada para todos depois de amarrada).
+   - Trecho 1, degraus de rocha: Isaque (batedor) escala a parede baixa (`mundo.escaladas`) e desce uma corda: [amarrarCorda] `amarrar` (Isaque), no ponto 'cordaMoria' (o id `cordaMoria` é a escalada do mundo). Ela vira uma escalada para Abraão (escalada liberada para todos depois de amarrada).
    - Trecho 2, passagem estreita com pedras soltas: Abraão (profeta) usa Q (discernir) para revelar o caminho firme. Pedras falsas brilham em vermelho; o caminho certo, em dourado. Engano revelado.
    - Trecho 3, a pergunta, num patamar:
      - isaque: Gn 22:7 «Meu pai,»
@@ -533,9 +534,9 @@ Tipos: masmorra, cooperativo, espiritual. Refs: Gn 17:5, 17:15; Gn 21:1-6; Gn 22
    - anjo: Gn 22:11 «Abraão, Abraão;» e abraao: Gn 22:11 «Aqui estou.»
    - anjo: Gn 22:12 (trecho já conferido)
 6. **carneiro**
-   - narrador: Gn 22:13
+   - narrador: Gn 22:13 «E Abraão levantou seus olhos, e olhou, e eis detrás dele um carneiro, preso pelos chifres em um arbusto;»
    - "Olhe ao redor." [carneiro] `usar` (Abraão) no 'arbustoCarneiro': o carneiro preso pelos chifres (Animal 'carneiro' com chifres curvos).
-   - A oferta é mostrada como fogo no altar, sem violência.
+   - A oferta é mostrada como fogo no altar, sem violência. narrador: Gn 22:13 «e Abraão foi e tomou o carneiro, e o ofereceu como oferta queimada no lugar de seu filho.»
    - Isaque abraça o pai (animação `sim`/abraço).
    - narrador: Gn 22:14 → memória `jeovaJire`; Aponta para Cristo `cordeiro`.
 7. **promessa**

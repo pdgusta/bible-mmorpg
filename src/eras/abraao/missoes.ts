@@ -61,8 +61,8 @@ const ficcao = (quem: string, texto: string, emocao?: 'alegre' | 'triste' | 'pre
 
 /** Sussurros do tentador (ficção) diante dos despojos de Sodoma (B3). */
 export const MENTIRAS_B3 = [
-  'Você mereceu.',
-  'Ninguém vai saber.',
+  'Isso é seu. Não divida com ninguém.',
+  'Pegue tudo antes que outro pegue.',
   'Com isso você nunca mais precisará de ninguém.',
   'Ló escolheu a melhor terra. Pegue a sua parte.',
 ];
@@ -87,7 +87,7 @@ export const PROVA_TENTACAO_B3: DefProva = {
   titulo: 'Nem um fio',
   instrucao: 'Os despojos brilham e o sussurro insiste. Responda com Q — "Está escrito" — com a Palavra que já recebeu.',
   mentiras: MENTIRAS_B3,
-  respostas: ['Gn 14:22', 'Gn 13:8', 'Gn 12:2'],
+  respostas: ['Gn 14:22-23', 'Gn 13:8', 'Gn 12:2'],
   alvo: 6,
   personagem: 'abraao',
   intensidade: 0.5,
@@ -504,7 +504,7 @@ const B1: DefMissao = {
           await c.fade(true, 0);
           await c.camera(more.clone().add(new THREE.Vector3(-16, 10, -18)), more.clone().add(new THREE.Vector3(0, 3, 0)), 0);
           await c.fade(false, 2);
-          await c.dialogo([narrador('Gn 12:1')]);
+          await c.dialogo([narrador('Gn 12:1-3')]);
           // a caravana caminha até o carvalho
           ['abraao', 'sara', 'lo', 'eliezer'].forEach((id, i) => soltar(c.mover(id, anel(more, i + 1, 4))));
           await c.dialogo([narrador('Gn 12:4'), narrador('Gn 12:5'), narrador('Gn 12:6')]);
@@ -540,7 +540,7 @@ const B1: DefMissao = {
           c.treinar(p.id, 'comunhao', 0.5);
           marcar(c, 'b1AltarMore');
         }
-        await c.cena(() => vozDeDeus(c, [deus('Gn 12:2'), deus('Gn 12:3')], 0.6));
+        await c.dialogo([narrador('Gn 12:7', 'e ali ele edificou um altar ao Senhor, que lhe apareceu.')]);
         s.cristo('bencaoNacoes');
       },
     },
@@ -975,7 +975,7 @@ const B2: DefMissao = {
             while (!MIRANTES.every(ok)) {
               const { id, personagem: p } = await interacaoEntre(c, MIRANTES.filter((x) => !ok(x)));
               if (p.id !== 'abraao') {
-                c.dica('Foi a Abrão que Deus disse: caminha pela terra.');
+                c.dica('Foi a Abrão que Deus mandou caminhar pela terra.');
                 continue;
               }
               marcar(c, `b2_${id}`);
@@ -1337,7 +1337,7 @@ const B3: DefMissao = {
     },
     {
       id: 'melquisedeque',
-      objetivo: 'No vale de Savé.',
+      objetivo: 'Volte com os resgatados ao vale de Savé.',
       async executar(c) {
         const s = sv();
         const save = lugar(c, 'save');
@@ -1405,10 +1405,10 @@ const B3: DefMissao = {
           controlarSe(c, 'abraao');
           await c.dialogo([reiSodomaDiz('Gn 14:21', 'Dá-me as pessoas, e toma os bens para ti.')]);
           // a resposta de Abrão (Gn 14:22) é a Palavra que vence a cobiça
-          c.receberVersiculo('Gn 14:22');
+          c.receberVersiculo('Gn 14:22-23');
           c.receberVersiculo('Gn 13:8');
           c.receberVersiculo('Gn 12:2');
-          c.dica('Pressione Q — Está escrito. Segure o botão direito, se tiver o escudo.');
+          c.dica('Pressione Q: "Está escrito".');
           s.audio.musica('prova');
           await c.prova(PROVA_TENTACAO_B3);
           s.audio.musica('calmo');
@@ -1671,7 +1671,7 @@ const B5: DefMissao = {
         }
         carga(c, true);
         c.versiculo('Jo 19:17');
-        c.dica('Isaque leva a lenha; Abraão leva o fogo. Foram os dois juntos: não se afastem.');
+        c.dica('Isaque leva a lenha; Abraão leva o fogo. Subam juntos: não se afastem.');
       },
     },
     {
@@ -1772,7 +1772,7 @@ const B5: DefMissao = {
               c.treinar('isaque', 'coragem', 0.4);
               marcar(c, 'b5Medo');
             }
-            c.objetivo('O topo do monte.', ['topoMoria']);
+            c.objetivo('Chegue ao topo do monte.', ['topoMoria']);
             await c.chegar('abraao', 'topoMoria', 6);
             aproximarSeLonge(c, 'isaque', lugar(c, 'topoMoria'), 8, 1);
           });
@@ -1839,7 +1839,7 @@ const B5: DefMissao = {
           const [bx, bz] = ponto2(c.mundo as MundoBase, 'arbustoCarneiro');
           const carneiro = await criarAnimal('carneiro', 'carneiro', bx, bz);
           carneiro.prender();
-          await c.dialogo([narrador('Gn 22:13')]);
+          await c.dialogo([narrador('Gn 22:13', 'E Abraão levantou seus olhos, e olhou, e eis detrás dele um carneiro, preso pelos chifres em um arbusto;')]);
           c.objetivo('Olhe ao redor.', ['arbustoCarneiro']);
           await comEtapa(c, 'b5.carneiro', {}, () => interacaoDe(c, 'carneiro', 'abraao', 'Quem toma o carneiro é Abraão.'));
           // a oferta é mostrada só como fogo no altar
@@ -1851,7 +1851,7 @@ const B5: DefMissao = {
             const altar = lugar(c, 'altarMoria');
             await c.camera(altar.clone().add(new THREE.Vector3(8, 4, 8)), altar.clone().add(new THREE.Vector3(0, 1.4, 0)), 0);
             await c.fade(false, 1.2);
-            await c.esperar(1.5);
+            await c.dialogo([narrador('Gn 22:13', 'e Abraão foi e tomou o carneiro, e o ofereceu como oferta queimada no lugar de seu filho.')]);
           });
           marcar(c, 'b5Carneiro');
         }

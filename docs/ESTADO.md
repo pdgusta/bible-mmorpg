@@ -24,7 +24,7 @@ Estado do código ao sair: `npx tsc --noEmit` dá 0 erros, `npx vitest run` pass
 | Animais e áudio | ✅ (`?lab=animais`) | `tecnico/animais-audio.md` |
 | Mundo de Canaã | ✅ (`?lab=canaa`, ≤ 92 draw calls) | `tecnico/canaa.md` |
 | Conteúdo da era 1 | ✅ escrito, revisado e com os 5 ajustes de lógica da revisão (branch `frente/era-noe`) | `tecnico/era-noe.md`, `tecnico/revisao.md` |
-| Conteúdo da era 2 | 🟡 parcial (abaixo) | briefing: `agentes/era-abraao.md` |
+| Conteúdo da era 2 | ✅ escrito, testado e revisado · ⏳ ligação na integração (abaixo) | `tecnico/era-abraao.md` |
 | Motor visual do vale de Noé | 🟡 parcial (abaixo) | briefing: `agentes/motor.md` |
 | Integração (fluxo da partida, ligações, e2e) | 🟡 até A1 jogável ✅ (e2e `integracao.mjs`) · era 2 e `jogar-mvp` pendentes | `tecnico/integracao.md` |
 | Deploy (GitHub Pages) | ✅ workflow pronto (ativar em *Settings → Pages → GitHub Actions*) | `README.md` |
@@ -52,17 +52,22 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 
 **Dicas para o e2e no Windows:** no Git Bash, use `MSYS_NO_PATHCONV=1` antes de `node e2e/foto.mjs "/..."`. Com o laço parado (`jogo.manual = true; jogo.renderizarManual = false`), só as fotos renderizam: o título fica pronto em cerca de 50 s e o roteiro inteiro até A1 leva uns 2 min. Com o laço rodando no SwiftShader, o `page.screenshot` estoura o tempo.
 
-### 2. Conteúdo da era 2 (`agentes/era-abraao.md`)
+### 2. Conteúdo da era 2 (`tecnico/era-abraao.md`)
 
-**Já existe em `src/eras/abraao/`:** `personagens`, `memorias`, `cristo`, `interativos`, `mecanicas`, `servicos` e `missoes.ts` (1921 linhas, B1–B5). O `tsc` passa.
+**Pronto em `src/eras/abraao/`:** `personagens`, `memorias`, `cristo`, `interativos`, `mecanicas`, `missoes` (B1–B5 completas, B5 termina nos créditos), `servicos`, `atalhos` (`jogarEraAbraao`) e `index` (`ERA_ABRAAO`), com `tests/era-abraao.test.ts` (16 testes: cada missão, a era inteira, idempotência e a era jogada só pelos atalhos). Revisão de fidelidade feita pelo checklist de `tecnico/revisao.md`; os desvios do ROTEIRO e as pendências estão em `tecnico/era-abraao.md`.
 
-**Falta:**
-- `atalhos.ts` e `index.ts` (`ERA_ABRAAO`), no formato de `src/eras/noe/`;
-- `tests/era-abraao.test.ts`, copiando o modelo de `tests/era-noe.test.ts`;
-- `docs/tecnico/era-abraao.md`;
-- a revisão de fidelidade com `docs/tecnico/revisao.md` e `node scripts/planilha-falas.mjs abraao`.
-
-Confira se `missoes.ts` termina em B5 completo; o agente parou logo depois de escrevê-lo.
+**O que a integração precisa para ligar a era** (`src/jogo/ligacao/abraao.ts`, hoje provisório: não usa nada de `src/eras/abraao/index.ts`):
+1. `ERA_ABRAAO_JOGO`: trocar os jogáveis provisórios por `JOGAVEIS_ABRAAO` e preencher `npcs: NPCS_ABRAAO`, `missoes: MISSOES_ABRAAO`, `memorias: MEMORIAS_ABRAAO`, `cristo: CRISTO_ABRAAO`, `missaoInicial: 'b1'`. Sem `seguinte` (última era do MVP).
+2. `criarPersonagens`/`posicoesIniciais`: criar jogáveis e NPCs em `INICIO_ABRAAO` (ponto + yaw; Isaque no `bastidor`) e `jogo.troca.ordem = IDS_JOGAVEIS_ABRAAO`. Os NPCs de cena (`NPCS_CENA_ABRAAO`) as missões criam por `servicos.criarPersonagem`.
+3. Implementar `ServicosAbraao` como `ServicosNoe` em `ligacao/noe.ts`:
+   - `canaa` = o `MundoCanaa`; `ceu` = `jogo.ceu`; `progresso` = `s.progresso`; `entrada` = `jogo.entrada`; `camera.tremer`; `aCadaQuadro` = `jogo.aCadaQuadro`;
+   - `animais.criar` → `criarAnimal(e, mundo, x, z, {ativos, y, yaw, sexo, tom})`; `animais.rebanho(a)` → `Rebanho` em `mundo.atualizaveis`; `soltarRebanho`;
+   - `cristo`, `controlar`, `liberarPosto`, `emitir`, `criarPersonagem`, `removerPersonagem`;
+   - `creditos()`: tela de créditos do MVP (memórias, segredos, tempo) e volta ao menu, resolvendo ao fechar.
+4. `ligar()`: `ERA_ABRAAO.ligarServicos(servicos)` e `ERA_ABRAAO.registrarSegredos(mundo, servicos, jogo.flags)` (guardar o desligar). `reconstruir()`: `ERA_ABRAAO.reconstruir(servicos, mundo, jogo.flags)`. `desligar()` e mundo descartado (novo jogo, título): `ligarServicosAbraao(null)` e `ERA_ABRAAO.limparCena()` (os rebanhos e animais de cena ficam guardados em `missoes.ts`).
+5. `atalhos(op)`: como em `noe.ts`, com `AmbienteAtalhosAbraao` e `jogarEraAbraao` (para `e2e/jogar-mvp.mjs` e `?dev&missao=b3`).
+6. Áudio que as missões pedem e o módulo de áudio ainda não tem: música `batalha` e efeitos `alarme`, `aparar`, `golpe`, `discernir`, `pedra` (mapear para existentes ou criar). Ambientes `canaa`, `noite` e `vento` já existem.
+7. Opcional: `Ceu.estrelas` (0..1) para o céu de Gn 15:5 encher de estrelas em B4.
 
 ### 3. Motor visual (`agentes/motor.md`)
 
