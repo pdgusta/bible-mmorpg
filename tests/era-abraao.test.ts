@@ -699,6 +699,16 @@ describe('era de Abraão — dados', () => {
       if (typeof r.olhar === 'string') expect(conhecido(r.olhar), `rotina de ${d.id}: ${r.olhar}`).toBe(true);
     }
   });
+
+  it('B5: os servos esperam fora do raio de chegada ao pé do Moriá (a etapa `pe` não termina sozinha)', () => {
+    const m = srcMissoes.match(/c\.chegar\('abraao', 'peMoria'(?:, ([\d.]+))?\)/);
+    expect(m, "c.chegar('abraao', 'peMoria'…) em missoes.ts").not.toBeNull();
+    const raio = m![1] ? Number(m![1]) : 3;
+    const [sx, sz] = MAPA_CANAA.pontos.servosMoria;
+    const [px, pz] = MAPA_CANAA.pontos.peMoria;
+    // +1,5: a folga que o CtxMissao falso dá ao `chegar`
+    expect(Math.hypot(sx - px, sz - pz)).toBeGreaterThan(raio + 1.5);
+  });
 });
 
 describe('era de Abraão — missões jogadas com CtxMissao falso', () => {
@@ -834,9 +844,9 @@ describe('era de Abraão — atalhos de depuração', () => {
     const atalhos = jogarEraAbraao(amb, { aoEtapa: (m, e) => etapas.push(`${m}.${e}`) });
     await Promise.all([historia, atalhos]);
     // todas as etapas em que o jogador age passaram pelos atalhos (as só de cinemática podem
-    // terminar antes de o atalho vê-las; b5.pe também, porque 'servosMoria' fica dentro do raio de 'peMoria')
+    // terminar antes de o atalho vê-las)
     const comAcao = ['b1.altarMore', 'b1.acampar', 'b1.invocar', 'b2.separar', 'b2.pastores', 'b2.abraoELo', 'b2.percorrer', 'b2.manre',
-      'b3.dividir', 'b3.ataque', 'b3.libertar', 'b3.melquisedeque', 'b3.nemUmFio', 'b4.fora', 'b4.duvida', 'b5.subida',
+      'b3.dividir', 'b3.ataque', 'b3.libertar', 'b3.melquisedeque', 'b3.nemUmFio', 'b4.fora', 'b4.duvida', 'b5.pe', 'b5.subida',
       'b5.altar', 'b5.carneiro'];
     for (const e of comAcao) expect(etapas, e).toContain(e);
     expect(atual!.estado).toMatchObject({ id: 'b5', status: 'concluida' });

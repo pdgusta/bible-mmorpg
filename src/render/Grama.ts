@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { GLOBAIS, GLSL_RUIDO, GLSL_SEM_VERSO, FAIXA_REVELAR } from './Shaders';
+import { GLOBAIS, GLSL_RUIDO, GLSL_SEM_VERSO, glslEncolher } from './Shaders';
 import type { Relevo } from '../mundo/Relevo';
 
 export type FuncaoDensidade = (x: number, z: number) => number; // 0..1
 export type FuncaoCorGrama = (x: number, z: number, out: THREE.Color) => void;
 
-/** Tufo de lâminas curvas, com cor de base escura e ponta clara (cores por vértice). */
+/** Tufo de lâminas curvas, com a base na cor do chão e a ponta clara (cores por vértice). */
 function geometriaTufo(lam: number, seg: number, larg: number, alturaBase: number): THREE.BufferGeometry {
   const pos: number[] = [];
   const cor: number[] = [];
@@ -29,8 +29,11 @@ function geometriaTufo(lam: number, seg: number, larg: number, alturaBase: numbe
       const cz = oz + dz * curva;
       const y = alt * t;
       pos.push(cx - px * w, y, cz - pz * w, cx + px * w, y, cz + pz * w);
-      const k = 0.58 + t * 0.47;
-      cor.push(k, k, k, k, k, k);
+      // a base quase na cor do chão (o tufo nasce dele) e a ponta clara e morna, pegando sol
+      const k = 0.8 + t * 0.34;
+      const kr = k + t * 0.04;
+      const kb = k - t * 0.1;
+      cor.push(kr, k, kb, kr, k, kb);
     }
     for (let s = 0; s < seg; s++) {
       const a = base + s * 2;
@@ -104,7 +107,7 @@ export class Grama {
            vec4 _b = modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
            float _d = distance(_b.xz, uFoco.xz);
            float _f = 1.0 - smoothstep(uRaioG * 0.72, uRaioG, _d);
-           _f *= 1.0 - smoothstep(uRaio - ${FAIXA_REVELAR.toFixed(1)}, uRaio, distance(_b.xz, uCentro));
+           _f *= 1.0 - ${glslEncolher('_b.xz')};
            transformed.y *= uAltura;
            float _h = transformed.y;
            float _w = sin(uTempo * 2.2 + _b.x * 0.4 + _b.z * 0.3) * 0.5 + sin(uTempo * 3.7 + _b.x * 0.9) * 0.2;

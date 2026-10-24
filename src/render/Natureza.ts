@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { MeshoptSimplifier } from 'three/examples/jsm/libs/meshopt_simplifier.module.js';
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { extrairPartes, type ParteModelo } from './Ativos';
 import { aplicarPatch } from './Shaders';
 import { Aleatorio } from '../core/aleatorio';
@@ -26,7 +27,7 @@ export interface OpcoesVariante {
    * (copa + tronco, ~100 triângulos). Padrão 105 m; Infinity desliga.
    */
   alcanceMedio?: number;
-  /** Fração de triângulos do tronco mantida também de perto (árvores: 0,5; 1 = malha original). */
+  /** Fração de triângulos do tronco mantida também de perto (árvores: 0,35; 1 = malha original). */
   reduzirTroncoPerto?: number;
   /**
    * Recolore as folhas (materiais "Leaves*"): mantém o desenho da textura e troca a cor.
@@ -49,6 +50,11 @@ interface Modelo {
   nome: string;
   perto: ParteModelo[];
   longe: ParteModelo[];
+  /**
+   * Material de sombra de cada parte de perto, com o mesmo patch (vento, alcance, revelação):
+   * sem ele a sombra fica parada e não encolhe com a instância.
+   */
+  sombras: THREE.Material[];
   raio: number;
   sil: Silhueta | null;
 }
@@ -85,6 +91,9 @@ const _e = new THREE.Euler();
 const _p = new THREE.Vector3();
 const _s = new THREE.Vector3();
 const _esf = new THREE.Sphere();
+/** Frações de `distanciaMax` que limitam o alcance perto (com sombra) e o começo das silhuetas. */
+const FRACAO_PERTO = 0.16;
+const FRACAO_MEDIO = 0.38;
 
 /**
  * Vegetação e rochas instanciadas a partir do Stylized Nature MegaKit.
@@ -149,12 +158,13 @@ export class Natureza {
     const partesBase = extrairPartes(no, this.cacheMat);
     const perto: ParteModelo[] = [];
     const longe: ParteModelo[] = [];
+    const sombras: THREE.Material[] = [];
     let raio = 0;
     const temFolha = partesBase.some((p) => p.folha);
     const temTronco = partesBase.some((p) => !p.folha);
     const arvore = temFolha && temTronco;
     const reduzir = op.reduzirTronco ?? (arvore ? 0.25 : 0);
-    const reduzirPerto = op.reduzirTroncoPerto ?? (arvore ? 0.5 : 1);
+    const reduzirPerto = op.reduzirTroncoPerto ?? (arvore ? 0.35 : 1);
     const caixaFolha = new THREE.Box3();
     const caixaTronco = new THREE.Box3();
     for (const p of partesBase) {
@@ -187,7 +197,12 @@ export class Natureza {
       if (tint) mat.color.multiply(new THREE.Color(tint));
       p.geometria.computeBoundingSphere();
       raio = Math.max(raio, p.geometria.boundingSphere!.radius + p.geometria.boundingSphere!.center.length());
-      aplicarPatch(mat, { vento: p.folha ? (op.vento ?? 0.12) : (op.vento ?? 0.12) * 0.25, alturaRef: 6, alcance: uAlcance, semVerso: p.folha, luminancia: lum });
+      const vento = p.folha ? (op.vento ?? 0.12) : (op.vento ?? 0.12) * 0.25;
+      aplicarPatch(mat, { vento, alturaRef: 6, alcance: uAlcance, semVerso: p.folha, luminancia: lum });
+      // sem o fade por alcance: na passada de sombra o cameraPosition é a câmera da luz, e a sombra
+      // encolheria pela distância ao sol. Não faz falta: só as partes de perto projetam sombra, e o
+      // perto (≤ 16% da distanciaMax) fica sempre antes dos últimos 15% do alcance.
+      sombras.push(aplicarPatch(new THREE.MeshDepthMaterial(), { vento, alturaRef: 6 }));
       if (lum) mat.userData.luminancia = lum;
       mat.name = `${variante}_${mat.name}`;
       const geoPerto = !p.folha && reduzirPerto < 0.99 ? simplificar(p.geometria, reduzirPerto) : p.geometria;
@@ -197,7 +212,7 @@ export class Natureza {
         : reduzir ? simplificar(p.geometria, reduzir) : p.geometria;
       longe.push({ geometria: geoLonge, material: mat, folha: p.folha });
     }
-    return { nome, perto, longe, raio, sil };
+    return { nome, perto, longe, sombras, raio, sil };
   }
 
   adicionar(variante: string, x: number, y: number, z: number, ry: number, s: number, aleatorio?: Aleatorio, rx = 0) {
@@ -283,12 +298,13 @@ export class Natureza {
         return;
       }
       const criar = (partes: ParteModelo[], sombra: boolean, sufixo: string) =>
-        partes.map((p) => {
+        partes.map((p, pi) => {
           const im = new THREE.InstancedMesh(p.geometria, p.material, total);
           im.count = 0;
           im.visible = false;
           im.frustumCulled = false;
           im.castShadow = sombra && v.op.sombra;
+          if (im.castShadow) im.customDepthMaterial = mod.sombras[pi];
           im.receiveShadow = true;
           im.name = `${v.nome}_${mod.nome}${sufixo}`;
           this.grupo.add(im);
@@ -325,8 +341,12 @@ export class Natureza {
       const alc = Math.min(v.op.alcance, this.distanciaMax);
       v.uAlcance.value = alc;
       const alc2 = alc * alc;
-      const perto2 = v.op.alcancePerto * v.op.alcancePerto;
-      const medio2 = v.silCopa ? v.op.alcanceMedio * v.op.alcanceMedio : Infinity;
+      // o preset de qualidade (distanciaMax) encurta também o modelo completo com sombra e o
+      // começo das silhuetas: no médio (230 m), perto ≤ 37 m e silhueta a partir de 87 m
+      const perto = Math.min(v.op.alcancePerto, this.distanciaMax * FRACAO_PERTO);
+      const medio = Math.min(v.op.alcanceMedio, this.distanciaMax * FRACAO_MEDIO);
+      const perto2 = perto * perto;
+      const medio2 = v.silCopa ? medio * medio : Infinity;
       const contP: number[] = v.modelos.map(() => 0);
       const contL: number[] = v.modelos.map(() => 0);
       let contS = 0;
@@ -397,6 +417,7 @@ export class Natureza {
       for (const mod of v.modelos) {
         for (const p of mod.perto) { p.geometria.dispose(); p.material.dispose(); }
         for (const p of mod.longe) p.geometria.dispose();
+        for (const s of mod.sombras) s.dispose();
       }
     }
   }
@@ -502,6 +523,23 @@ function corPorAltura(g: THREE.BufferGeometry, base = 0.62) {
   return g;
 }
 
+/**
+ * Normais macias puxadas para cima (como as da grama): de longe a copa recebe luz por igual e
+ * não vira uma mancha escura com facetas.
+ */
+function normaisMacias(g: THREE.BufferGeometry, paraCima: number) {
+  g.deleteAttribute('normal');
+  g.deleteAttribute('uv');
+  const m = mergeVertices(g);
+  m.computeVertexNormals();
+  const n = m.attributes.normal;
+  for (let i = 0; i < n.count; i++) {
+    _p.set(n.getX(i), n.getY(i) + paraCima, n.getZ(i)).normalize();
+    n.setXYZ(i, _p.x, _p.y, _p.z);
+  }
+  return m;
+}
+
 let _geoCopa: THREE.BufferGeometry | null = null;
 /** Copa: icosaedro "fofo" de raio 1. */
 function geoCopa() {
@@ -513,8 +551,7 @@ function geoCopa() {
       const k = 1 + Math.sin(x * 5.1 + z * 2.3) * 0.08 + Math.cos(y * 4.7 + x * 1.9) * 0.07;
       p.setXYZ(i, x * k, y * k, z * k);
     }
-    g.computeVertexNormals();
-    _geoCopa = corPorAltura(g, 0.6);
+    _geoCopa = corPorAltura(normaisMacias(g, 0.9), 0.72);
   }
   return _geoCopa;
 }
@@ -532,8 +569,7 @@ function geoCone() {
     for (const g of partes) pos.push(...(g.toNonIndexed().attributes.position.array as Float32Array));
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    g.computeVertexNormals();
-    _geoCone = corPorAltura(g, 0.55);
+    _geoCone = corPorAltura(normaisMacias(g, 0.7), 0.66);
   }
   return _geoCone;
 }
@@ -552,15 +588,49 @@ MeshoptSimplifier.ready.then(() => { simplificadorPronto = true; });
 function simplificar(g: THREE.BufferGeometry, fracao: number): THREE.BufferGeometry {
   const idx = g.index;
   if (!simplificadorPronto || !idx) return g;
+  // solda os vértices por posição: as costuras de UV e de normal duplicam vértices, e para o
+  // simplificador cada costura vira uma borda travada (o tronco da oliveira não passava de 7212 → 6540
+  // triângulos; soldado, chega a 30% com erro de 0,3%)
   const pa = g.attributes.position;
-  const pos = new Float32Array(pa.count * 3);
-  for (let i = 0; i < pa.count; i++) { pos[i * 3] = pa.getX(i); pos[i * 3 + 1] = pa.getY(i); pos[i * 3 + 2] = pa.getZ(i); }
+  const chaves = new Map<string, number>();
+  const solda = new Uint32Array(pa.count);
+  const originais: number[][] = [];
+  for (let i = 0; i < pa.count; i++) {
+    const k = `${Math.round(pa.getX(i) * 1e4)},${Math.round(pa.getY(i) * 1e4)},${Math.round(pa.getZ(i) * 1e4)}`;
+    let w = chaves.get(k);
+    if (w === undefined) {
+      w = originais.length;
+      chaves.set(k, w);
+      originais.push([]);
+    }
+    originais[w].push(i);
+    solda[i] = w;
+  }
+  const pos = new Float32Array(originais.length * 3);
+  originais.forEach(([i], w) => { pos[w * 3] = pa.getX(i); pos[w * 3 + 1] = pa.getY(i); pos[w * 3 + 2] = pa.getZ(i); });
   const ind = new Uint32Array(idx.count);
-  for (let i = 0; i < idx.count; i++) ind[i] = idx.getX(i);
+  for (let i = 0; i < idx.count; i++) ind[i] = solda[idx.getX(i)];
   const alvo = Math.max(3, Math.floor((idx.count * fracao) / 3) * 3);
-  const [novo] = MeshoptSimplifier.simplify(ind, pos, 3, alvo, 0.05, ['LockBorder']);
+  const [novo] = MeshoptSimplifier.simplify(ind, pos, 3, alvo, 0.02, ['LockBorder']);
   if (novo.length < 3) return g;
+  // volta aos vértices originais: num vértice de costura, escolhe para o triângulo inteiro o lado
+  // de UV mais coerente (o de menor perímetro em UV), para a textura não esticar
+  const uv = g.attributes.uv;
+  const saida = new Uint32Array(novo.length);
+  const uvDist = (a: number, b: number) => Math.abs(uv.getX(a) - uv.getX(b)) + Math.abs(uv.getY(a) - uv.getY(b));
+  for (let t = 0; t < novo.length; t += 3) {
+    const ca = originais[novo[t]], cb = originais[novo[t + 1]], cc = originais[novo[t + 2]];
+    let melhor = [ca[0], cb[0], cc[0]];
+    if (uv && ca.length + cb.length + cc.length > 3) {
+      let menor = Infinity;
+      for (const a of ca) for (const b of cb) for (const c of cc) {
+        const d = uvDist(a, b) + uvDist(b, c) + uvDist(c, a);
+        if (d < menor) { menor = d; melhor = [a, b, c]; }
+      }
+    }
+    saida[t] = melhor[0]; saida[t + 1] = melhor[1]; saida[t + 2] = melhor[2];
+  }
   const out = g.clone();
-  out.setIndex(new THREE.BufferAttribute(novo, 1));
+  out.setIndex(new THREE.BufferAttribute(saida, 1));
   return out;
 }

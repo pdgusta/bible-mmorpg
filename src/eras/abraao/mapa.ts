@@ -376,11 +376,14 @@ export const MAPA_CANAA: DefMapa = {
     // vale de Savé: fundo mais verde
     const ds = Math.hypot(x - CANAA.save[0], z - CANAA.save[1]);
     if (ds < 30) out.lerp(_c.set('#a6a85e'), (1 - smoothstep(10, 30, ds)) * 0.5);
-    // Moriá: rocha calcária
+    // Moriá: estratos de calcário quente nas faces íngremes; nos patamares, terra e mato seco
     const dmo = Math.hypot(x - MORIA.topo[0], z - MORIA.topo[1]);
     if (dmo < 58) {
       const m = 1 - smoothstep(44, 56, dmo);
-      out.lerp(_c.set(Math.sin(h * 1.3 + n2) > 0.2 ? '#cfc4ab' : '#e0d8c4'), m * (0.55 + pedra * 0.4));
+      const faixa = Math.sin(h * 1.3 + n2 * 0.9);
+      out.lerp(_c.set(faixa > 0.5 ? '#bea283' : faixa > -0.3 ? '#dcc8a2' : '#ccb08a'), m * (0.45 + pedra * 0.5));
+      out.lerp(_c.set(n > 0 ? '#a0975a' : '#b2a366'), m * (1 - pedra) * 0.75);
+      if (n2 > 0.45) out.lerp(_c.set('#957f62'), m * pedra * 0.5 * smoothstep(0.45, 0.8, n2));
       const rt = T.rota(x, z);
       if (rt.d < rt.w + 0.4) out.lerp(_c.set('#c9b48c'), 0.7);
     }

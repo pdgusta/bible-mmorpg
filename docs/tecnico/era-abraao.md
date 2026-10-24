@@ -65,7 +65,7 @@ Os itens de fala abaixo já foram aceitos e levados ao ROTEIRO (ver "Falas e tex
 - **B3, prova da tentação:** as respostas são `Gn 14:22-23` (Gn 14:22 sozinho termina em vírgula), `Gn 13:8` e `Gn 12:2`. Duas mentiras do ROTEIRO ("Você mereceu.", "Ninguém vai saber.") viraram "Isso é seu. Não divida com ninguém." e "Pegue tudo antes que outro pegue.", porque Gn 13:8 e Gn 12:2 não as respondiam (cada resposta tem de servir a todas as mentiras).
 - **B3:** 6 inimigos (4 sentinelas acordam 2 guerreiros, o mínimo do ROTEIRO). Os cativos são 4 + Ló (`cativo5`), solto por último e só por Abrão.
 - **B5:** Gn 22:13 é dividido: o carneiro preso antes de o jogador agir; "e Abraão foi e tomou o carneiro…" depois, já com o fogo no altar.
-- **B5, `pe`:** `servosMoria` fica a 6,7 m de `peMoria` (raio 8), então a etapa termina assim que começa e funciona como cena.
+- **B5, `pe`:** `servosMoria` fica a 6,7 m de `peMoria`, na beira do pé plano (que só tem ~7 m de raio; além dele a encosta é íngreme). Por isso a chegada usa o raio padrão (3): o jogador anda até o pé, e um teste de dados garante que os servos ficam fora do raio.
 - A pose de oração usa o clipe `agachado` (`CLIPE_ORACAO`).
 
 ## Falas e textos alterados na revisão (T-002)
