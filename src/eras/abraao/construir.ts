@@ -238,9 +238,9 @@ export class MundoCanaa {
     const r = new Aleatorio(1416);
     this.despojosSave = zona(m, 'despojosSave', 1416, (c) => {
       em(c, m, x, z, 0, () => despojos(c, r));
-      em(c, m, x + 3.4, z - 2.4, 0.5, () => despojos(c, r));
+      em(c, m, x - 3.4, z + 2.4, 0.5, () => despojos(c, r));
     });
-    this.brilho = new BrilhoDespojos(x + 1.4, m.relevo.altura(x, z), z - 1, 3.4, 2, new Aleatorio(1417));
+    this.brilho = new BrilhoDespojos(x - 1.4, m.relevo.altura(x, z), z + 1, 3.4, 2, new Aleatorio(1417));
     m.estruturas.add(this.brilho.grupo);
   }
 

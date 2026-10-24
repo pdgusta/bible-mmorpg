@@ -663,7 +663,7 @@ export class BrilhoDespojos {
       this.halos.setMatrixAt(i, m4);
     });
     this.halos.instanceMatrix.needsUpdate = true;
-    this.matHalo.uniforms.uForca.value = 0.85 * f;
-    this.matChao.uniforms.uForca.value = 0.45 * f;
+    this.matHalo.uniforms.uForca.value = 1.15 * f;
+    this.matChao.uniforms.uForca.value = 0.6 * f;
   }
 }

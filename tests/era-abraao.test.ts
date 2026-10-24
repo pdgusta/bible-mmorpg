@@ -19,7 +19,7 @@ import { ehBiblica } from '../src/jogo/contratos';
 import type { DefPersonagem, Personagem } from '../src/jogo/Personagem';
 import type { Mundo } from '../src/mundo/Mundo';
 import { ACAMPAMENTOS, CURRAIS, MAPA_CANAA, TRILHA_BETEL } from '../src/eras/abraao/mapa';
-import { CAMINHO_FE, DESPOJOS, brilhoDespojos, caminhoFe, trechoRevelado } from '../src/eras/abraao/mecanicas';
+import { CAMINHO_FE, DESPOJOS, avancoNoCaminho, brilhoDespojos, caminhoFe, trechoRevelado } from '../src/eras/abraao/mecanicas';
 import type { EstadoAltar, LugarAcampamento, NomeAltar, NomeCurral, NomePorteira, NomeTenda } from '../src/eras/abraao/construir';
 import { MEMORIAS_NOE } from '../src/eras/noe/memorias';
 import {
@@ -818,6 +818,126 @@ describe('era de Abraão — missões jogadas com CtxMissao falso', () => {
     }
     expect(v.flags.b5Carneiro).toBe(true);
     expect(v.canaa.altares.altarMoria).toBe('aceso');
+  });
+});
+
+describe('era de Abraão — ensinamentos 11 (sair pela fé) e 15 (não amar as riquezas)', () => {
+  const destinoB1 = MAPA_CANAA.pontos.acampamentoBetel;
+  const caminho = caminhoFe([...TRILHA_BETEL, destinoB1]);
+  const ultimo = caminho.pontos.length - 1;
+  /** Pontos a cada ~1 m ao longo do caminho, do início ao destino. */
+  function amostras(): [number, number][] {
+    const out: [number, number][] = [];
+    for (let i = 1; i < caminho.pontos.length; i++) {
+      const [ax, az] = caminho.pontos[i - 1];
+      const [bx, bz] = caminho.pontos[i];
+      const n = Math.ceil(Math.hypot(bx - ax, bz - az));
+      for (let k = 0; k <= n; k++) out.push([ax + ((bx - ax) * k) / n, az + ((bz - az) * k) / n]);
+    }
+    return out;
+  }
+
+  it('11: o caminho de Moré ao monte se divide em trechos de ~24 m e se revela só para a frente', () => {
+    expect(caminho.pontos[0]).toEqual(TRILHA_BETEL[0]);
+    expect(caminho.pontos[ultimo]).toEqual(destinoB1);
+    expect(ultimo).toBeGreaterThanOrEqual(4);
+    for (let i = 1; i <= ultimo; i++) {
+      const passo = caminho.s[i] - caminho.s[i - 1];
+      if (i < ultimo) expect(passo).toBeCloseTo(CAMINHO_FE.passo, 6);
+      else expect(passo).toBeGreaterThanOrEqual(CAMINHO_FE.passo / 2);
+    }
+    // no início, a bússola mostra o fim do primeiro trecho, nunca o destino
+    const [x0, z0] = caminho.pontos[0];
+    expect(trechoRevelado(caminho, x0, z0, 0)).toBe(1);
+    // andando, o trecho só avança, um de cada vez, e o destino aparece só no fim
+    let k = 0;
+    const vistos: number[] = [];
+    for (const [x, z] of amostras()) {
+      const n = trechoRevelado(caminho, x, z, k);
+      expect(n).toBeGreaterThanOrEqual(k);
+      expect(n - Math.max(k, 1)).toBeLessThanOrEqual(1);
+      if (n !== k) vistos.push(n);
+      if (n === ultimo && k !== ultimo) expect(avancoNoCaminho(caminho, x, z)).toBeGreaterThanOrEqual(caminho.s[ultimo - 1] - CAMINHO_FE.revelar - 1.01);
+      k = n;
+    }
+    expect(vistos).toEqual(Array.from({ length: ultimo }, (_, i) => i + 1));
+    // voltar não esconde o que já se abriu
+    expect(trechoRevelado(caminho, x0, z0, k)).toBe(ultimo);
+  });
+
+  it('11: em B1 a bússola aponta trecho a trecho até o monte entre Betel e Ai', async () => {
+    const v = mundoAtual;
+    const b1 = MISSOES_ABRAAO[0];
+    // o jogador anda pela trilha antes de chegar (o `chegar` falso só teleporta)
+    await jogarMissao(v, b1, 'auto', novoEstado(b1.id), (c) => {
+      const chegar = c.chegar.bind(c);
+      c.chegar = async (quem, alvo, raio) => {
+        if (alvo === 'acampamentoBetel') {
+          for (const [x, z] of amostras()) {
+            v.pessoa('abraao').teleportar(x, 0, z);
+            v.quadro(0.1);
+          }
+        }
+        return chegar(quem, alvo, raio);
+      };
+    });
+    const alvos = v.reg.alvos;
+    const doCaminho = alvos.slice(alvos.indexOf('altarMore') + 1, alvos.indexOf('mastroTenda1'));
+    expect(doCaminho).toEqual([...caminho.pontos.slice(1, ultimo), 'acampamentoBetel']);
+  });
+
+  it('15: o brilho dos despojos é pleno perto, desbota com a distância e some longe', () => {
+    expect(brilhoDespojos(0)).toBe(1);
+    expect(brilhoDespojos(DESPOJOS.perto)).toBe(1);
+    expect(brilhoDespojos(DESPOJOS.longe)).toBe(0);
+    expect(brilhoDespojos(DESPOJOS.longe + 30)).toBe(0);
+    let antes = 1;
+    for (let d = DESPOJOS.perto; d <= DESPOJOS.longe; d += 0.5) {
+      const b = brilhoDespojos(d);
+      expect(b).toBeLessThanOrEqual(antes);
+      antes = b;
+    }
+    expect(brilhoDespojos((DESPOJOS.perto + DESPOJOS.longe) / 2)).toBeCloseTo(0.5, 6);
+  });
+
+  it('15: quando o rei de Sodoma faz a oferta, Abrão (no dízimo) está perto o bastante para ver o brilho', () => {
+    const [dx, dz] = MAPA_CANAA.pontos.dizimo;
+    const [px, pz] = MAPA_CANAA.pontos.despojosSave;
+    expect(brilhoDespojos(Math.hypot(dx - px, dz - pz))).toBeGreaterThan(0.75);
+    // e a pilha (até ~4,5 m do centro) não encobre o interativo do dízimo (raio 3)
+    expect(Math.hypot(dx - px, dz - pz)).toBeGreaterThan(3 + 4.5);
+  });
+
+  it('15: em B3 os despojos brilham na tentação, a recusa vale mais que qualquer achado e nada prende o jogador', async () => {
+    const v = mundoAtual;
+    const [b1, b2, b3, b4] = MISSOES_ABRAAO;
+    await jogarMissao(v, b1);
+    await jogarMissao(v, b2);
+    v.reg.xp.length = 0;
+    let acesosNaProva: boolean | null = null;
+    await jogarMissao(v, b3, 'auto', novoEstado(b3.id), (c) => {
+      const prova = c.prova.bind(c);
+      c.prova = (def) => {
+        acesosNaProva = v.canaa.despojosVisiveis && v.canaa.despojosAcesos;
+        return prova(def);
+      };
+    });
+    expect(acesosNaProva).toBe(true);
+    // a recusa: XP de "resistir a uma tentação" (DESIGN §6), acima do maior prêmio por achar algo
+    expect(v.reg.xp.filter(([, f]) => f === 'prova')).toEqual([['abraao', 'prova', undefined]]);
+    expect(XP.prova).toBe(60);
+    expect(XP.prova).toBeGreaterThan(XP.segredo);
+    // B3 terminou sem ninguém se afastar: o brilho continua aceso e desbota só pela distância
+    expect(v.canaa.despojosVisiveis).toBe(true);
+    expect(v.canaa.despojosAcesos).toBe(true);
+    // o carregar restaura os despojos pelas flags
+    v.canaa.definirDespojos(false);
+    v.canaa.acenderDespojos(false);
+    reconstruirMundoAbraao(v.servicos, v.mundo as never, v.flags);
+    expect([v.canaa.despojosVisiveis, v.canaa.despojosAcesos]).toEqual([true, true]);
+    // o rei de Sodoma levou os seus bens (Gn 14:24): em Manre, nada de despojos
+    await jogarMissao(v, b4);
+    expect([v.canaa.despojosVisiveis, v.canaa.despojosAcesos]).toEqual([false, false]);
   });
 });
 

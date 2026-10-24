@@ -315,8 +315,9 @@ export const MAPA_CANAA: DefMapa = {
     altarSalem: [3, 85],
     melquisedeque: [-2, 88],
     dizimo: [-6, 90],
-    // os bens de Sodoma trazidos de volta (Gn 14:16), que Abrão recusa (Gn 14:23)
-    despojosSave: [-16, 107],
+    // os bens de Sodoma trazidos de volta (Gn 14:16), que Abrão recusa (Gn 14:23); perto do
+    // dízimo, onde Abrão está quando o rei de Sodoma faz a oferta
+    despojosSave: [-12, 95],
     chegadaSodoma: [30, 104],
     // B4 — a noite das estrelas (junto da tenda em Manre)
     ceuEstrelas: CANAA.ceuEstrelas,
