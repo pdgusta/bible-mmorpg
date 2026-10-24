@@ -23,7 +23,7 @@ Estado do código ao sair: `npx tsc --noEmit` dá 0 erros, `npx vitest run` pass
 | UI | ✅ (demo `?lab=ui`) | `tecnico/ui.md` |
 | Animais e áudio | ✅ (`?lab=animais`) | `tecnico/animais-audio.md` |
 | Mundo de Canaã | ✅ (`?lab=canaa`, ≤ 92 draw calls) | `tecnico/canaa.md` |
-| Conteúdo da era 1 | ✅ escrito e revisado · ⏳ 5 ajustes de lógica pendentes (abaixo) | `tecnico/era-noe.md`, `tecnico/revisao.md` |
+| Conteúdo da era 1 | ✅ escrito, revisado e com os 5 ajustes de lógica da revisão (branch `frente/era-noe`) | `tecnico/era-noe.md`, `tecnico/revisao.md` |
 | Conteúdo da era 2 | 🟡 parcial (abaixo) | briefing: `agentes/era-abraao.md` |
 | Motor visual do vale de Noé | 🟡 parcial (abaixo) | briefing: `agentes/motor.md` |
 | Integração (fluxo da partida, ligações, e2e) | 🟡 até A1 jogável ✅ (e2e `integracao.mjs`) · era 2 e `jogar-mvp` pendentes | `tecnico/integracao.md` |
@@ -84,13 +84,17 @@ Confira se `missoes.ts` termina em B5 completo; o agente parou logo depois de es
 - **Física:** inclinação máxima no `CorpoFisico`; hoje as encostas não bloqueiam a subida.
 - **Desempenho:** medir o vale (≤ 150 draw calls e ≤ 600 mil triângulos no preset médio) e escrever `docs/tecnico/motor.md`.
 
-### 4. Ajustes de lógica da era 1 (pedidos pela revisão; nada aplicado ainda)
+### 4. Ajustes de lógica da era 1 (pedidos pela revisão; aplicados na branch `frente/era-noe`)
 
-1. **Gn 7:2:** animais limpos (ovelha, cabra, boi) chegam de 7 em 7 em A4.
-2. **Gn 8:6:** quem abre a janela é Noé (`soltarCorvo`/`definirJanela`); Jafé só solta as amarras.
-3. **Ensinamento 9:** `segredoEstacoes` só fica ativo depois da flag `a6Altar` (`registrarSegredosNoe`).
-4. **Ensinamento 6:** animais agitados forçados fogem (`Animal.fugirDe`) e precisam ser acalmados por Sem.
-5. Uma fala curta de ficção para Sem em A2, porque o objetivo diz "Fale com Sem, Cam e Jafé".
+1. **Gn 7:2:** ✅ os animais limpos (ovelha, cabra, boi e os cervos da gruta) chegam de 7 em 7 em A4: três casais e um macho para o altar (leitura registrada em `tecnico/era-noe.md`). O objetivo conta espécies e o banner mostra Gn 7:2.
+2. **Gn 8:6:** ✅ Jafé só solta as amarras (`a5Amarras`); Noé abre a janela em `soltarCorvo` (narrador Gn 8:6).
+3. **Ensinamento 9:** ✅ `segredoEstacoes` só fica ativo depois da flag `a6Altar` (`depoisDe` em `SEGREDOS_INTERATIVOS`).
+4. **Ensinamento 6:** ✅ forçados por quem não sabe acalmar, os agitados fogem (`Animal.fugirDe`, que agora mantém o susto) até Sem acalmá-los.
+5. ✅ Sem tem uma fala curta de ficção no planejamento de A2.
+
+Pendências:
+- `docs/ROTEIRO.md` (A4 "0/8 pares" e "par perdido", A5 "Jafé abre a cobertura") e `docs/tecnico/revisao.md` §8 (pendências 1 a 4) ainda descrevem o estado antigo.
+- Medir as draw calls de A4 no jogo integrado: no pior caso há cerca de 29 animais ao mesmo tempo.
 
 ## Problemas conhecidos (arte)
 

@@ -151,10 +151,11 @@ export const INTERATIVOS_NOE: Record<string, DefInterativoNoe[]> = {
     ...n3('rede', 2).map((id, i): DefInterativoNoe => ({ id, verbo: 'amarrar', rotulo: 'Prender a rede de carga', lugar: { arca: `rede${i + 1}` as NomePontoArca }, segurar: 2, dica: 'Jafé pode subir e prender as redes.' })),
   ],
   'a5.janela': [
-    { id: 'janela', verbo: 'amarrar', rotulo: 'Abrir a cobertura da janela', lugar: { arca: 'janela' }, segurar: 2, dica: 'Jafé pode subir até a janela.' },
+    // Jafé só solta as amarras; quem abre a janela é Noé (Gn 8:6), em soltarCorvo
+    { id: 'janela', verbo: 'amarrar', rotulo: 'Soltar as amarras da janela', lugar: { arca: 'janela' }, segurar: 2, dica: 'Jafé pode subir até a janela.' },
   ],
   'a5.corvo': [
-    { id: 'soltarCorvo', verbo: 'usar', rotulo: 'Soltar o corvo', lugar: { arca: 'escadaJanela' }, raio: 3.5 },
+    { id: 'soltarCorvo', verbo: 'usar', rotulo: 'Abrir a janela e soltar o corvo', lugar: { arca: 'escadaJanela' }, raio: 3.5 },
   ],
   'a5.soltarPomba': [
     { id: 'soltarPomba', verbo: 'usar', rotulo: 'Soltar a pomba', lugar: { arca: 'escadaJanela' }, raio: 3.5 },
@@ -168,18 +169,25 @@ export const INTERATIVOS_NOE: Record<string, DefInterativoNoe[]> = {
   ],
 };
 
-/** Espécies dos pares de A4 que chegam sozinhos (os agitados param e esperam Sem). */
-export const PARES_A4: { especie: string; chegada: string; agitado: boolean; atraso: number }[] = [
-  { especie: 'ovelha', chegada: 'chegadaAnimais1', agitado: false, atraso: 0 },
-  { especie: 'cabra', chegada: 'chegadaAnimais2', agitado: false, atraso: 5 },
+/**
+ * Espécies de A4 que chegam sozinhas (as agitadas param e esperam Sem). As limpas vêm de sete
+ * em sete, as outras de dois em dois (Gn 7:2). Leitura do jogo: sete animais, três casais e um
+ * macho a mais, o que será oferecido no altar (Gn 8:20).
+ */
+export const PARES_A4: { especie: string; chegada: string; agitado: boolean; atraso: number; limpo?: boolean }[] = [
+  { especie: 'ovelha', chegada: 'chegadaAnimais1', agitado: false, atraso: 0, limpo: true },
+  { especie: 'cabra', chegada: 'chegadaAnimais2', agitado: false, atraso: 5, limpo: true },
   { especie: 'camelo', chegada: 'chegadaAnimais3', agitado: true, atraso: 10 },
-  { especie: 'boi', chegada: 'chegadaAnimais4', agitado: false, atraso: 16 },
+  { especie: 'boi', chegada: 'chegadaAnimais4', agitado: false, atraso: 16, limpo: true },
   { especie: 'cavalo', chegada: 'chegadaAnimais1', agitado: true, atraso: 22 },
   { especie: 'jumento', chegada: 'chegadaAnimais2', agitado: false, atraso: 28 },
   { especie: 'leao', chegada: 'chegadaAnimais3', agitado: true, atraso: 34 },
 ];
-/** O oitavo par, que se escondeu na gruta. */
-export const PAR_PERDIDO = 'cervo';
+/** Quantos de cada espécie entram na arca (Gn 7:2). */
+export const quantosDaEspecie = (par: { limpo?: boolean }) => (par.limpo ? 7 : 2);
+/** A oitava espécie, que se escondeu na gruta: o cervo, limpo, vem de sete em sete (Gn 7:2). */
+export const ESPECIE_PERDIDA = 'cervo';
+export const QUANTOS_PERDIDOS = quantosDaEspecie({ limpo: true });
 export const TOTAL_PARES = PARES_A4.length + 1;
 /** Animais das baias do convés 2 (A5). */
 export const ANIMAIS_BAIAS = ['boi', 'camelo', 'leao'];
@@ -204,11 +212,14 @@ export function interativoConversa(pessoa: string): DefInterativoNoe {
 }
 export const INTERATIVO_FALAR_SEM: DefInterativoNoe = { id: 'falarSem', verbo: 'falar', rotulo: 'Falar com Sem', lugar: { personagem: 'sem' }, raio: 2.8 };
 
-/** Segredos (memórias opcionais), ativos a era inteira enquanto não forem achados. */
-export const SEGREDOS_INTERATIVOS: (DefInterativoNoe & { memoria: string; quando: 'antes' | 'depois' })[] = [
+/**
+ * Segredos (memórias opcionais), ativos a era inteira enquanto não forem achados. `depoisDe`:
+ * flag que precisa estar marcada (o vale novo só se abre depois do altar, Ensinamento 9).
+ */
+export const SEGREDOS_INTERATIVOS: (DefInterativoNoe & { memoria: string; quando: 'antes' | 'depois'; depoisDe?: string })[] = [
   { id: 'segredoLameque', memoria: 'lameque', quando: 'antes', verbo: 'olhar', rotulo: 'Ler a pedra', lugar: 'segredoLameque', raio: 2.5, marcador: false },
   { id: 'segredoEnoque', memoria: 'enoque', quando: 'antes', verbo: 'olhar', rotulo: 'Ler a pedra memorial', lugar: 'segredoEnoque', raio: 2.5, marcador: false },
-  { id: 'segredoEstacoes', memoria: 'estacoes', quando: 'depois', verbo: 'olhar', rotulo: 'Olhar o campo', lugar: 'segredoEstacoes', raio: 4, marcador: false },
+  { id: 'segredoEstacoes', memoria: 'estacoes', quando: 'depois', depoisDe: 'a6Altar', verbo: 'olhar', rotulo: 'Olhar o campo', lugar: 'segredoEstacoes', raio: 4, marcador: false },
 ];
 
 /** Todos os ids de interativos da era (para os testes de unicidade). */
@@ -216,7 +227,7 @@ export function idsInterativosNoe(): string[] {
   return [
     ...Object.values(INTERATIVOS_NOE).flat().map((d) => d.id),
     ...PARES_A4.filter((p) => p.agitado).map((p) => idAcalmar(p.especie)),
-    idAcalmar(PAR_PERDIDO),
+    idAcalmar(ESPECIE_PERDIDA),
     ...ENCORAJAVEIS.map(idEncorajar),
     ...CONVERSAS_A6.map(idConversa),
     INTERATIVO_FALAR_SEM.id,
@@ -296,7 +307,7 @@ export function registrarEtapa(m: MundoBase, s: Pick<ServicosNoe, 'vale'>, chave
 
 /**
  * Registra os segredos da era (pedras de Lameque e de Enoque antes do dilúvio, o campo de
- * semeadura depois). Ficam ativos enquanto a memória não for guardada; ao achar: memória
+ * semeadura depois do altar). Ficam ativos enquanto a memória não for guardada; ao achar: memória
  * (conta como segredo para o legado de Abrão) e XP de descoberta. Devolve a remoção.
  */
 export function registrarSegredosNoe(m: MundoBase, s: Pick<ServicosNoe, 'vale' | 'progresso' | 'audio'>, flags: Record<string, unknown>): () => void {
@@ -305,7 +316,7 @@ export function registrarSegredosNoe(m: MundoBase, s: Pick<ServicosNoe, 'vale' |
   const ajustes: Record<string, AjusteInterativo> = {};
   for (const d of defs) {
     ajustes[d.id] = {
-      ativo: () => !s.progresso.temMemoria(d.memoria) && estado() === d.quando,
+      ativo: () => !s.progresso.temMemoria(d.memoria) && estado() === d.quando && (!d.depoisDe || !!flags[d.depoisDe]),
       aoInteragir: (p) => {
         if (!s.progresso.memoria(d.memoria)) return;
         s.progresso.ganharXP(p.id, 'segredo');

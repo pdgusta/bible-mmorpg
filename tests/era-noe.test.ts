@@ -20,7 +20,7 @@ import type { Mundo } from '../src/mundo/Mundo';
 import { MAPA_NOE } from '../src/eras/noe/mapa';
 import {
   ERA_NOE, MISSOES_NOE, MEMORIAS_NOE, CRISTO_NOE, SEGREDOS_NOE, JOGAVEIS_NOE, NPCS_NOE, INICIO_NOE,
-  PROVA_TENTACAO_A3, PROVA_MEDO_A5, ZOMBARIAS_A3, CONVERSAS_RECOMECO,
+  PROVA_TENTACAO_A3, PROVA_MEDO_A5, ZOMBARIAS_A3, CONVERSAS_RECOMECO, PARES_A4, ESPECIE_PERDIDA, esperarAcalmarGrupo, idAcalmar,
   PONTOS_RESERVA, idsInterativosNoe, pontosUsadosNoe, ligarServicosNoe, registrarSegredosNoe, reconstruirMundoNoe,
   jogarEraNoe, type AnimalNoe, type ServicosNoe, type NomePontoArca, type AmbienteAtalhosNoe,
 } from '../src/eras/noe';
@@ -114,6 +114,14 @@ class AnimalFalso implements AnimalNoe {
   }
   acalmar() {
     this.agitado = false;
+  }
+  fugas = 0;
+  fugirDe(de: THREE.Vector3) {
+    // corre uns metros para longe e continua como estava (agitado continua agitado)
+    this.fugas++;
+    const d = this.posicao.clone().sub(de).setY(0);
+    if (d.lengthSq() < 1e-6) d.set(1, 0, 0);
+    this.posicao.add(d.normalize().multiplyScalar(6));
   }
   async irPara(x: number, z: number) {
     this.posicao.set(x, this.posicao.y, z);
@@ -629,6 +637,101 @@ describe('era de Noé — missões jogadas com CtxMissao falso', () => {
       }
     }
     expect(v.flags.valeEstado).toBe('depois');
+  });
+});
+
+describe('era de Noé — ajustes da revisão (docs/tecnico/revisao.md §8)', () => {
+  const missao = (id: string) => MISSOES_NOE.find((m) => m.id === id)!;
+
+  it('Gn 7:2: os animais limpos de A4 (e os cervos da gruta) chegam de sete em sete; os outros, de dois em dois', async () => {
+    const v = valeAtual;
+    const criados = new Map<string, number>();
+    const criar = v.servicos.animais.criar;
+    v.servicos.animais.criar = (e, x, z, o) => {
+      criados.set(e, (criados.get(e) ?? 0) + 1);
+      return criar(e, x, z, o);
+    };
+    await jogarMissao(v, missao('a4'));
+    for (const par of PARES_A4) expect(criados.get(par.especie), par.especie).toBe(['ovelha', 'cabra', 'boi'].includes(par.especie) ? 7 : 2);
+    expect(PARES_A4.filter((p) => p.limpo).map((p) => p.especie).sort()).toEqual(['boi', 'cabra', 'ovelha']);
+    expect(criados.get(ESPECIE_PERDIDA)).toBe(7);
+    expect(v.reg.versiculos).toContain('Gn 7:2');
+    expect(v.animais.size).toBe(0);
+  });
+
+  it('Gn 8:6: Jafé só solta as amarras; quem abre a janela é Noé, ao soltar o corvo', async () => {
+    const v = valeAtual;
+    const usos: string[] = [];
+    const usar = v.usar.bind(v);
+    v.usar = async (i, p) => {
+      usos.push(`${i.id}:${p.id}`);
+      await usar(i, p);
+    };
+    let abriuDepoisDe = '';
+    v.arca.definirJanela = (aberta?: boolean) => {
+      if (aberta) abriuDepoisDe = usos[usos.length - 1];
+    };
+    await jogarMissao(v, missao('a5'));
+    expect(usos).toContain('janela:jafe');
+    expect(abriuDepoisDe).toBe('soltarCorvo:noe');
+    expect(v.flags.a5Amarras).toBe(true);
+    expect(v.flags.janelaAberta).toBe(true);
+    const i86 = v.reg.linhas.findIndex((l) => ehBiblica(l) && l.ref === 'Gn 8:6');
+    const i87 = v.reg.linhas.findIndex((l) => ehBiblica(l) && l.ref === 'Gn 8:7');
+    expect(i86).toBeGreaterThanOrEqual(0);
+    expect(i87).toBeGreaterThan(i86);
+  });
+
+  it('Ensinamento 9: o segredo das estações só se abre depois do altar (a6Altar)', () => {
+    const v = valeAtual;
+    registrarSegredosNoe(v.mundo as never, v.servicos, v.flags);
+    const ativo = () => Interativos.ativo(v.interativos.obter('segredoEstacoes')!);
+    expect(ativo()).toBe(false);
+    v.flags.valeEstado = 'depois';
+    expect(ativo()).toBe(false);
+    v.flags.a6Altar = true;
+    expect(ativo()).toBe(true);
+  });
+
+  it('Ensinamento 6: forçados por quem não sabe acalmar, os agitados fogem e continuam agitados até Sem', async () => {
+    const v = valeAtual;
+    const a4 = missao('a4');
+    const c = new CtxFalso(v, a4, novoEstado('a4'), 'eventos');
+    const macho = new AnimalFalso('camelo', 5, 39, v.animais);
+    const femea = new AnimalFalso('camelo', 6, 40, v.animais);
+    macho.agitar();
+    femea.agitar();
+    // Cam (que não sabe acalmar) chega perto do par
+    v.servicos.controlar('cam');
+    v.personagens.get('cam')!.teleportar(5.5, 0, 38.5);
+    let quem: Personagem | null = null;
+    const espera = esperarAcalmarGrupo(c, 'camelo', [macho, femea]).then((p) => (quem = p));
+    for (let i = 0; i < 5; i++) await imediato();
+    expect(macho.fugas).toBeGreaterThan(0);
+    expect(femea.fugas).toBeGreaterThan(0);
+    expect(macho.agitado && femea.agitado).toBe(true);
+    expect(v.reg.dicas.some((d) => d.includes('fogem'))).toBe(true);
+    expect(quem).toBeNull();
+    // Cam não acalma; Sem sim (o interativo acompanha o animal)
+    const i = v.interativos.obter(idAcalmar('camelo'))!;
+    expect(i.pos.distanceTo(macho.posicao)).toBe(0);
+    expect(v.candidatos(i).map((p) => p.id)).toEqual(['sem']);
+    await v.usar(i, v.personagens.get('sem')!);
+    await espera;
+    expect(quem!.id).toBe('sem');
+    c.controle.abort();
+    expect(v.interativos.obter(idAcalmar('camelo'))).toBeUndefined();
+  });
+
+  it('Sem tem uma fala no planejamento de A2 ("Fale com Sem, Cam e Jafé")', async () => {
+    const v = valeAtual;
+    const m = missao('a2');
+    const estado = novoEstado('a2');
+    const c = new CtxFalso(v, m, estado, 'auto');
+    await m.etapas[0].executar(c);
+    c.controle.abort();
+    const falantes = v.reg.linhas.filter((l) => !ehBiblica(l)).map((l) => l.quem);
+    expect(falantes).toEqual(expect.arrayContaining(['sem', 'cam', 'jafe']));
   });
 });
 

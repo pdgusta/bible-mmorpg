@@ -14,8 +14,8 @@ import type { NomeClipe } from '../../entidades/humano/Animador';
 import { NOE } from './mapa';
 import { servicosNoe, type AnimalNoe, type NomePontoArca, type OpcoesAnimalNoe, type ServicosNoe } from './servicos';
 import {
-  ANIMAIS_BAIAS, CONVERSAS_A6, ENCORAJAVEIS, INTERATIVO_FALAR_SEM, PARES_A4, PAR_PERDIDO, TOTAL_PARES,
-  garantirEscalada, idConversa, interativoAcalmar, interativoConversa, interativoEncorajar, ponto2, registrarDefs, registrarEtapa,
+  ANIMAIS_BAIAS, CONVERSAS_A6, ENCORAJAVEIS, INTERATIVO_FALAR_SEM, PARES_A4, ESPECIE_PERDIDA, TOTAL_PARES,
+  garantirEscalada, idConversa, interativoAcalmar, interativoConversa, interativoEncorajar, ponto2, quantosDaEspecie, QUANTOS_PERDIDOS, registrarDefs, registrarEtapa,
   resolverLugar, type AjusteInterativo, type LugarNoe, type MundoBase, type RegistroInterativos,
 } from './interativos';
 import {
@@ -486,6 +486,7 @@ const A2: DefMissao = {
           ficcao('noe', 'A viga mestra precisa subir até o alto do casco. Sozinho, ninguém a ergue.', 'firme'),
           ficcao('jafe', 'Eu subo o andaime e amarro a corda lá em cima.', 'alegre'),
           ficcao('cam', 'E eu seguro o guincho. Só não demorem!'),
+          ficcao('sem', 'Eu oro por nós enquanto trabalhamos. Depois, ajudo a passar o betume.', 'reverente'),
         ]);
         c.dica('Coloque Cam no guincho, troque para Jafé e suba o andaime. Quem está num posto continua lá quando você troca.');
       },
@@ -765,40 +766,84 @@ const A3: DefMissao = {
 const FONTES_MANTIMENTO = [...lista('saco', 4), ...lista('fruta', 2)];
 const TOTAL_MANTIMENTO = FONTES_MANTIMENTO.length;
 const entregue = (c: CtxMissao, id: string) => feito(c, `a4Entregue_${id}`);
-const paresDentro = (c: CtxMissao) => contarFlags(c, [...PARES_A4.map((p) => `a4Par_${p.especie}`), `a4Par_${PAR_PERDIDO}`]);
+const paresDentro = (c: CtxMissao) => contarFlags(c, [...PARES_A4.map((p) => `a4Par_${p.especie}`), `a4Par_${ESPECIE_PERDIDA}`]);
 
 function objetivoA4(c: CtxMissao) {
   const m = FONTES_MANTIMENTO.filter((id) => entregue(c, id)).length;
   c.objetivo(
-    `Ajude os animais a entrar na arca (${paresDentro(c)}/${TOTAL_PARES} pares) e leve mantimento à arca (${m}/${TOTAL_MANTIMENTO}).`,
+    `Ajude os animais a entrar na arca (${paresDentro(c)}/${TOTAL_PARES} espécies) e leve mantimento à arca (${m}/${TOTAL_MANTIMENTO}).`,
     ['filaAnimais', 'celeiro', 'entregaArca'],
   );
 }
 
-/** Um par chega pela borda do vale, para se estiver agitado e entra pela rampa. */
-async function conduzirPar(c: CtxMissao, par: (typeof PARES_A4)[number], indice: number) {
+/** Distância (m) em que quem não sabe acalmar força os animais agitados (Ensinamento 6). */
+const RAIO_FORCAR = 2.5;
+
+/**
+ * Espera Sem acalmar um grupo agitado. Enquanto isso, se o personagem controlado não souber
+ * acalmar e chegar perto, força os animais: eles fogem e continuam agitados (Ensinamento 6).
+ * `carencia`: segundos sem vigiar no começo (quem achou o grupo ainda está ao lado).
+ */
+export async function esperarAcalmarGrupo(c: CtxMissao, especie: string, grupo: AnimalNoe[], carencia = 0): Promise<Personagem> {
+  const calmo = esperarAcalmar(c, especie, grupo[0].posicao);
+  let fim = false;
+  const vigia = async () => {
+    const DT = 0.25;
+    let pausa = carencia;
+    while (!fim) {
+      await c.esperar(DT);
+      pausa = Math.max(0, pausa - DT);
+      if (fim || pausa > 0) continue;
+      const p = c.ativo();
+      if (p.pode('acalmar') || !grupo.some((a) => a.posicao.distanceTo(p.posicao) < RAIO_FORCAR)) continue;
+      const de = p.posicao.clone();
+      for (const a of grupo) a.fugirDe(de);
+      sv().audio.efeito('sopro');
+      pausa = 3;
+      if (!feito(c, 'a4DicaFugir')) {
+        marcar(c, 'a4DicaFugir');
+        c.dica('Forçados, os animais fogem. Sem pode acalmá-los.');
+      }
+    }
+  };
+  soltar(vigia());
+  try {
+    return await calmo;
+  } finally {
+    fim = true;
+  }
+}
+
+/**
+ * Uma espécie chega pela borda do vale (as limpas de sete em sete, as outras de dois em dois,
+ * Gn 7:2), para se estiver agitada e entra pela rampa.
+ */
+async function conduzirEspecie(c: CtxMissao, par: (typeof PARES_A4)[number], indice: number) {
   const s = sv();
   const flag = `a4Par_${par.especie}`;
   if (feito(c, flag)) return;
   await c.esperar(par.atraso);
   const [x, z] = ponto2(c.mundo as MundoBase, par.chegada);
-  const macho = await criarAnimal(`par_${par.especie}_m`, par.especie, x, z, { sexo: 'macho' });
-  const femea = await criarAnimal(`par_${par.especie}_f`, par.especie, x + 1.6, z + 0.8, { sexo: 'femea' });
+  const chaves = Array.from({ length: quantosDaEspecie(par) }, (_, i) => `par_${par.especie}_${i}`);
   try {
+    const grupo = await Promise.all(chaves.map((chave, i) =>
+      criarAnimal(chave, par.especie, x + (i % 3) * 1.6, z + Math.floor(i / 3) * 1.6, { sexo: i % 2 ? 'femea' : 'macho' })));
     const fila = lugar(c, 'filaAnimais');
     const lado = (indice % 2 ? 1 : -1) * (2 + (indice % 3) * 2.5);
-    await Promise.all([macho.irPara(fila.x + lado, fila.z + 3), femea.irPara(fila.x + lado + 1.2, fila.z + 4)]);
+    await Promise.all(grupo.map((a, i) => a.irPara(fila.x + lado + (i % 3) * 1.2, fila.z + 3 + Math.floor(i / 3) * 1.2)));
+    if (par.limpo && !feito(c, 'a4Gn72')) {
+      marcar(c, 'a4Gn72');
+      c.versiculo('Gn 7:2');
+    }
     if (par.agitado && !feito(c, `a4Calmo_${par.especie}`)) {
-      macho.agitar();
-      femea.agitar();
+      for (const a of grupo) a.agitar();
       s.audio.efeito('sopro');
       if (!feito(c, 'a4DicaAcalmar')) {
         marcar(c, 'a4DicaAcalmar');
         c.dica('Alguns animais chegam agitados e param. Sem pode acalmá-los (Q ou E).');
       }
-      const p = await esperarAcalmar(c, par.especie, macho.posicao);
-      macho.acalmar();
-      femea.acalmar();
+      const p = await esperarAcalmarGrupo(c, par.especie, grupo);
+      for (const a of grupo) a.acalmar();
       marcar(c, `a4Calmo_${par.especie}`);
       c.treinar(p.id, 'compaixao', 0.5);
       c.xp(p.id, 'servir');
@@ -810,12 +855,16 @@ async function conduzirPar(c: CtxMissao, par: (typeof PARES_A4)[number], indice:
     const rampa = lugar(c, 'entregaArca');
     const porta = arca('porta');
     const caminho = caminhoParaDentro(rampa, porta);
-    await Promise.all([macho.entrar(caminho), femea.entrar(caminho)]);
+    // um atrás do outro pela rampa
+    await Promise.all(grupo.map(async (a, i) => {
+      if (i) await c.esperar(i * 0.5);
+      await a.entrar(caminho);
+    }));
     marcar(c, flag);
     c.contador('pares', paresDentro(c));
     objetivoA4(c);
   } finally {
-    await Promise.all([removerAnimal(`par_${par.especie}_m`, false), removerAnimal(`par_${par.especie}_f`, false)]);
+    await Promise.all(chaves.map((chave) => removerAnimal(chave, false)));
   }
 }
 
@@ -864,7 +913,7 @@ async function levarMantimento(c: CtxMissao) {
 
 const A4: DefMissao = {
   id: 'a4', era: ERA, titulo: 'De dois em dois', tipos: ['servico', 'exploracao'],
-  resumo: 'Os animais vêm de dois em dois. Sem acalma os agitados, Cam e Jafé levam o mantimento, e um par perdido espera na gruta.',
+  resumo: 'Os animais vêm de dois em dois, e os limpos de sete em sete. Sem acalma os agitados, Cam e Jafé levam o mantimento, e os cervos perdidos esperam na gruta.',
   refs: ['Gn 6:19-21', 'Gn 7:1-3', 'Gn 7:9', 'Pv 12:10'],
   recompensa: { xp: 100 },
   proxima: 'a5',
@@ -902,7 +951,7 @@ const A4: DefMissao = {
       async executar(c) {
         objetivoA4(c);
         c.dica('Os animais estão chegando (Gn 6:20). Ajude-os a entrar na arca e leve mantimento (Gn 6:21).');
-        await Promise.all([Promise.all(PARES_A4.map((par, i) => conduzirPar(c, par, i))), levarMantimento(c)]);
+        await Promise.all([Promise.all(PARES_A4.map((par, i) => conduzirEspecie(c, par, i))), levarMantimento(c)]);
       },
     },
     {
@@ -916,41 +965,44 @@ const A4: DefMissao = {
     },
     {
       id: 'parPerdido',
-      objetivo: 'Falta um par: dizem que entrou na gruta a oeste.',
+      objetivo: 'Faltam os cervos: dizem que entraram na gruta a oeste.',
       async executar(c) {
         const s = sv();
-        if (feito(c, `a4Par_${PAR_PERDIDO}`)) return;
-        c.objetivo('Falta um par: dizem que entrou na gruta a oeste.', ['entradaGruta']);
+        if (feito(c, `a4Par_${ESPECIE_PERDIDA}`)) return;
+        c.objetivo('Faltam os cervos: dizem que entraram na gruta a oeste.', ['entradaGruta']);
         const fundo = lugar(c, 'fundoGruta');
-        const macho = await criarAnimal('perdido_m', PAR_PERDIDO, fundo.x, fundo.z, { sexo: 'macho' });
-        const femea = await criarAnimal('perdido_f', PAR_PERDIDO, fundo.x + 1.2, fundo.z + 0.6, { sexo: 'femea' });
+        // limpo: sete cervos (Gn 7:2)
+        const chaves = Array.from({ length: QUANTOS_PERDIDOS }, (_, i) => `perdido_${i}`);
         try {
-          macho.agitar();
-          femea.agitar();
+          const grupo = await Promise.all(chaves.map((chave, i) =>
+            criarAnimal(chave, ESPECIE_PERDIDA, fundo.x + (i % 3) * 1.2, fundo.z + Math.floor(i / 3) * 1.2, { sexo: i % 2 ? 'femea' : 'macho' })));
+          for (const a of grupo) a.agitar();
           if (!feito(c, 'a4AchouPar')) {
             const quem = await comEtapa(c, 'a4.parPerdido', {}, () => c.interacao('gruta'));
             marcar(c, 'a4AchouPar');
             c.xp(quem.id, 'segredo');
           }
-          c.objetivo('Os dois animais estão assustados. Traga Sem para acalmá-los.', [{ personagem: 'sem' }]);
-          c.dica('Os dois animais estão assustados. Traga Sem para acalmá-los.');
-          const sem = await esperarAcalmar(c, PAR_PERDIDO, macho.posicao);
-          macho.acalmar();
-          femea.acalmar();
+          c.objetivo('Os cervos estão assustados. Traga Sem para acalmá-los.', [{ personagem: 'sem' }]);
+          c.dica('Os cervos estão assustados. Traga Sem para acalmá-los.');
+          const sem = await esperarAcalmarGrupo(c, ESPECIE_PERDIDA, grupo, 3);
+          for (const a of grupo) a.acalmar();
           c.treinar(sem.id, 'compaixao', 0.5);
-          macho.seguir(sem, 2.5);
-          femea.seguir(sem, 3.5);
-          c.objetivo('Leve o par até a arca.', ['portaArca']);
+          grupo.forEach((a, i) => a.seguir(sem, 2.5 + i * 0.8));
+          c.objetivo('Leve os cervos até a arca.', ['portaArca']);
           await c.chegar(sem.id, 'portaArca', 7);
           const rampa = lugar(c, 'entregaArca');
           const porta = arca('porta');
           const caminho = caminhoParaDentro(rampa, porta);
-          await Promise.all([macho.entrar(caminho), femea.entrar(caminho)]);
-          marcar(c, `a4Par_${PAR_PERDIDO}`);
+          // um atrás do outro pela rampa
+          await Promise.all(grupo.map(async (a, i) => {
+            if (i) await c.esperar(i * 0.5);
+            await a.entrar(caminho);
+          }));
+          marcar(c, `a4Par_${ESPECIE_PERDIDA}`);
           c.contador('pares', paresDentro(c));
           s.audio.efeito('conquista');
         } finally {
-          await Promise.all([removerAnimal('perdido_m', false), removerAnimal('perdido_f', false)]);
+          await Promise.all(chaves.map((chave) => removerAnimal(chave, false)));
         }
       },
     },
@@ -1303,18 +1355,25 @@ const A5: DefMissao = {
         };
         const noeSolta = (id: string) => interacaoDe(c, id, 'noe', 'Quem solta as aves é Noé.');
 
-        if (!feito(c, 'janelaAberta')) {
+        // Jafé sobe e solta as amarras; quem abre a janela é Noé (Gn 8:6)
+        if (!feito(c, 'a5Amarras') && !feito(c, 'janelaAberta')) {
           posicionarNaArca(c, 'conves3');
-          c.objetivo('Jafé: suba a escada e abra a cobertura da janela.', [arca('janela')]);
+          c.objetivo('Jafé: suba a escada e solte as amarras da janela.', [arca('janela')]);
           c.dica('Jafé pode subir pela escada até a janela.');
           await comEtapa(c, 'a5.janela', {}, () => c.interacao('janela'));
-          s.vale.arca.definirJanela(true);
-          s.ceu.hora = 10;
-          marcar(c, 'janelaAberta');
+          s.audio.efeito('corda');
+          marcar(c, 'a5Amarras');
         }
         if (!feito(c, 'a5Corvo')) {
-          c.objetivo('Noé: solte o corvo pela janela.', [arca('escadaJanela')]);
-          await comEtapa(c, 'a5.corvo', {}, () => noeSolta('soltarCorvo'));
+          const abrir = !feito(c, 'janelaAberta');
+          c.objetivo(abrir ? 'Noé: abra a janela e solte o corvo (Gn 8:6-7).' : 'Noé: solte o corvo pela janela.', [arca('escadaJanela')]);
+          await comEtapa(c, 'a5.corvo', abrir ? {} : { soltarCorvo: { rotulo: 'Soltar o corvo' } }, () => interacaoDe(c, 'soltarCorvo', 'noe', abrir ? 'Noé pode abrir a janela.' : 'Quem solta as aves é Noé.'));
+          if (abrir) {
+            s.vale.arca.definirJanela(true);
+            s.ceu.hora = 10;
+            marcar(c, 'janelaAberta');
+            await c.dialogo([narrador('Gn 8:6')]);
+          }
           s.audio.efeito('corvo');
           await soltarAve('corvo', 'corvo', false);
           await c.dialogo([narrador('Gn 8:7')]);

@@ -84,6 +84,8 @@ export interface AnimalNoe {
   /** Agitado: para e não segue ninguém até ser acalmado. */
   agitar(): void;
   acalmar(): void;
+  /** Corre para longe de `pos` por alguns segundos; se estava agitado, continua agitado. */
+  fugirDe(pos: THREE.Vector3, segundos?: number): void;
   /** Anda até (x, z); resolve ao chegar. */
   irPara(x: number, z: number): Promise<void>;
   /** Aves: voa até o ponto; resolve ao chegar. */
