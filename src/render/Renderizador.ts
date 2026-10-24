@@ -46,7 +46,7 @@ export class Renderizador {
     this.gl.toneMapping = THREE.ACESFilmicToneMapping;
     this.gl.toneMappingExposure = 1.05;
     this.gl.shadowMap.enabled = true;
-    this.gl.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.gl.shadowMap.type = THREE.PCFShadowMap; // o r186 removeu o PCFSoftShadowMap (caía neste com aviso)
     this.redimensionar();
     window.addEventListener('resize', () => this.redimensionar());
   }

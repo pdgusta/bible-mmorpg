@@ -5,7 +5,7 @@ import type { Relevo } from '../mundo/Relevo';
 export type FuncaoDensidade = (x: number, z: number) => number; // 0..1
 export type FuncaoCorGrama = (x: number, z: number, out: THREE.Color) => void;
 
-/** Tufo de lâminas curvas, com cor de base escura e ponta clara (cores por vértice). */
+/** Tufo de lâminas curvas, com a base na cor do chão e a ponta clara (cores por vértice). */
 function geometriaTufo(lam: number, seg: number, larg: number, alturaBase: number): THREE.BufferGeometry {
   const pos: number[] = [];
   const cor: number[] = [];
@@ -29,8 +29,11 @@ function geometriaTufo(lam: number, seg: number, larg: number, alturaBase: numbe
       const cz = oz + dz * curva;
       const y = alt * t;
       pos.push(cx - px * w, y, cz - pz * w, cx + px * w, y, cz + pz * w);
-      const k = 0.58 + t * 0.47;
-      cor.push(k, k, k, k, k, k);
+      // a base quase na cor do chão (o tufo nasce dele) e a ponta clara e morna, pegando sol
+      const k = 0.8 + t * 0.34;
+      const kr = k + t * 0.04;
+      const kb = k - t * 0.1;
+      cor.push(kr, k, kb, kr, k, kb);
     }
     for (let s = 0; s < seg; s++) {
       const a = base + s * 2;
