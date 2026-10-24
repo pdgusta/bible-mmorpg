@@ -29,7 +29,7 @@ export const PONTOS_RESERVA: Record<string, [number, number]> = {
   vistaVale: [-60, 140], centroVale: [0, 0],
   inicio: [36, 84], orarMonte: [100, 116], corteLenha: [-128, 24], pilhaBosque: [-122, 30],
   arvoreGofer1: [-134, 14], arvoreGofer2: [-140, 32], arvoreGofer3: [-130, 44], entregaTroncos: [30, 28],
-  quilha: [-10, 12], vauOeste: [138, -28], vauLeste: [156, -30],
+  quilha: [-10, 12], guincho: [-22, 26], andaime: [-14, 15], vauOeste: [138, -28], vauLeste: [156, -30],
   andaimeBase: [-14, 18], andaimeTopo: [-14, 14], ancoraCorda: [-14, 13],
   encaixeViga1: [-70, 18], encaixeViga2: [40, 18],
   betumarCasco1: [-50, 18], betumarCasco2: [-20, 18], betumarCasco3: [30, 18],
