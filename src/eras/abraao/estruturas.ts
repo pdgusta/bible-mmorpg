@@ -13,9 +13,9 @@ export const CORES_CANAA = {
   calcarioEscuro: '#bdb197',
   calcarioQuente: '#d4c3a0',
   rebocoClaro: '#e4d8bf',
-  tendaCabra: '#3a3028',
-  tendaCabra2: '#4a3c30',
-  tendaListra: '#c8b48a',
+  tendaCabra: '#5e4a3a',
+  tendaCabra2: '#6c5644',
+  tendaListra: '#dcc9a0',
   tendaInimiga: '#5a2622',
   tendaInimiga2: '#3e2a3c',
   listraInimiga: '#b8743a',
@@ -59,6 +59,100 @@ export function aldeia(c: Construtor, casas: [number, number, number, number, nu
     const cor = [CORES_CANAA.calcario, CORES_CANAA.calcarioQuente, CORES_CANAA.rebocoClaro][i % 3];
     c.em(x, 0, z, yaw, () => casaPedra(c, w, d, h, cor, detalhe));
   });
+}
+
+/** Superfície (u, v) ∈ [0,1]² em grade, com as duas faces (lona vista de fora e de dentro). */
+function superficie(nu: number, nv: number, f: (u: number, v: number) => THREE.Vector3) {
+  const pos: number[] = [];
+  const quina = (u: number, v: number) => f(u / nu, v / nv).toArray();
+  for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) {
+    const a = quina(i, j), b = quina(i + 1, j), c = quina(i, j + 1), d = quina(i + 1, j + 1);
+    pos.push(...a, ...c, ...b, ...b, ...c, ...d);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  const verso = g.clone();
+  const p = verso.attributes.position;
+  for (let i = 0; i < p.count; i += 3) {
+    const x = p.getX(i + 1), y = p.getY(i + 1), z = p.getZ(i + 1);
+    p.setXYZ(i + 1, p.getX(i + 2), p.getY(i + 2), p.getZ(i + 2));
+    p.setXYZ(i + 2, x, y, z);
+  }
+  verso.computeVertexNormals();
+  return mergeGeometries([g, verso])!;
+}
+
+/**
+ * Tenda de pelo de cabra (Gn 12:8; 13:18): teto de faixas tecidas, cumeeira ondulada sobre
+ * três postes, frente aberta erguida em postes, fundo e laterais caindo até o chão, tapete e
+ * almofadas dentro. Frente para +z. Mesmo tamanho e colisor da `Construtor.tenda`.
+ */
+export function tendaPelos(c: Construtor, w: number, d: number, h: number, cor = CORES_CANAA.tendaCabra, cor2 = CORES_CANAA.tendaCabra2, listra = CORES_CANAA.tendaListra) {
+  const cume = 0.42;
+  const postes = [0.17, 0.5, 0.83];
+  // altura da cumeeira: alta nos postes, cedendo entre eles e caindo nas pontas
+  const alturaCume = (u: number) => {
+    const dp = Math.min(...postes.map((p) => Math.abs(u - p)));
+    const ponta = u < postes[0] || u > postes[2] ? dp / postes[0] : 0;
+    return h * (1 - 0.05 * Math.abs(2 * u - 1) - 0.08 * Math.min(1, dp / 0.165) * (1 - ponta) - 0.24 * ponta * ponta);
+  };
+  const teto = (u: number, v: number) => {
+    const fundo = v < cume;
+    const tt = fundo ? (cume - v) / cume : (v - cume) / (1 - cume);
+    const y = alturaCume(u) * (1 - (fundo ? 0.48 : 0.34) * Math.pow(tt, 1.25)) - 0.05 * h * Math.sin(Math.PI * tt);
+    return new THREE.Vector3((u - 0.5) * w * (1 + 0.05 * tt), y, (v - 0.5) * d);
+  };
+  // faixas do teto ao comprido (pano tecido em tiras), com duas listras claras de cada lado
+  const faixas: [number, number, string][] = [
+    [0, 0.1, cor2], [0.1, 0.135, listra], [0.135, 0.3, cor], [0.3, 0.42, cor2], [0.42, 0.56, cor], [0.56, 0.595, listra],
+    [0.595, 0.78, cor2], [0.78, 0.815, listra], [0.815, 1, cor],
+  ];
+  for (const [v0, v1, k] of faixas) {
+    const nv = Math.max(1, Math.ceil((v1 - v0) * 10));
+    c.peca(superficie(12, nv, (u, v) => teto(u, v0 + (v1 - v0) * v)), k, 0, 0, 0, 0, 0, 0, 1, 1, 1, { ao: 0, variacao: 0.03 });
+  }
+  // sanefa: a borda da frente pende um pouco
+  c.peca(superficie(12, 1, (u, s) => teto(u, 1).add(new THREE.Vector3(0, -0.32 * s, 0.02 * s))), listra, 0, 0, 0, 0, 0, 0, 1, 1, 1, { ao: 0.15, variacao: 0.02 });
+  // fundo e as laterais da metade de trás descem até o chão, um pouco abertos para fora
+  c.peca(superficie(12, 2, (u, s) => {
+    const t = teto(u, 0);
+    return new THREE.Vector3(t.x, t.y * (1 - s), t.z - 0.35 * s);
+  }), cor2, 0, 0, 0, 0, 0, 0, 1, 1, 1, { ao: 0.3, variacao: 0.02 });
+  for (const lado of [0, 1]) {
+    c.peca(superficie(5, 2, (v, s) => {
+      const t = teto(lado, v * 0.6);
+      return new THREE.Vector3(t.x + (lado ? 1 : -1) * 0.25 * s, t.y * (1 - s), t.z);
+    }), cor, 0, 0, 0, 0, 0, 0, 1, 1, 1, { ao: 0.3, variacao: 0.02 });
+  }
+  // postes da cumeeira e da frente, estacas e cordas
+  for (const u of postes) {
+    const t = teto(u, cume);
+    c.cilindro(t.x, 0, t.z, 0.045, 0.055, t.y + 0.04, CORES.madeira, 6);
+  }
+  for (const u of [0.06, 0.36, 0.64, 0.94]) {
+    const t = teto(u, 1);
+    c.cilindro(t.x, 0, t.z - 0.05, 0.04, 0.05, t.y, CORES.madeira, 6);
+    const estaca = new THREE.Vector3(t.x * 1.15, 0.05, t.z + 1.3);
+    c.viga(new THREE.Vector3(t.x, t.y, t.z), estaca, 0.012, CORES.corda, 4);
+    c.cilindro(estaca.x, 0, estaca.z, 0.03, 0.04, 0.3, CORES.madeiraClara, 5);
+  }
+  for (const lado of [-1, 1]) {
+    const t = teto(lado > 0 ? 1 : 0, 0.15);
+    const estaca = new THREE.Vector3(t.x + lado * 1.4, 0.05, t.z - 0.4);
+    c.viga(new THREE.Vector3(t.x, t.y * 0.85, t.z), estaca, 0.012, CORES.corda, 4);
+    c.cilindro(estaca.x, 0, estaca.z, 0.03, 0.04, 0.3, CORES.madeiraClara, 5);
+  }
+  // dentro: tapete, cortina que divide a tenda e almofadas encostadas no fundo
+  c.caixa(-w * 0.08, 0.01, d * 0.08, w * 0.62, 0.04, d * 0.55, CORES_CANAA.tapete, { raio: 0.01, ao: 0 });
+  c.caixa(-w * 0.08, 0.05, d * 0.08, w * 0.5, 0.01, d * 0.07, CORES_CANAA.tapete3, { raio: 0, ao: 0 });
+  const xc = w * 0.26;
+  c.caixa(xc, 0, -d * 0.08, 0.05, h * 0.6, d * 0.5, '#cdb990', { raio: 0.01, ao: 0.25 });
+  c.caixa(xc + 0.03, h * 0.3, -d * 0.08, 0.05, 0.16, d * 0.5, CORES_CANAA.tapete, { raio: 0, ao: 0 });
+  for (const [x, k] of [[-0.3, CORES_CANAA.tapete2], [0.05, CORES_CANAA.tapete3], [0.4, CORES_CANAA.tapete]] as const) {
+    c.caixa(x * w * 0.6 - w * 0.08, 0.04, -d * 0.3, 0.75, 0.32, 0.5, k, { raio: 0.12, ao: 0.2, ry: x * 0.3 });
+  }
+  c.colisor({ x: 0, z: -d * 0.1, hx: w / 2, hz: d * 0.35, y0: -1, y1: h, piso: false });
 }
 
 /** Tenda de pelo de cabra desmontada: rolos de pano, mastros deitados e estacas. */
@@ -291,9 +385,15 @@ interface Fogo {
   fase: number;
 }
 
+/** Até onde (do foco) uma fogueira ainda ganha uma das luzes de verdade. */
+const ALCANCE_LUZ = 42;
+
 /**
  * Todas as fogueiras de um mundo em três draw calls (chamas, halo no ar, brilho no chão).
  * O brilho cresce à noite (`noite` 0..1). Adicione todas antes de `construir()`.
+ * As fogueiras acesas mais perto do foco (`focar`) recebem também uma PointLight, que ilumina
+ * personagens e tendas em volta. As luzes são sempre as mesmas (`nLuzes`) e nunca saem da cena:
+ * apagadas ficam com intensidade 0, para o número de luzes (e os shaders) não mudar.
  */
 export class Fogueiras {
   readonly grupo = new THREE.Group();
@@ -305,14 +405,28 @@ export class Fogueiras {
   private chao: THREE.InstancedMesh | null = null;
   private matHalo = materialBrilho('#ff9038', true);
   private matChao = materialBrilho('#ff8a30', false);
+  private luzes: THREE.PointLight[] = [];
+  private foco = new THREE.Vector3(Infinity, 0, Infinity);
+  private perto: { f: Fogo; d: number }[] = [];
   private m4 = new THREE.Matrix4();
   private q = new THREE.Quaternion();
   private p = new THREE.Vector3();
   private s = new THREE.Vector3();
   private eixo = new THREE.Vector3(0, 1, 0);
 
-  constructor() {
+  constructor(nLuzes = 2) {
     this.grupo.name = 'fogueiras';
+    for (let i = 0; i < nLuzes; i++) {
+      const l = new THREE.PointLight('#ff9a4a', 0, 15, 1.5);
+      l.name = 'luzFogueira';
+      this.luzes.push(l);
+      this.grupo.add(l);
+    }
+  }
+
+  /** Ponto de onde se escolhem as fogueiras que ganham luz (o foco da câmera). */
+  focar(p: THREE.Vector3) {
+    this.foco.copy(p);
   }
 
   adicionar(x: number, y: number, z: number, escala = 1, ativa = true): number {
@@ -379,6 +493,32 @@ export class Fogueiras {
     }
     this.matHalo.uniforms.uForca.value = 0.18 + this.noite * 0.85;
     this.matChao.uniforms.uForca.value = 0.08 + this.noite * 0.9;
+    this.atualizarLuzes(t);
+  }
+
+  private atualizarLuzes(t: number) {
+    const perto = this.perto;
+    perto.length = 0;
+    for (const f of this.lista) {
+      if (!f.ativa) continue;
+      const d = Math.hypot(f.x - this.foco.x, f.z - this.foco.z);
+      if (d < ALCANCE_LUZ) perto.push({ f, d });
+    }
+    perto.sort((a, b) => a.d - b.d);
+    this.luzes.forEach((l, i) => {
+      const alvo = perto[i];
+      if (!alvo) {
+        l.intensity = 0;
+        return;
+      }
+      const { f, d } = alvo;
+      const fl = 1 + Math.sin(t * 8.3 + f.fase) * 0.09 + Math.sin(t * 15.1 + f.fase * 1.7) * 0.06;
+      // some devagar perto do limite, para a troca de fogueira não piscar
+      const longe = 1 - THREE.MathUtils.smoothstep(d, ALCANCE_LUZ - 14, ALCANCE_LUZ);
+      l.position.set(f.x, f.y + 0.9 * f.escala, f.z);
+      l.distance = 9 + 6 * f.escala;
+      l.intensity = (0.6 + this.noite * 13) * f.escala * fl * longe;
+    });
   }
 }
 

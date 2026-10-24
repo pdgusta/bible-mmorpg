@@ -19,7 +19,7 @@ Cada ensinamento presente no MVP é vivido numa mecânica, nunca apenas narrado.
 | 13 | Andar por fé, não por vista | Gn 13:10-11; 2 Co 5:7 | B2: a câmera mostra o que Ló viu (a planície verde) antes de ele escolher | O jogador vê a beleza que atraiu Ló. O Diário mostra para onde ela levou (Sodoma). |
 | 14 | Amar quem se afastou | Gn 14:14-16 | B3: arriscar a noite inteira para resgatar Ló, que escolheu a melhor terra para si | O resgate devolve a Unidade perdida em B2. |
 | 15 | Não amar as riquezas | Gn 14:22-23; Mt 6:21 | B3: os despojos brilham, o sussurro insiste; a prova se vence recusando "nem um fio" | O brilho desbota quando o jogador se afasta. Recusar dá mais XP que qualquer item. |
-| 16 | Generosidade: o dízimo | Gn 14:20; Hb 7:2 | B3: entregar a Melquisedeque a décima parte dos despojos | O jogador entrega antes de ser abençoado, e a bênção vem depois (Gn 14:19-20). |
+| 16 | Generosidade: o dízimo | Gn 14:20; Hb 7:2 | B3: entregar a Melquisedeque a décima parte dos despojos | Melquisedeque abençoa Abrão primeiro, e o dízimo vem depois, como resposta à bênção (Gn 14:19-20). |
 | 17 | Fé contra a dúvida | Gn 15:1-6; Rm 4:3; Hb 11:1 | B4: memórias acendem estrelas; o Escudo da fé bloqueia os dardos | O céu impossível de contar *é* a resposta. "Creu", e a Couraça é dada. |
 | 18 | Obediência que confia na provisão | Gn 22:8, 22:13-14; Hb 11:17-19 | B5: subir o Moriá juntos. Na pergunta "onde está o cordeiro?", a resposta é bíblica e o caminho segue | A provisão aparece *no alto do monte*, não antes de subir. |
 | 19 | O Cordeiro no lugar do filho | Gn 22:13; Jo 1:29; Rm 8:32 | B5: Abraão liberta o carneiro preso no arbusto; o Diário abre "Aponta para Cristo" | O substituto é encontrado, não fabricado: a salvação é provida por Deus. |
