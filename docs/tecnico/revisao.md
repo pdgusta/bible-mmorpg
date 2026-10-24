@@ -72,7 +72,7 @@ npx vitest run tests/era-<era>.test.ts && npx tsc --noEmit
 - [ ] **Objetivos:** imperativo + contagem no fim, "Leve 4 troncos ao estaleiro (0/4)". Se houver ref, ela vem antes: "Construa um altar ao Senhor (Gn 8:20). Junte pedras (0/6)." Nada de objetivos que são só um substantivo ("A janela").
 - [ ] **Rótulos de interativo:** infinitivo + objeto ("Tapar o vazamento", "Fixar a ponta da viga").
 - [ ] **Dica para quem não pode usar:** "<Quem> pode <verbo>." ("Noé pode construir o altar.").
-- [ ] Teclas citadas iguais às do jogo (E, Q, R, Tab, 1–4), no formato "Pressione Q: "Está escrito"."
+- [ ] Teclas citadas iguais às do jogo (E, Q, R, Tab, 1–4), no formato `Pressione Q: "Está escrito".`
 
 ## 6. Ensinamentos
 
@@ -88,30 +88,12 @@ npx vitest run tests/era-<era>.test.ts && npx tsc --noEmit
 ## 8. Era 1 (Noé): resultado da revisão
 
 **Corrigido:**
-- Gn 8:21 passou para o narrador ("disse em seu coração").
-- Gn 7:24, que vinha depois de Gn 8:1, virou Gn 8:3-4: ordem certa, os 150 dias e Ararate. O título passou a "Ao fim dos cento e cinquenta dias…".
-- Gn 8:9 agora aparece inteiro.
-- Gn 9:9 virou Gn 9:9-10, porque terminava em vírgula.
-- Notas de Cristo:
-  - "vigilância" não está em Mt 24:37-39;
-  - "a confiança que sustentou a arca";
-  - "a Semente chegou em Cristo".
-- Memórias: a folha de oliveira (o texto diz "arrancada", não "verde"); a frase do arco-íris.
-- Clareza:
-  - "Sem fôlego";
-  - "cavernas";
-  - o objetivo do betume e o "A janela";
-  - "acalme as baias";
-  - "o par… acalmá-los";
-  - "Como Noé, assente…";
-  - rótulos e dicas.
-- Noé responde "Sim, filho" a Sem.
-- A dica de A5 liga a viga mestra ao casco (Ensinamento 1).
+- Falas bíblicas: Gn 8:21 passou para o narrador ("disse em seu coração"); Gn 7:24, que vinha depois de Gn 8:1, virou Gn 8:3-4 (ordem certa, 150 dias e Ararate; título "Ao fim dos cento e cinquenta dias…"); Gn 8:9 agora aparece inteiro; Gn 9:9 virou Gn 9:9-10 (terminava em vírgula).
+- Notas de Cristo: "vigilância" (não está em Mt 24:37-39), "a confiança que sustentou a arca", "a Semente chegou em Cristo". Memórias: a folha de oliveira (o texto diz "arrancada", não "verde") e a frase do arco-íris.
+- Clareza: "Sem fôlego", "cavernas", o objetivo do betume, "A janela", "acalme as baias", "o par… acalmá-los", "Como Noé, assente…", rótulos e dicas. Noé responde "Sim, filho" a Sem; a dica de A5 liga a viga mestra ao casco (Ensinamento 1).
 
 **Pendências que exigem lógica ou decisão:**
-1. Gn 7:2 manda levar os animais limpos de sete em sete, mas A4 mostra um só par de ovelha, cabra e boi. Recomendação:
-   - fazer os limpos chegarem em grupos de 7;
-   - ou trocar essas espécies por impuras e deixar os limpos como um rebanho visual.
+1. Gn 7:2 manda levar os animais limpos de sete em sete, mas A4 mostra um só par de ovelha, cabra e boi. Recomendação: os limpos chegam em grupos de 7, ou essas espécies viram impuras e os limpos ficam como rebanho visual.
 2. Gn 8:6 diz que Noé abriu a janela, mas no jogo quem abre a cobertura é Jafé. Recomendação: Jafé só sobe e solta as amarras, e a janela abre na interação de Noé (`soltarCorvo`).
 3. Ensinamento 9 ("o mapa novo só se abre depois do altar"): o segredo `segredoEstacoes` já está ativo antes do altar. Recomendação: exigir a flag `a6Altar`.
 4. Ensinamento 6 ("se forçados, fogem"): não está implementado. Os agitados só esperam.

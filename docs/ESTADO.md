@@ -19,7 +19,7 @@ O MVP (era 1, Noé → era 2, Abraão) está **em construção**. Os módulos fo
 | Conteúdo da era 1 (prólogo, A1–A6) | ✅ escrito (17 testes) · 🔄 revisão de fidelidade em andamento | `tecnico/era-noe.md`, `tecnico/revisao.md` |
 | Mundo de Canaã | ✅ pronto (`?lab=canaa`, ≤ 92 draw calls) | `tecnico/canaa.md` |
 | Motor visual (vale de Noé, dilúvio, interior da arca, desempenho) | 🔄 em andamento | `tecnico/motor.md` |
-| Animais e áudio | 🔄 em andamento | `tecnico/animais-audio.md` |
+| Animais e áudio | ✅ pronto (23 espécies, rebanho, áudio sintetizado; `?lab=animais`) | `tecnico/animais-audio.md` |
 | Conteúdo da era 2 (B1–B5) | 🔄 em andamento | `tecnico/era-abraao.md` |
 | Integração (fluxo da partida, ligações, e2e do MVP) | 🔄 em andamento | `tecnico/integracao.md` |
 | Deploy (GitHub Pages) | ✅ workflow pronto (ativar em *Settings → Pages → GitHub Actions*) | `README.md` |
