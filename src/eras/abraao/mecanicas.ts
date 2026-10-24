@@ -519,7 +519,7 @@ export class Juntos {
       ctrl.modVelocidade = 0.3;
       if (this.tDica <= 0) {
         this.tDica = 12;
-        this.dica(`Foram os dois juntos: espere por ${outro.nome}.`);
+        this.dica(`Subam juntos: espere por ${outro.nome}.`);
       }
     } else if (d < this.distancia - 2) this.liberar();
   }

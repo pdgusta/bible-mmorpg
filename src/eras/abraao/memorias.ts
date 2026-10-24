@@ -24,7 +24,7 @@ export const MEMORIAS_ABRAAO: DefMemoria[] = [
   },
   {
     id: 'resgate', titulo: 'Trouxe de volta o seu irmão', ref: 'Gn 14:16', era: ERA, forca: 2,
-    descricao: 'Ló tinha escolhido a melhor terra e foi levado cativo. Abrão não pensou na ofensa: foi buscá-lo de noite, até Dã.',
+    descricao: 'Ló tinha escolhido a melhor terra e foi levado cativo. Abrão não o abandonou: foi buscá-lo de noite, até Dã.',
   },
   {
     id: 'melquisedeque', titulo: 'Bendito seja Abrão', ref: 'Gn 14:19', era: ERA, forca: 2,
@@ -44,7 +44,7 @@ export const MEMORIAS_ABRAAO: DefMemoria[] = [
   },
   {
     id: 'jeovaJire', titulo: 'Javé-Jiré', ref: 'Gn 22:14', era: ERA, forca: 0,
-    descricao: 'No monte Moriá, Deus proveu o carneiro no lugar de Isaque. No monte do Senhor ele será visto.',
+    descricao: 'No monte Moriá, Deus proveu o carneiro no lugar de Isaque. Abraão deu ao lugar um nome que guarda isso: o Senhor proverá.',
   },
 ];
 
