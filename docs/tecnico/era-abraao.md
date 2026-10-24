@@ -82,7 +82,7 @@ Planilha: `node scripts/planilha-falas.mjs abraao e2e/saida/planilha-abraao` (34
 **Corrigido:**
 - Ordem do texto em B1 (Gn 12:1-3) e Gn 22:13 dividido (acima).
 - Prova de B3: resposta `Gn 14:22-23` e duas mentiras (acima).
-- "Aponta para Cristo": `bencaoNacoes` ganhou `Gl 3:16` ("Cristo, a Semente de Abraão"); `melquisedeque` não afirma mais "intercede por nós" (Hb 7:25, fora das refs) e se apoia em Hb 7:3; `justica` não depende mais de Rm 4:5 e 4:24 (fora das refs e ausentes do `versiculos.json`) e ganhou `Gl 3:8`.
+- "Aponta para Cristo": `bencaoNacoes` ganhou `Gl 3:16` ("Cristo, a Semente de Abraão"); `melquisedeque` não afirma mais "intercede por nós" (está em Hebreus 7, mas fora das refs) e se apoia em Hb 7:3; `justica` não depende mais dos versos de Romanos 4 sobre as obras e a ressurreição (fora das refs e ausentes do `versiculos.json`) e ganhou `Gl 3:8`.
 - Texto bíblico digitado fora de `ref`/`trecho`: "No monte do Senhor ele será visto" (memória `jeovaJire`), "caminha pela terra" (dica de B2) e "foram os dois juntos" (dica de B5 e de `Juntos`).
 - Memória `resgate`: "não pensou na ofensa" (Ló não ofendeu Abrão) virou "não o abandonou".
 - Objetivos que eram só substantivo ("No vale de Savé.", "O topo do monte."), a dica de "Está escrito" no formato do jogo (e sem citar o escudo, que só vem em B4) e a dica do altar com o nome da época (`Abrão pode…` / `Abraão pode…`).
