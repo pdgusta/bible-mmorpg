@@ -5,6 +5,7 @@ import { Animador } from './Animador';
 import { gerarPersonagem, type Aparencia } from './Vestimenta';
 import { criarAderecos, type NomeAderecos } from './Aderecos';
 import { clamp } from '../../core/util';
+import { simplificadorPronto, simplificarIndice } from '../../render/Simplificar';
 
 /** Material único compartilhado por todos os humanos (cores vêm dos vértices). */
 let materialHumanos: THREE.MeshLambertMaterial | null = null;
@@ -17,6 +18,9 @@ function material() {
 }
 
 export type Mao = 'direita' | 'esquerda' | 'costas';
+
+/** Fração dos triângulos do corpo no nível de longe, que é também o da sombra. */
+const FRACAO_LONGE = 0.25;
 
 const _q = new THREE.Quaternion();
 const _q2 = new THREE.Quaternion();
@@ -47,6 +51,10 @@ export class Humano {
   private faseEscalada = 0;
   private pesoEscalada = 0;
   visivel = true;
+  /** Distância (m) da câmera em que o corpo passa ao nível de longe (volta ao de perto 2 m antes). */
+  static distanciaLonge = 18;
+  private longe = false;
+  private descartado = false;
 
   constructor(base: CorpoBase, aparencia: Aparencia) {
     this.base = base;
@@ -80,6 +88,35 @@ export class Humano {
     this.raiz.add(this.modelo);
     this.animador = new Animador(this.modelo, base);
     this.animador.atualizar(0);
+    void simplificadorPronto.then(() => this.prepararLod());
+  }
+
+  /**
+   * LOD do corpo: o índice simplificado vai depois do original no mesmo buffer, e cada passada
+   * escolhe a faixa (drawRange). A de cor usa o de longe a partir de `distanciaLonge`; a de sombra,
+   * sempre (não há draw call nem malha a mais).
+   */
+  private prepararLod() {
+    if (this.descartado) return;
+    const g = this.malha.geometry;
+    const perto = g.index!.array;
+    const longe = simplificarIndice(g, FRACAO_LONGE, { coerencia: 'color', erro: 0.01 });
+    if (!longe) return;
+    const ind = new Uint32Array(perto.length + longe.length);
+    ind.set(perto);
+    ind.set(longe, perto.length);
+    g.setIndex(new THREE.BufferAttribute(ind, 1));
+    g.setDrawRange(0, perto.length);
+    const nPerto = perto.length;
+    const nLonge = longe.length;
+    this.malha.onBeforeRender = (_r, _c, camera, geometria) => {
+      const e = this.malha.matrixWorld.elements;
+      const d = Math.hypot(camera.position.x - e[12], camera.position.y - e[13], camera.position.z - e[14]);
+      this.longe = d > Humano.distanciaLonge - (this.longe ? 2 : 0);
+      if (this.longe) geometria.setDrawRange(nPerto, nLonge);
+      else geometria.setDrawRange(0, nPerto);
+    };
+    this.malha.onBeforeShadow = (_r, _o, _c, _sc, geometria) => geometria.setDrawRange(nPerto, nLonge);
   }
 
   /** Coloca um objeto na mão (ou nas costas). null remove. */
@@ -215,6 +252,7 @@ export class Humano {
   }
 
   dispose() {
+    this.descartado = true;
     this.malha.geometry.dispose();
     this.animador.dispose();
     for (const a of this.anexos.values()) a.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
