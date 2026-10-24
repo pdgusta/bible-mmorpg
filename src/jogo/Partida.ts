@@ -395,14 +395,18 @@ export class Partida {
     }, 0);
   }
 
-  /** Créditos do MVP: um resumo da jornada e a tela de créditos; resolve quando ela fecha. */
-  private creditos(): Promise<void> {
+  /**
+   * Créditos do MVP: o resumo da jornada e depois a tela de créditos; resolve quando ela fecha.
+   * O resumo vai na camada do título, que fica acima do fade preto com que a B5 termina
+   * (os avisos ficam abaixo dele).
+   */
+  private async creditos(): Promise<void> {
     const prog = this.s.progresso;
     const min = Math.round(prog.tempoJogado / 60);
     const tempo = min >= 60 ? `${Math.floor(min / 60)} h ${min % 60} min` : `${min} min`;
-    this.ui.aviso(
+    await this.ui.titulo(
+      'Fim da jornada',
       `Memórias: ${prog.memorias.length} de ${MEMORIAS.todas().length} · Segredos: ${prog.segredos.length} · Tempo de jornada: ${tempo}`,
-      'memoria',
     );
     this.ui.menusC.abrir('creditos');
     // tempo real: com o menu aberto o jogo fica pausado e aCadaQuadro não roda

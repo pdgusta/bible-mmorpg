@@ -29,7 +29,7 @@ Arquivos:
 - `ERAS`, `ORDEM_ERAS = ['noe', 'abraao']`, `defEra(id)` e `NOMES_ERAS`.
 - `DefEra`: id, nome, sub, protagonista, missão inicial, jogáveis, NPCs, missões, memórias, Cristo, `seguinte`, texto de carregamento, hora de chegada e `criar(ctx)`.
 - `EraAtiva`: `mundo`, `sujo`, `criarPersonagens()`, `posicoesIniciais()`, `ligar()`/`desligar()`, `reconstruir()`, `vistaTitulo()`, `ambiente()` e `atalhos?(op)`.
-- `ContextoEra`: `jogo`, `ui`, `s`, `audio`, `transicaoEra(nomes)`, `cristo(id)` e `creditos()` (resumo da jornada e a tela de créditos; resolve quando ela fecha).
+- `ContextoEra`: `jogo`, `ui`, `s`, `audio`, `transicaoEra(nomes)`, `cristo(id)` e `creditos()` (resumo da jornada na camada do título, que fica acima do fade preto com que a B5 termina, e depois a tela de créditos; resolve quando ela fecha).
 
 ## Ligações (`src/jogo/ligacao/`)
 
@@ -55,6 +55,7 @@ Arquivos:
 
 - `node e2e/integracao.mjs [pasta]`: do carregamento até A1 jogável (título sobre o vale, Novo jogo, prólogo, HUD, andar, Diário, pausa, salvar no espaço 1; depois muda a posição de Noé e uma flag, sai para o título e carrega o espaço 1 pelo menu, conferindo que posição e flag voltam). Fotos em `e2e/saida/integracao/`. Leva uns 2 min no SwiftShader: o laço fica parado e só as fotos renderizam.
 - `--transicao`: joga o resto da era 1 pelos atalhos e confere a transição para Canaã (genealogia mostrada e limpa, Abrão no controle, B1 jogável). Leva uns 14 min; fotos de A6 (arco-íris), da genealogia e de B1. Confere também que a tela de carregamento não fica por cima do jogo.
+- Nos dois modos, o roteiro termina conferindo os créditos: com o fade preto ligado, o resumo da jornada aparece por cima dele e depois a tela de créditos (fotos `9-creditos-resumo` e `10-creditos`).
 - `e2e/jogar-mvp.mjs` (`npm run e2e`) ainda não existe.
 - Os testes simulam o websocket do Vite (`abrir()` em `e2e/utilidades.mjs`), para o HMR não recarregar a página.
 - No Git Bash do Windows, use `MSYS_NO_PATHCONV=1` antes de `node e2e/foto.mjs "/..."`, senão o `/` vira um caminho do Windows.

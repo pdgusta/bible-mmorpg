@@ -264,6 +264,40 @@ if (comTransicao) {
   await foto('8-b1-canaa');
 }
 
+// ------------------------------------------------------------------ créditos (fim de B5)
+// A B5 deixa a tela em preto (fade) antes de chamar os créditos: o resumo da jornada tem de
+// aparecer por cima do preto, e depois a tela de créditos.
+{
+  await pag.evaluate(async () => {
+    await window.partida.ui.fade(true, 0);
+    window.fimCreditos = false;
+    window.partida.creditos().then(() => (window.fimCreditos = true));
+  });
+  await pag.waitForFunction(() => document.querySelector('.titulo-capitulo.visivel')?.textContent?.includes('Memórias'), null, { timeout: 10000 }).catch(() => {});
+  await pag.waitForTimeout(1300); // o título aparece com transição de 1,1 s
+  const resumo = await pag.evaluate(() => {
+    const t = document.querySelector('.titulo-capitulo');
+    const f = document.querySelector('.fade-preto');
+    const z = (e) => Number(getComputedStyle(e).zIndex);
+    return {
+      texto: t?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+      visivel: !!t && getComputedStyle(t).opacity === '1',
+      acimaDoFade: !!t && !!f && z(t) > z(f),
+      fadeAtivo: !!f && getComputedStyle(f).opacity === '1',
+    };
+  });
+  v(resumo.fadeAtivo && resumo.visivel && resumo.acimaDoFade && /Memórias: \d+ de \d+ · Segredos: \d+ · Tempo de jornada/.test(resumo.texto),
+    `resumo da jornada visível por cima do fade preto: "${resumo.texto}"`);
+  await foto('9-creditos-resumo');
+  const abriu = await pag.waitForFunction(() => window.partida.ui.menusC.topo() === 'creditos', null, { timeout: 15000 }).then(() => true, () => false);
+  v(abriu, 'depois do resumo, a tela de créditos abre');
+  await pag.waitForTimeout(400);
+  await foto('10-creditos');
+  await pag.locator('button.btn.principal', { hasText: 'Voltar' }).click();
+  v(await pag.waitForFunction(() => window.fimCreditos, null, { timeout: 5000 }).then(() => true, () => false), 'fechar os créditos resolve creditos()');
+  await pag.evaluate(() => window.partida.ui.fade(false, 0));
+}
+
 const erroMissao = await pag.evaluate(() => window.partida.errosMissao);
 v(erroMissao.length === 0, `sem erros de missão ${erroMissao.join(' | ')}`);
 v(erros.length === 0, `sem erros no console (${erros.length})`);
