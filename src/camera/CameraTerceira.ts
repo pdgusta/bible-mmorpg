@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { clamp, damp, dampAngle } from '../core/util';
 import type { MundoFisico } from '../mundo/Fisica';
 import type { Entrada } from '../core/Entrada';
+import type { CopasCamera } from './Copas';
 
 /**
  * Câmera em terceira pessoa: órbita com o mouse, zoom na roda, colisão com terreno e
@@ -31,6 +32,8 @@ export class CameraTerceira {
   tremor = 0;
   /** Tag de colisor que a câmera atravessa (paredes invisíveis do Moriá: 'invisivel'). */
   tag: string | undefined = 'invisivel';
+  /** Copas das árvores do mundo atual (o Jogo liga em `definirMundo`): a câmera não entra nelas. */
+  copas: CopasCamera | null = null;
   // efeitos aplicados por cima de qualquer controlador (jogo, cinemática, troca, transição)
   private efTremor = { forca: 0, t: 0, dur: 0 };
   private efBalanco = 0;
@@ -102,6 +105,8 @@ export class CameraTerceira {
       // um raio lateral que já nasce dentro de uma parede (personagem encostado) não conta
       if (hit >= 0 && (i === 0 || hit > 0.35)) melhor = Math.min(melhor, Math.max(0.6, hit - 0.3));
     }
+    const copa = this.copas?.raio(pivo, dir, melhor + 0.3) ?? -1;
+    if (copa >= 0) melhor = Math.min(melhor, Math.max(0.6, copa - 0.3));
     return melhor;
   }
 

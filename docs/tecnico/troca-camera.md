@@ -2,7 +2,7 @@
 
 Arquivos:
 - `src/jogo/{Jogo,Personagem,IA,Interacoes,Controle,Troca}.ts`
-- `src/camera/{CameraTerceira,CameraTroca,Cinematica,TransicaoEra}.ts`
+- `src/camera/{CameraTerceira,Copas,CameraTroca,Cinematica,TransicaoEra}.ts`
 - `e2e/teste-troca.mjs`
 
 ## Jogo (`src/jogo/Jogo.ts`)
@@ -66,6 +66,7 @@ Arquivos:
 - **`CameraTerceira`:**
   - `encaixar(pos, yaw, fisica?)`, `entradaMouse`, `atualizar(dt, foco, fisica)`, `frente()`, `direita()`, `yaw`, `pitch`, `distancia`, `distanciaAlvo`, `externo`.
   - 5 raios evitam atravessar paredes (raios laterais que nascem dentro de uma parede são ignorados).
+  - `copas` (uma `CopasCamera`, ligada pelo `Jogo.definirMundo` com a `Natureza` do mundo): o raio central também para antes da copa das árvores (elipsoide de 85% da caixa da folhagem; a copa que já contém o pivô não conta). Ver `Natureza.copas()` em `tecnico/motor.md`.
   - No gamepad, a câmera volta para trás do personagem.
 - **`Cinematica`** (implementa `ServicoCinematica`):
   - `para(pos, alvo, dur)` faz uma curva que passa por cima do relevo.
@@ -104,4 +105,4 @@ Detalhes:
 
 - Cinemática em trilho com vários pontos.
 - Cair ao soltar no meio da escalada: hoje o E só solta perto da base ou do topo.
-- Alinhar as faixas de revelação de `Shaders.ts` e `Terreno.ts` e dar revelação à água (tarefa do motor).
+- Dar revelação à água (tarefa do motor).

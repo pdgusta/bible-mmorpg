@@ -57,6 +57,17 @@ interface Modelo {
   sombras: THREE.Material[];
   raio: number;
   sil: Silhueta | null;
+  /** Caixa da folhagem das árvores (centro e semi-eixos, espaço do modelo), para `copas()`. */
+  copa: [number, number, number, number, number, number] | null;
+}
+
+/** Copa de uma árvore em pé, no mundo (ver `Natureza.copas`). */
+export interface Copa {
+  x: number;
+  z: number;
+  y0: number;
+  y1: number;
+  raio: number;
 }
 
 interface Instancia {
@@ -111,6 +122,7 @@ export class Natureza {
   private frustum = new THREE.Frustum();
   private projTela = new THREE.Matrix4();
   private construida = false;
+  private versao_ = 0;
   distanciaMax = 230;
 
   constructor(cenaNatureza: THREE.Object3D) {
@@ -172,6 +184,12 @@ export class Natureza {
       (p.folha ? caixaFolha : caixaTronco).union(p.geometria.boundingBox!);
     }
     let sil: Silhueta | null = null;
+    let copa: Modelo['copa'] = null;
+    if (arvore) {
+      const c = caixaFolha.getCenter(new THREE.Vector3());
+      const t = caixaFolha.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+      copa = [c.x, c.y, c.z, t.x, t.y, t.z];
+    }
     if (arvore && (op.alcanceMedio ?? 105) < 1e5) {
       const c = caixaFolha.getCenter(new THREE.Vector3());
       const t = caixaFolha.getSize(new THREE.Vector3()).multiplyScalar(0.5);
@@ -212,7 +230,7 @@ export class Natureza {
         : reduzir ? simplificar(p.geometria, reduzir) : p.geometria;
       longe.push({ geometria: geoLonge, material: mat, folha: p.folha });
     }
-    return { nome, perto, longe, sombras, raio, sil };
+    return { nome, perto, longe, sombras, raio, sil, copa };
   }
 
   adicionar(variante: string, x: number, y: number, z: number, ry: number, s: number, aleatorio?: Aleatorio, rx = 0) {
@@ -220,6 +238,7 @@ export class Natureza {
     if (!v) throw new Error(`Variante não definida: ${variante}`);
     const m = aleatorio ? Math.floor(aleatorio.proximo() * v.modelos.length) : 0;
     v.instancias.push({ x, y, z, ry, s, m, rx, oculta: false });
+    this.versao_++;
     if (this.construida) this.construirVariante(v);
     return v.instancias.length - 1;
   }
@@ -229,6 +248,7 @@ export class Natureza {
     const v = this.variantes.get(variante);
     if (!v || !v.instancias[indice]) return;
     v.instancias[indice].m = modelo % v.modelos.length;
+    this.versao_++;
     if (this.construida) this.construirVariante(v);
   }
 
@@ -238,6 +258,7 @@ export class Natureza {
     if (!v || !v.instancias[indice]) return;
     v.instancias[indice].oculta = oculta;
     this.ultimoFoco.set(1e9, 0, 0);
+    this.versao_++;
   }
 
   instancia(variante: string, indice: number): Readonly<Instancia> | null {
@@ -324,6 +345,7 @@ export class Natureza {
       v.instancias = [];
     }
     this.ultimoFoco.set(1e9, 0, 0);
+    this.versao_++;
   }
 
   atualizar(dt: number, camera: THREE.Camera, foco: THREE.Vector3, forcar = false) {
@@ -393,6 +415,33 @@ export class Natureza {
         for (const im of v.malhasLonge[mi] ?? []) { im.count = contL[mi]; im.visible = contL[mi] > 0; im.instanceMatrix.needsUpdate = true; }
       });
       for (const im of [v.silCopa, v.silTronco]) if (im) { im.count = contS; im.visible = contS > 0; im.instanceMatrix.needsUpdate = true; }
+    }
+  }
+
+  /** Muda a cada instância adicionada, escondida, trocada de modelo ou limpa (quem guarda `copas()` refaz). */
+  get versao() {
+    return this.versao_;
+  }
+
+  /**
+   * Copas das árvores em pé (caixa da folhagem de cada instância visível, já na escala e no giro
+   * dela), só de leitura: a câmera de 3ª pessoa usa para não entrar na folhagem.
+   */
+  *copas(): Generator<Copa> {
+    for (const v of this.variantes.values()) {
+      for (const i of v.instancias) {
+        const c = v.modelos[i.m]?.copa;
+        if (!c || i.oculta || i.rx) continue;
+        const [cx, cy, cz, rx, ry, rz] = c;
+        const cos = Math.cos(i.ry), sen = Math.sin(i.ry);
+        yield {
+          x: i.x + (cx * cos + cz * sen) * i.s,
+          z: i.z + (-cx * sen + cz * cos) * i.s,
+          y0: i.y + (cy - ry) * i.s,
+          y1: i.y + (cy + ry) * i.s,
+          raio: Math.max(rx, rz) * i.s,
+        };
+      }
     }
   }
 

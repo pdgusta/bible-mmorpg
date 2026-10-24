@@ -6,6 +6,7 @@ import { Ativos } from '../render/Ativos';
 import { Entrada } from '../core/Entrada';
 import { Eventos } from '../core/Eventos';
 import { CameraTerceira } from '../camera/CameraTerceira';
+import { CopasCamera } from '../camera/Copas';
 import { CorpoBase } from '../entidades/humano/CorpoBase';
 import type { Mundo } from '../mundo/Mundo';
 import { Personagem, type Comando, type DefPersonagem } from './Personagem';
@@ -174,6 +175,7 @@ export class Jogo {
     m.natureza.distanciaMax = this.render.preset.distancia;
     m.grama.densidadeGlobal = this.render.preset.densidadeGrama;
     this.ctxIA.nav = m.nav;
+    this.cam.copas = new CopasCamera(m.natureza);
   }
 
   criarPersonagem(def: DefPersonagem, x: number, z: number, yaw = 0): Personagem {
