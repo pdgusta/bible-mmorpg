@@ -88,15 +88,15 @@ Confira se `missoes.ts` termina em B5 completo; o agente parou logo depois de es
   - sombras com vento e revelação (`customDepthMaterial`).
 - **Céu e luz:** ciclo do dia, nuvens brancas e fofas, tempestade, arco-íris e glória dourada. A neblina é suave e mais rala no alto, então as montanhas do horizonte guardam o relevo.
 - **Terreno:** blocos de 96 m com malha de 2 m perto e de 4 m longe, mais saias contra frestas; modos lama e molhado. A grama tem a base na cor do chão e a ponta clara.
-- **Transição de era:** duas faixas encadeadas em `Shaders.ts`. A vegetação e a grama somem primeiro; depois o terreno, as estruturas e a água afundam ou se apagam. Nada flutua.
+- **Transição de era:** duas faixas encadeadas em `Shaders.ts`. A vegetação e a grama somem primeiro; depois o terreno, as estruturas e a água afundam ou se apagam. Nada flutua, e a sombra das estruturas, da arca e dos animais afunda junto (`Mundo.prepararSombras`).
+- **Humanos:** LOD da malha com 25% dos triângulos a partir de 18 m da câmera; a sombra usa sempre esse nível. De perto o corpo não muda (`tecnico/personagens.md`).
 - **Física:** inclinação máxima a pé, que vale também no ar; quem fica numa encosta íngreme escorrega e não pula (`CorpoFisico.naEncosta`). Testes em `src/mundo/Fisica.test.ts`.
-- **Orçamento (preset médio, 7 vistas):** no máximo 128 draw calls e 579 mil triângulos. Tabela em `tecnico/motor.md`.
+- **Orçamento (preset médio, 7 vistas):** no máximo 128 draw calls e 513 mil triângulos. Tabela em `tecnico/motor.md`.
 
 **Para outras frentes (fora do escopo desta):**
 - **Canaã (`src/eras/abraao/construir.ts`):** trocar o `recolorirFolhas()` pela cor por variante em `definirVariantes`: `oliveira` com `corFolha: '#b4c0a2'` (sem `tintFolha`), `arbusto` com `corFolha: '#a9b583'`, `arbustoVerde` com `corFolha: '#86b860'` e `pedra` com `corSolido: '#c9bea6'`; depois apagar as duas chamadas e a função. Hoje as silhuetas de longe das oliveiras de Canaã saem avermelhadas, porque a cor média vem da textura original. A fórmula é outra (`0,45 + 0,55·lum/média` em vez de `0,55 + 1,6·lum`): confira as cores em `?lab=canaa`.
 - **Canaã (`estruturas.ts`):** a faixa de encolher está escrita à mão (`uRaio - 20.0`); trocar por `glslEncolher()` de `Shaders.ts`.
 - **Transição (`src/camera/TransicaoEra.ts`):** a `FOLGA_TERRENO` não tem efeito (o `uRaio` do terreno é o mesmo objeto do `GLOBAIS`); a folga agora mora nas faixas de `Shaders.ts` e a constante pode sair.
-- **Personagens:** cada humano tem ~22 mil triângulos e projeta sombra: 4 em cena pesam ~180 mil, o maior custo do vale. Um LOD para os humanos é o próximo ganho.
 - **Câmera:** a câmera de 3ª pessoa entra na copa das árvores (a tela fica verde-escura); ela não colide com folhagem.
 
 ### 4. Ajustes de lógica da era 1 (pedidos pela revisão; nada aplicado ainda)

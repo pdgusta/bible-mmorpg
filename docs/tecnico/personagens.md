@@ -13,8 +13,15 @@ Todos os humanos usam **um único corpo base animado**: o manequim da Universal 
 | `CorpoBase.ts` | Processa o GLB do manequim, uma vez por corpo (`masc`/`fem`): geometria unificada no espaço bind, `juntas` (posições dos ossos), perfil do corpo por fatias (para a roupa não atravessar a pele), categoria de cor por vértice (`Pele`), clipes divididos em `clipsInferiores`, `clipsSuperiores` e `clipsCompletos`. `ySola`/`yTopo` servem para alinhar o pé ao chão. |
 | `Vestimenta.ts` | `Aparencia` (corpo, altura, pele, cabelo, barba, túnica, manto, faixa, cabeça, `cabecaEscala`, sandália) e `gerarPersonagem(base, ap)`, que devolve a `BufferGeometry` skinned. `Malhador` acumula vértices com pesos, e `tubo` gera anéis. |
 | `Animador.ts` | `CLIPES` (nomes PT → clipes UAL), `NomeClipe` e `Animador`, um mixer em duas camadas: pernas para a locomoção e tronco para atividades. Campos `atividade` (corpo todo, em laço) e `superior` (só o tronco). `tocar(nome, corpo, vel): Promise` toca um clipe uma vez; `velocidade`, `noChao`, `agachado` e `nadando` escolhem a locomoção. |
-| `Humano.ts` | Junta tudo: `raiz`, `malha`, `animador`, `ossos`. `segurar(adereco, mao)`, `olharPara` (cabeça vira para um ponto), `oracao` (0..1, pose procedural de oração), `escalando` (pose procedural de escalada), `posicaoOsso`, `atualizar(dt, distCamera)` com LOD de animação pela distância. |
+| `Humano.ts` | Junta tudo: `raiz`, `malha`, `animador`, `ossos`. `segurar(adereco, mao)`, `olharPara` (cabeça vira para um ponto), `oracao` (0..1, pose procedural de oração), `escalando` (pose procedural de escalada), `posicaoOsso`, `atualizar(dt, distCamera)` com LOD de animação pela distância. LOD da malha: ver abaixo. |
 | `Aderecos.ts` | Objetos de mão gerados por código: cajado, machado, martelo, tocha, lanterna, escudo, espada, funda, tronco, feixe, cesto, jarro, pomba, corda, balde, saco, pão, fogo. São presos ao osso por `boneInverse * bindMatrix * P_bind`. |
+
+## LOD do corpo (`Humano.ts`)
+
+- O corpo (~21 a 25 mil triângulos) ganha um nível de longe com 25% dos triângulos (`FRACAO_LONGE`), feito por `simplificarIndice` (`src/render/Simplificar.ts`, erro de 1%, cor como atributo de coerência nas costuras).
+- Os dois índices ficam no mesmo buffer (perto, depois longe) e cada passada escolhe a faixa pelo `drawRange`: `onBeforeRender` usa o de longe a partir de `Humano.distanciaLonge` (18 m, volta ao de perto a 16 m); `onBeforeShadow` usa sempre o de longe. Nenhuma malha ou draw call a mais, e a escolha vale para qualquer câmera.
+- De perto o corpo é idêntico: com o tempo congelado, a foto muda só em 240 pixels, todos na sombra dos pés no chão (`e2e/saida/motor/t008-perto-{antes,depois}.png`; a 19 m, `t008-lod19-{perto,longe}.png`). A sombra barata não escurece o próprio corpo porque o erro (1% de ~1,8 m) fica abaixo do `normalBias` do sol (4 cm).
+- O LOD é montado quando o simplificador (WASM) fica pronto (`simplificadorPronto`); até lá o humano desenha o corpo inteiro. No laboratório (`?lab=personagens`), que desenha um quadro só, a foto sai sempre com o corpo inteiro.
 
 ## Detalhes que custaram caro (não desfaça)
 
