@@ -228,7 +228,6 @@ class ValeFalso {
       liberarPosto: (idPosto) => {
         for (const p of this.personagens.values()) if (p.posto?.id === idPosto) p.sairPosto();
       },
-      emitir: (nome, dados) => this.emitir(nome, dados),
       removerPersonagem: (id) => {
         this.personagens.delete(id);
       },

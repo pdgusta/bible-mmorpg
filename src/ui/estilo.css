@@ -790,6 +790,7 @@ details.kjv p { padding: 0 1rem 0.9rem; font-style: italic; color: var(--tinta-2
 .menu-rodape { margin-top: 1rem; text-align: center; font-size: 0.8rem; font-weight: 600; color: var(--tinta-3); }
 .menu-linha-botoes { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.2rem; flex-wrap: wrap; }
 .pausa-cartao { width: min(24rem, 100%); }
+.slots-cartao { width: min(44rem, 100%); }
 .confirmar-cartao { width: min(26rem, 100%); text-align: center; }
 .confirmar-cartao p { font-weight: 600; color: var(--tinta-2); }
 .confirmar-cartao .menu-linha-botoes { justify-content: center; }

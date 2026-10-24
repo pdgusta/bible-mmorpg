@@ -1044,7 +1044,7 @@ async function etapaFontes(c: CtxMissao) {
           est.nivel = THREE.MathUtils.clamp(est.nivel + (sobe - desce) * DT, 0, 1);
           s.vale.definirAguaInterna(est.nivel);
           lentidao(est.nivel);
-          const novo = `As fontes do grande abismo: tape os vazamentos (${est.tapados.size}/4). Água: ${Math.round(est.nivel * 100)}%.`;
+          const novo = `As fontes do grande abismo: tape os vazamentos (${est.tapados.size}/4). Água: ${Math.round(est.nivel * 10) * 10}%.`;
           if (novo !== texto) {
             texto = novo;
             const alvos: Alvo[] = [...est.abertos].filter((n) => !est.tapados.has(n)).map((n) => arca(`vazamento${n}` as NomePontoArca));

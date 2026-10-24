@@ -35,6 +35,7 @@ export class Dialogo {
   private digitacao: { cheio: string; inicio: number; timer: number } | null = null;
   private escolhaAtual: { opcoes: OpcaoEscolha[]; podem: boolean[]; foco: number; resolver: (i: number) => void; botoes: HTMLButtonElement[] } | null = null;
   private emUso = 0;
+  private ultimoPulo = 0;
   /** Caracteres por segundo da máquina de escrever (0 = instantâneo). */
   velocidade = 52;
 
@@ -127,7 +128,12 @@ export class Dialogo {
       return true;
     }
     if (c === 'Escape') {
-      this.pular();
+      // segurar Esc pula fala a fala, num ritmo em que ainda se vê o que passa
+      const agora = performance.now();
+      if (!e.repeat || agora - this.ultimoPulo > 160) {
+        this.ultimoPulo = agora;
+        this.pular();
+      }
       return true;
     }
     return false;
@@ -305,7 +311,10 @@ export class Dialogo {
         e.stopPropagation();
         this.escolher(i);
       });
-      b.addEventListener('pointerenter', () => this.focar(i));
+      // só o movimento real do mouse muda o foco (opções que surgem sob o cursor não o roubam)
+      b.addEventListener('pointermove', () => {
+        if (this.escolhaAtual?.foco !== i) this.focar(i);
+      });
       this.opcoesEl.append(b);
       return b;
     });

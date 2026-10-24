@@ -326,6 +326,7 @@ export class Menus {
     const lista = el('div', 'slots-lista', el('div', 'slots-vazio', 'Lendo os saves…'));
     const t = this.cartao(modo === 'salvar' ? 'Salvar jogo' : 'Carregar jogo', lista,
       el('div', 'menu-rodape', 'Exporte um save para guardá-lo como arquivo .json; importe para trazê-lo de volta.'));
+    t.querySelector('.menu-cartao')?.classList.add('slots-cartao');
     void this.preencherSlots(t, modo);
     return t;
   }

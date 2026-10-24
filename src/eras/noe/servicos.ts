@@ -133,10 +133,8 @@ export interface ServicosNoe {
   cristo(id: string): void;
   /** Passa o controle do jogador para um personagem (sem a câmera de troca). */
   controlar(id: string): void;
-  /** Tira alguém de um posto de cooperação (Controle.liberarPosto). */
-  liberarPosto(id: string): void;
-  /** Emite no barramento do jogo (jogo.eventos). */
-  emitir(evento: string, dados?: unknown): void;
+  /** Tira quem estiver no posto de cooperação com este id (Controle.liberarPosto). */
+  liberarPosto(idPosto: string): void;
   /** Some com um NPC do mundo (moradores da cidade depois do dilúvio). */
   removerPersonagem(id: string): void;
   /**

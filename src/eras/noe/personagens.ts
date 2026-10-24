@@ -106,8 +106,11 @@ export const JAFE_JOGAVEL: DefPersonagem = {
   rotina: ROTINA_JAFE,
 };
 
-/** Os quatro jogáveis, na ordem da roda de troca (teclas 1–4). */
-export const JOGAVEIS_NOE: DefPersonagem[] = [NOE_JOGAVEL, SEM_JOGAVEL, CAM_JOGAVEL, JAFE_JOGAVEL];
+/**
+ * Os quatro jogáveis, na ordem da roda de troca (teclas 1–4). Cam vem em 2º porque a primeira
+ * troca do jogo é para ele (A1: "Tab ou 2").
+ */
+export const JOGAVEIS_NOE: DefPersonagem[] = [NOE_JOGAVEL, CAM_JOGAVEL, SEM_JOGAVEL, JAFE_JOGAVEL];
 export const IDS_JOGAVEIS_NOE = JOGAVEIS_NOE.map((d) => d.id);
 
 // ------------------------------------------------------------------------------ família

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GLOBAIS, GLSL_RUIDO } from './Shaders';
+import { GLOBAIS, GLSL_RUIDO, GLSL_SEM_VERSO, FAIXA_REVELAR } from './Shaders';
 import type { Relevo } from '../mundo/Relevo';
 
 export type FuncaoDensidade = (x: number, z: number) => number; // 0..1
@@ -104,7 +104,7 @@ export class Grama {
            vec4 _b = modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
            float _d = distance(_b.xz, uFoco.xz);
            float _f = 1.0 - smoothstep(uRaioG * 0.72, uRaioG, _d);
-           _f *= 1.0 - smoothstep(uRaio - 20.0, uRaio, distance(_b.xz, uCentro));
+           _f *= 1.0 - smoothstep(uRaio - ${FAIXA_REVELAR.toFixed(1)}, uRaio, distance(_b.xz, uCentro));
            transformed.y *= uAltura;
            float _h = transformed.y;
            float _w = sin(uTempo * 2.2 + _b.x * 0.4 + _b.z * 0.3) * 0.5 + sin(uTempo * 3.7 + _b.x * 0.9) * 0.2;
@@ -121,7 +121,8 @@ export class Grama {
         );
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', '#include <common>\nvarying float vMulCor;')
-        .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= vMulCor;');
+        .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= vMulCor;')
+        .replace('#include <normal_fragment_begin>', GLSL_SEM_VERSO);
     };
     this.material = mat;
     const criar = (geo: THREE.BufferGeometry, n: number, nome: string) => {

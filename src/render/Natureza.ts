@@ -116,7 +116,7 @@ export class Natureza {
       if (tint) mat.color.multiply(new THREE.Color(tint));
       p.geometria.computeBoundingSphere();
       raio = Math.max(raio, p.geometria.boundingSphere!.radius + p.geometria.boundingSphere!.center.length());
-      aplicarPatch(mat, { vento: p.folha ? (op.vento ?? 0.12) : (op.vento ?? 0.12) * 0.25, alturaRef: 6, alcance: uAlcance });
+      aplicarPatch(mat, { vento: p.folha ? (op.vento ?? 0.12) : (op.vento ?? 0.12) * 0.25, alturaRef: 6, alcance: uAlcance, semVerso: p.folha });
       mat.name = `${variante}_${mat.name}`;
       perto.push({ ...p, material: mat });
       const geoLonge = p.folha

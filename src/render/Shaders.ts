@@ -51,7 +51,20 @@ export interface OpcoesPatch {
   alturaRef?: number; // altura em que o vento atinge a amplitude total
   /** Alcance de desenho (m): a instância encolhe suavemente nos últimos 15% (sem "pop"). */
   alcance?: { value: number };
+  /** Faces duplas iluminadas como a da frente (folhas, lâminas): sem "verso" escuro. */
+  semVerso?: boolean;
 }
+
+/** Largura (m) da faixa da "revelação" radial (transição entre eras), igual em todos os materiais. */
+export const FAIXA_REVELAR = 20;
+/** Quanto o terreno e as estruturas afundam fora do raio revelado. */
+export const AFUNDAR_REVELAR = 30;
+
+/** Trecho GLSL que mantém a normal da frente nas faces de trás (DoubleSide). */
+export const GLSL_SEM_VERSO = `#include <normal_fragment_begin>
+#ifndef FLAT_SHADED
+  normal = normalize( vNormal );
+#endif`;
 
 /** Injeta vento e revelação num material padrão do three (Lambert/Standard/Phong). */
 export function aplicarPatch(material: THREE.Material, op: OpcoesPatch = {}) {
@@ -59,6 +72,7 @@ export function aplicarPatch(material: THREE.Material, op: OpcoesPatch = {}) {
   const revelar = op.revelar ?? true;
   const href = op.alturaRef ?? 4;
   const alcance = op.alcance;
+  const semVerso = op.semVerso ?? false;
   const anterior = material.onBeforeCompile;
   material.onBeforeCompile = (sh, r) => {
     anterior?.call(material, sh, r);
@@ -82,15 +96,22 @@ export function aplicarPatch(material: THREE.Material, op: OpcoesPatch = {}) {
       `;
     }
     if (revelar) {
+      // instâncias (vegetação) encolhem em torno da base; malhas fundidas (estruturas) afundam
+      // por vértice, junto com o terreno
       corpo += /* glsl */ `
-      float _dc = distance(_base.xz, uCentro);
-      float _enc = 1.0 - smoothstep(uRaio - 20.0, uRaio, _dc);
-      transformed *= _enc;
+      #ifdef USE_INSTANCING
+        float _enc = 1.0 - smoothstep(uRaio - ${FAIXA_REVELAR.toFixed(1)}, uRaio, distance(_base.xz, uCentro));
+        transformed *= _enc;
+      #else
+        float _af = smoothstep(uRaio - ${FAIXA_REVELAR.toFixed(1)}, uRaio, distance(_pm.xz, uCentro));
+        transformed.y -= _af * ${AFUNDAR_REVELAR.toFixed(1)};
+      #endif
       `;
     }
     sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${corpo}`);
+    if (semVerso) sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', GLSL_SEM_VERSO);
   };
-  material.customProgramCacheKey = () => `patch_${vento}_${revelar}_${href}_${alcance ? 'a' : ''}`;
+  material.customProgramCacheKey = () => `patch_${vento}_${revelar}_${href}_${alcance ? 'a' : ''}_${semVerso ? 'v' : ''}`;
   return material;
 }
 

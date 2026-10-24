@@ -305,7 +305,7 @@ export const MAPA_CANAA: DefMapa = {
     sentinela2: ROTAS_SENTINELAS.sentinela2[0],
     sentinela3: ROTAS_SENTINELAS.sentinela3[0],
     sentinela4: ROTAS_SENTINELAS.sentinela4[0],
-    fugaInimigos: [46, -232],
+    fugaInimigos: [46, -217],
     save: CANAA.save,
     salem: CANAA.salem,
     altarSalem: [3, 85],

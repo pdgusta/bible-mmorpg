@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GLOBAIS } from './Shaders';
+import { GLOBAIS, FAIXA_REVELAR } from './Shaders';
 import type { Relevo } from '../mundo/Relevo';
 
 /**
@@ -65,6 +65,7 @@ export class Agua {
         uniform vec3 uRasa; uniform vec3 uFunda; uniform vec3 uCeu; uniform vec3 uSol; uniform vec3 uCorSol;
         uniform float uTempo; uniform float uTurva; uniform float uLuz; uniform float uOnda;
         uniform vec4 uRecorte; uniform float uRecorteYaw;
+        uniform vec2 uCentro; uniform float uRaio;
         varying vec3 vMundo;
         float h12(vec2 p){ vec3 p3 = fract(vec3(p.xyx) * .1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
         float vn(vec2 p){ vec2 i = floor(p); vec2 f = fract(p); f = f*f*(3.0-2.0*f);
@@ -99,6 +100,9 @@ export class Agua {
           cor = mix(cor, vec3(0.95, 0.97, 0.95), esp2 * 0.7 * (1.0 - uTurva));
           cor *= uLuz;
           float alfa = mix(0.55, 0.92, t) + esp2 * 0.3;
+          // revelação da transição de era (mesma faixa do terreno e das estruturas)
+          alfa *= 1.0 - smoothstep(uRaio - ${FAIXA_REVELAR.toFixed(1)}, uRaio, distance(vMundo.xz, uCentro));
+          if (alfa < 0.01) discard;
           gl_FragColor = vec4(cor, clamp(alfa, 0.0, 1.0));
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
@@ -106,6 +110,8 @@ export class Agua {
         }`,
     });
     this.material.uniforms.uTempo = GLOBAIS.uTempo;
+    this.material.uniforms.uCentro = GLOBAIS.uCentro;
+    this.material.uniforms.uRaio = GLOBAIS.uRaio;
     const geo = new THREE.PlaneGeometry(tamanho, tamanho, 1, 1);
     geo.rotateX(-Math.PI / 2);
     this.malha = new THREE.Mesh(geo, this.material);
