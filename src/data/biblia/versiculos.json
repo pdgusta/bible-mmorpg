@@ -3254,10 +3254,20 @@
    "nvt": "Vocês pretendiam me fazer o mal, mas Deus planejou tudo para o bem. Colocou-me neste cargo para que eu pudesse salvar a vida de muitos.",
    "kjv": "But as for you, ye thought evil against me; but God meant it unto good, to bring to pass, as it is this day, to save much people alive."
   },
+  "Êx 20:25": {
+   "bkj": "E se me fizeres um altar de pedra, não o edificarás de pedra esculpida, porque se levantares tua ferramenta sobre ele, já o profanaste.",
+   "nvt": "Se usarem pedras para construir meu altar, que sejam apenas pedras inteiras, em sua forma natural. Não alterem a forma das pedras com alguma ferramenta, pois isso tornaria o altar impróprio para o uso sagrado.",
+   "kjv": "And if thou wilt make me an altar of stone, thou shalt not build it of hewn stone: for if thou lift up thy tool upon it, thou hast polluted it."
+  },
   "Sl 56:3": {
    "bkj": "A qualquer tempo em que eu estiver com medo, confiarei em ti.",
    "nvt": "Quando eu tiver medo, porém, confiarei em ti.",
    "kjv": "What time I am afraid, I will trust in thee."
+  },
+  "Sl 133:1": {
+   "bkj": "Contemplai quão bom e quão agradável é para os irmãos habitarem juntos em união!",
+   "nvt": "Como é bom e agradável quando os irmãos vivem em união!",
+   "kjv": "Behold, how good and how pleasant it is for brethren to dwell together in unity!"
   },
   "Pv 12:10": {
    "bkj": "O homem justo se importa com a vida de seu animal, mas as ternas misericórdias dos perversos são cruéis.",
@@ -3374,10 +3384,30 @@
    "nvt": "“Quando o Filho do Homem voltar, será como no tempo de Noé.",
    "kjv": "But as the days of Noah were, so shall also the coming of the Son of man be."
   },
+  "Mt 24:38": {
+   "bkj": "Pois, assim como nos dias anteriores ao dilúvio, comiam, bebiam, casavam e davam-se em casamento, até o dia em que Noé entrou na arca,",
+   "nvt": "Nos dias antes do dilúvio, o povo seguia sua rotina de banquetes, festas e casamentos, até o dia em que Noé entrou na arca.",
+   "kjv": "For as in the days that were before the flood they were eating and drinking, marrying and giving in marriage, until the day that Noe entered into the ark,"
+  },
+  "Mt 24:39": {
+   "bkj": "e não o perceberam até que veio o dilúvio, e os levou a todos; assim também será a vinda do Filho do homem.",
+   "nvt": "Não perceberam o que estava para acontecer até que veio o dilúvio e levou todos. Assim será na vinda do Filho do Homem.",
+   "kjv": "And knew not until the flood came, and took them all away; so shall also the coming of the Son of man be."
+  },
   "Mt 26:64": {
    "bkj": "Disse-lhe Jesus: Tu o disseste; contudo, eu vos digo que vereis em breve o Filho do homem assentado à direita do poder, e vindo sobre as nuvens do céu.",
    "nvt": "Jesus respondeu: “É como você diz. Eu lhes digo que, no futuro, verão o Filho do Homem sentado à direita do Deus Poderoso e vindo sobre as nuvens do céu”.",
    "kjv": "Jesus saith unto him, Thou hast said: nevertheless I say unto you, Hereafter shall ye see the Son of man sitting on the right hand of power, and coming in the clouds of heaven."
+  },
+  "Mc 4:39": {
+   "bkj": "E ele, levantando-se, repreendeu o vento e disse ao mar: Paz, aquieta-te. E o vento cessou, e houve grande calmaria.",
+   "nvt": "Jesus despertou, repreendeu o vento e disse ao mar: “Silêncio! Aquiete-se!”. De repente, o vento parou, e houve grande calmaria.",
+   "kjv": "And he arose, and rebuked the wind, and said unto the sea, Peace, be still. And the wind ceased, and there was a great calm."
+  },
+  "Mc 4:40": {
+   "bkj": "E ele disse-lhes: Por que sois temerosos? Ainda não tendes fé?",
+   "nvt": "Então Jesus lhes perguntou: “Por que estão com medo? Ainda não têm fé?”.",
+   "kjv": "And he said unto them, Why are ye so fearful? how is it that ye have no faith?"
   },
   "Lc 1:32": {
    "bkj": "Ele será grande, e será chamado Filho do Altíssimo; e o Senhor Deus lhe dará o trono de Davi, seu pai;",
@@ -3388,6 +3418,16 @@
    "bkj": "e ele reinará sobre a casa de Jacó para sempre, e o seu reino não terá fim.",
    "nvt": "e ele reinará sobre Israel para sempre; seu reino jamais terá fim!”",
    "kjv": "And he shall reign over the house of Jacob for ever; and of his kingdom there shall be no end."
+  },
+  "Lc 3:34": {
+   "bkj": "que era filho de Jacó, que era filho de Isaque, que era filho de Abraão, que era filho de Terá, que era filho de Nacor,",
+   "nvt": "Judá era filho de Jacó. Jacó era filho de Isaque. Isaque era filho de Abraão. Abraão era filho de Terá. Terá era filho de Naor.",
+   "kjv": "Which was the son of Jacob, which was the son of Isaac, which was the son of Abraham, which was the son of Thara, which was the son of Nachor,"
+  },
+  "Lc 3:36": {
+   "bkj": "que era filho de Cainã, que era filho de A/naxade, que era filho de Sem, que era filho de Noé, que era filho de Lameque,",
+   "nvt": "Salá era filho de Cainã. Cainã era filho de Arfaxade. Arfaxade era filho de Sem. Sem era filho de Noé. Noé era filho de Lameque.",
+   "kjv": "Which was the son of Cainan, which was the son of Arphaxad, which was the son of Sem, which was the son of Noe, which was the son of Lamech,"
   },
   "Lc 22:20": {
    "bkj": "Semelhantemente também o cálice, depois da ceia, dizendo: Este cálice é o novo testamento no meu sangue, que é derramado por vós.",
@@ -3439,6 +3479,16 @@
    "nvt": "Jesus respondeu: “Eu sou o pão da vida. Quem vem a mim nunca mais terá fome. Quem crê em mim nunca mais terá sede.",
    "kjv": "And Jesus said unto them, I am the bread of life: he that cometh to me shall never hunger; and he that believeth on me shall never thirst."
   },
+  "Jo 8:56": {
+   "bkj": "Vosso pai Abraão regozijou-se de ver o meu dia; e viu-o, e alegrou-se.",
+   "nvt": "Seu pai Abraão exultou com a expectativa da minha vinda. Ele a viu e se alegrou”.",
+   "kjv": "Your father Abraham rejoiced to see my day: and he saw it, and was glad."
+  },
+  "Jo 10:4": {
+   "bkj": "E, quando ele coloca para fora as suas ovelhas, vai adiante delas, e as ovelhas o seguem, porque eles conhecem a sua voz.",
+   "nvt": "Depois de reuni-las, vai adiante delas, e elas o seguem porque conhecem sua voz.",
+   "kjv": "And when he putteth forth his own sheep, he goeth before them, and the sheep follow him: for they know his voice."
+  },
   "Jo 10:9": {
    "bkj": "Eu sou a porta; se algum homem entrar por mim, ele será salvo, e entrará e sairá, e achará pastagens.",
    "nvt": "Sim, eu sou a porta. Quem entrar por mim será salvo. Entrará e sairá e encontrará pasto.",
@@ -3448,6 +3498,11 @@
    "bkj": "Eu sou o bom pastor; o bom pastor dá a sua vida pelas ovelhas.",
    "nvt": "“Eu sou o bom pastor. O bom pastor sacrifica sua vida pelas ovelhas.",
    "kjv": "I am the good shepherd: the good shepherd giveth his life for the sheep."
+  },
+  "Jo 19:17": {
+   "bkj": "E, carregando ele a sua cruz, saiu para um lugar chamado o lugar de uma caveira, que é chamado em hebraico Gólgota;",
+   "nvt": "Carregando a própria cruz, Jesus foi ao local chamado Lugar da Caveira (em aramaico, Gólgota).",
+   "kjv": "And he bearing his cross went forth into a place called the place of a skull, which is called in the Hebrew Golgotha:"
   },
   "At 7:9": {
    "bkj": "E os patriarcas, movidos de inveja, venderam a José para o Egito; mas Deus era com ele,",
@@ -3509,6 +3564,11 @@
    "nvt": "Se ele não poupou nem mesmo seu próprio Filho, mas o entregou por todos nós, acaso não nos dará todas as outras coisas?",
    "kjv": "He that spared not his own Son, but delivered him up for us all, how shall he not with him also freely give us all things?"
   },
+  "2Co 5:7": {
+   "bkj": "(porque andamos por fé, não por vista).",
+   "nvt": "Porque vivemos por fé, e não pelo que vemos.",
+   "kjv": "(For we walk by faith, not by sight:)"
+  },
   "Gl 3:8": {
    "bkj": "Prevendo a Escritura que Deus justificaria os povos gentios pela fé, apregoou o evangelho a Abraão, dizendo: Em ti todos os povos serão abençoados.",
    "nvt": "As Escrituras previram esse tempo em que Deus declararia os gentios justos por meio da fé. Ele anunciou essas boas-novas a Abraão há muito tempo, quando disse: “Todas as nações da terra serão abençoadas por seu intermédio”.",
@@ -3529,6 +3589,21 @@
    "nvt": "Portanto, não nos cansemos de fazer o bem. No momento certo, teremos uma colheita de bênçãos, se não desistirmos.",
    "kjv": "And let us not be weary in well doing: for in due season we shall reap, if we faint not."
   },
+  "Ef 6:14": {
+   "bkj": "Estai, pois, firmes, tendo cingidos os vossos lombos com a verdade, e vestida a couraça da justiça,",
+   "nvt": "Assim, mantenham sua posição, colocando o cinto da verdade e a couraça da justiça.",
+   "kjv": "Stand therefore, having your loins girt about with truth, and having on the breastplate of righteousness;"
+  },
+  "Ef 6:15": {
+   "bkj": "e calçados os vossos pés na preparação do evangelho da paz.",
+   "nvt": "Como calçados, usem a paz das boas-novas, para que estejam inteiramente preparados.",
+   "kjv": "And your feet shod with the preparation of the gospel of peace;"
+  },
+  "Ef 6:16": {
+   "bkj": "Tomando, sobre tudo, o escudo da fé, com o qual podereis apagar todos os dardos inflamados do maligno.",
+   "nvt": "Em todas as situações, levantem o escudo da fé, para deter as flechas de fogo do maligno.",
+   "kjv": "Above all, taking the shield of faith, wherewith ye shall be able to quench all the fiery darts of the wicked."
+  },
   "Ef 6:17": {
    "bkj": "E tomai o capacete da salvação, e a espada do Espírito, que é a palavra de Deus.",
    "nvt": "Usem a salvação como capacete e empunhem a espada do Espírito, que é a palavra de Deus.",
@@ -3544,10 +3619,25 @@
    "nvt": "Em tudo que fizerem, trabalhem de bom ânimo, como se fosse para o Senhor, e não para os homens.",
    "kjv": "And whatsoever ye do, do it heartily, as to the Lord, and not unto men;"
   },
+  "1Ts 5:8": {
+   "bkj": "Mas nós, que somos do dia, sejamos sóbrios, vestindo-nos da couraça da fé e do amor e tendo por capacete a esperança da salvação.",
+   "nvt": "Mas nós, que vivemos na luz, devemos ser sóbrios, protegidos pela armadura da fé e do amor, usando o capacete da esperança da salvação.",
+   "kjv": "But let us, who are of the day, be sober, putting on the breastplate of faith and love; and for an helmet, the hope of salvation."
+  },
+  "Hb 7:1": {
+   "bkj": "Porque este Melquisedeque, rei de Salém, sacerdote do Deus Altíssimo, que encontrou Abraão quando este regressava da matança dos reis, e o abençoou,",
+   "nvt": "Esse Melquisedeque era rei de Salém e também sacerdote do Deus Altíssimo. Quando Abraão regressava para casa, depois de derrotar os reis, Melquisedeque foi ao seu encontro e o abençoou.",
+   "kjv": "For this Melchisedec, king of Salem, priest of the most high God, who met Abraham returning from the slaughter of the kings, and blessed him;"
+  },
   "Hb 7:2": {
    "bkj": "a quem também Abraão deu a décima parte de tudo; sendo primeiramente, por interpretação do seu nome, Rei de justiça, e depois disso também Rei de Salém, que é Rei de paz.",
    "nvt": "Então Abraão separou a décima parte de tudo e a entregou a Melquisedeque, cujo nome significa “rei da justiça”, enquanto rei de Salém quer dizer “rei da paz”.",
    "kjv": "To whom also Abraham gave a tenth part of all; first being by interpretation King of righteousness, and after that also King of Salem, which is, King of peace;"
+  },
+  "Hb 7:3": {
+   "bkj": "Sem pai, sem mãe, sem genealogia, não tendo princípio de dias nem fim de vida, mas feito semelhante ao Filho de Deus, permanece sacerdote para sempre.",
+   "nvt": "Não há registro de seu pai nem de sua mãe, nem de nenhum de seus antepassados, nem do começo nem do fim de sua vida. Semelhantemente ao Filho de Deus, ele permanece sacerdote para sempre.",
+   "kjv": "Without father, without mother, without descent, having neither beginning of days, nor end of life; but made like unto the Son of God; abideth a priest continually."
   },
   "Hb 11:1": {
    "bkj": "Ora, a fé é a substância das coisas pelas quais esperamos, a evidência das coisas não vistas.",
@@ -3588,6 +3678,21 @@
    "bkj": "Sujeitai-vos, pois, a Deus, resisti ao diabo, e ele fugirá de vós.",
    "nvt": "Portanto, submetam-se a Deus. Resistam ao diabo, e ele fugirá de vocês.",
    "kjv": "Submit yourselves therefore to God. Resist the devil, and he will flee from you."
+  },
+  "1Pe 3:20": {
+   "bkj": "os quais em outro tempo foram desobedientes, quando a longanimidade de Deus esperava nos dias de Noé, enquanto se preparava a arca; na qual poucas, isto é, oito almas foram salvas pela água.",
+   "nvt": "àqueles que, muito tempo atrás, desobedeceram a Deus quando ele esperou pacientemente enquanto Noé construía sua embarcação. Apenas oito pessoas foram salvas por meio da água do dilúvio,",
+   "kjv": "Which sometime were disobedient, when once the longsuffering of God waited in the days of Noah, while the ark was a preparing, wherein few, that is, eight souls were saved by water."
+  },
+  "1Pe 3:21": {
+   "bkj": "Tal como esta figura, agora, também, o batismo nos salva, não do despojamento da imundície da carne, mas a resposta de uma boa consciência para com Deus, pela ressurreição de Jesus Cristo;",
+   "nvt": "e aquela água simboliza o batismo que agora os salva, não pela remoção da sujeira do corpo, mas porque no batismo vocês declaram ter boa consciência diante de Deus. Ela é eficaz por meio da ressurreição de Jesus Cristo.",
+   "kjv": "The like figure whereunto even baptism doth also now save us (not the putting away of the filth of the flesh, but the answer of a good conscience toward God,) by the resurrection of Jesus Christ:"
+  },
+  "2Pe 2:5": {
+   "bkj": "e não perdoou ao mundo antigo, mas salvou Noé, a oitava pessoa, o pregador da justiça, trazendo o dilúvio sobre o mundo dos ímpios;",
+   "nvt": "Não poupou o mundo antigo, mas protegeu Noé, que proclamava a justiça, e sete pessoas de sua família, quando destruiu com um dilúvio o mundo dos perversos.",
+   "kjv": "And spared not the old world, but saved Noah the eighth person, a preacher of righteousness, bringing in the flood upon the world of the ungodly;"
   },
   "Ap 20:10": {
    "bkj": "E o diabo que os enganava, foi lançado no lago de fogo e enxofre, onde estão a besta e o falso profeta; e serão atormentados dia e noite para sempre e sempre.",
