@@ -71,8 +71,11 @@ export const GLSL_SEM_VERSO = `#include <normal_fragment_begin>
   normal = normalize( vNormal );
 #endif`;
 
-/** Injeta vento e revelação num material padrão do three (Lambert/Standard/Phong). */
+/** Injeta vento e revelação num material padrão do three (Lambert/Standard/Phong). Idempotente. */
 export function aplicarPatch(material: THREE.Material, op: OpcoesPatch = {}) {
+  // idempotente: materiais compartilhados (ex.: o das estruturas) só recebem o patch uma vez
+  if (material.userData.patch) return material;
+  material.userData.patch = true;
   const vento = op.vento ?? 0;
   const revelar = op.revelar ?? true;
   const href = op.alturaRef ?? 4;

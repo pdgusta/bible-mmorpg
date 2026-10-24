@@ -127,7 +127,7 @@ export class Partida {
   }
 
   private async iniciar(qualidadeFixa: boolean) {
-    const { jogo, ui, s } = this;
+    const { jogo, ui } = this;
     ui.acoes = this.acoes();
     this.audio.iniciar();
     this.aplicarConfig(ui.configuracoes(), qualidadeFixa);

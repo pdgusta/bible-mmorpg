@@ -168,7 +168,18 @@ export class Ceu {
 
     // nuvens fofas: aglomerados de esferas achatadas, instanciados
     const geo = criarGeometriaNuvem();
-    const matN = new THREE.MeshLambertMaterial({ color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 0.35, fog: false });
+    const matN = new THREE.ShaderMaterial({
+      vertexShader: VERT_NUVEM,
+      fragmentShader: FRAG_NUVEM,
+      uniforms: {
+        uTopo: { value: new THREE.Color('#ffffff') },
+        uBase: { value: new THREE.Color('#c8d0dc') },
+        uSolCor: { value: new THREE.Color('#ffd9a0') },
+        uSolDir: { value: new THREE.Vector3(0, 1, 0) },
+        uBorda: { value: 0.3 },
+      },
+      fog: false,
+    });
     this.nuvens = new THREE.InstancedMesh(geo, matN, 26);
     this.nuvens.frustumCulled = false;
     const r = new Aleatorio(77);
@@ -284,15 +295,22 @@ export class Ceu {
     const q = new THREE.Quaternion();
     const s = new THREE.Vector3();
     const p = new THREE.Vector3();
-    const matN = this.nuvens.material as THREE.MeshLambertMaterial;
-    matN.color.copy(this.hemi.color).lerp(new THREE.Color('#ffffff'), 0.55).multiplyScalar(1 - this.noite * 0.75);
-    matN.emissive.copy(corSol).multiplyScalar(0.35 * (1 - this.noite * 0.8)).lerp(new THREE.Color('#40444c'), this.tempestade);
+    // nuvens claras e macias: topo branco, base azulada (cor do céu), borda morna virada para o sol
+    const un = (this.nuvens.material as THREE.ShaderMaterial).uniforms;
+    const dia = 1 - this.noite * 0.8;
+    const topo = (un.uTopo.value as THREE.Color).setRGB(1, 0.99, 0.97).lerp(this.hemi.color, 0.12).multiplyScalar(dia);
+    const baseN = (un.uBase.value as THREE.Color).copy(u.uZenite.value as THREE.Color).lerp(u.uHorizonte.value as THREE.Color, 0.6).lerp(_branco, 0.45).multiplyScalar(0.92 * dia);
+    topo.lerp(_cinzaTempestade, this.tempestade * 0.85);
+    baseN.lerp(_cinzaTempestadeEscuro, this.tempestade * 0.9);
+    (un.uSolCor.value as THREE.Color).copy(corSol);
+    (un.uSolDir.value as THREE.Vector3).copy(dir);
+    un.uBorda.value = (0.25 + 0.6 * (1 - smoothstep(0.1, 0.5, elev))) * (1 - this.tempestade) * (1 - this.noite);
     for (let i = 0; i < this.dadosNuvens.length; i++) {
       const n = this.dadosNuvens[i];
       n.x += n.v * dt * 2.2;
       if (n.x > 650) n.x = -650;
       p.set(foco.x + n.x, n.y - this.tempestade * 40, foco.z + n.z);
-      s.set(n.s * (1 + this.tempestade * 0.6), n.s * 0.45, n.s * 0.8);
+      s.set(n.s * (1 + this.tempestade * 0.6), n.s * (0.3 + this.tempestade * 0.15), n.s * 0.8);
       m.compose(p, q, s);
       this.nuvens.setMatrixAt(i, m);
     }
@@ -304,12 +322,38 @@ export class Ceu {
   }
 }
 
+const _branco = new THREE.Color('#ffffff');
+const _cinzaTempestade = new THREE.Color('#6a717a');
+const _cinzaTempestadeEscuro = new THREE.Color('#3a4048');
+
+const VERT_NUVEM = /* glsl */ `
+varying vec3 vN;
+void main() {
+  // normal corrigida pela escala da instância (nuvens achatadas)
+  vec3 esc = vec3(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz), length(instanceMatrix[2].xyz));
+  vN = normalize(normal / esc);
+  gl_Position = projectionMatrix * viewMatrix * modelMatrix * instanceMatrix * vec4(position, 1.0);
+}`;
+
+const FRAG_NUVEM = /* glsl */ `
+uniform vec3 uTopo; uniform vec3 uBase; uniform vec3 uSolCor; uniform vec3 uSolDir; uniform float uBorda;
+varying vec3 vN;
+void main() {
+  vec3 n = normalize(vN);
+  vec3 cor = mix(uBase, uTopo, smoothstep(-0.5, 0.75, n.y));
+  float sol = max(dot(n, normalize(uSolDir)), 0.0);
+  cor += uSolCor * pow(sol, 2.5) * uBorda;
+  gl_FragColor = vec4(cor, 1.0);
+  #include <tonemapping_fragment>
+  #include <colorspace_fragment>
+}`;
+
 function criarGeometriaNuvem(): THREE.BufferGeometry {
   const partes: THREE.BufferGeometry[] = [];
   const r = new Aleatorio(5);
-  for (let i = 0; i < 7; i++) {
-    const g = new THREE.IcosahedronGeometry(r.entre(0.45, 0.8), 1);
-    g.translate(r.entre(-1.1, 1.1), r.entre(-0.1, 0.35), r.entre(-0.5, 0.5));
+  for (let i = 0; i < 9; i++) {
+    const g = new THREE.IcosahedronGeometry(r.entre(0.42, 0.78), 1);
+    g.translate(r.entre(-1.5, 1.5), r.entre(-0.05, 0.3), r.entre(-0.55, 0.55));
     partes.push(g);
   }
   return mesclar(partes);

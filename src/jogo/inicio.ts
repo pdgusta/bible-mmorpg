@@ -12,13 +12,24 @@ import type { Mundo } from '../mundo/Mundo';
 export const GENEALOGIA_SEM_ABRAO = ['Sem', 'Arfaxade', 'Selá', 'Éber', 'Pelegue', 'Reú', 'Serugue', 'Naor', 'Terá', 'Abrão'];
 
 /**
- * Ponto de entrada provisório: carrega o vale de Noé com Noé, Sem, Cam e Jafé e entrega o
- * controle a Noé. Parâmetros de desenvolvimento:
+ * Entrada do jogo: tela de carregamento, título sobre o vale e o fluxo completo (Partida).
+ * Com `?teste=troca|era`, abre o cenário de teste antigo (e2e/teste-troca.mjs).
+ */
+export async function iniciarJogo(canvas: HTMLCanvasElement, ui: HTMLDivElement) {
+  const P = new URLSearchParams(location.search);
+  if (P.get('teste')) return iniciarCenarioTeste(canvas);
+  const { Partida } = await import('./Partida');
+  await Partida.criar(canvas, ui);
+}
+
+/**
+ * Cenário de teste (sem UI nem missões): o vale de Noé com Noé, Sem, Cam e Jafé e o controle
+ * com Noé. Parâmetros:
  * - pos=x,z yaw pitch dist hora arca q: câmera/foto;
  * - teste=troca: um posto e uma escalada de teste perto de Cam e Jafé;
  * - teste=era: expõe window.testeEra() (transição para um segundo vale, com Abrão).
  */
-export async function iniciarJogo(canvas: HTMLCanvasElement, _ui: HTMLDivElement) {
+async function iniciarCenarioTeste(canvas: HTMLCanvasElement) {
   const P = new URLSearchParams(location.search);
   const jogo = new Jogo(canvas, (P.get('q') as any) ?? 'medio');
   (window as any).jogo = jogo;
