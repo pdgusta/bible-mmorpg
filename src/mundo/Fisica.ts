@@ -11,6 +11,8 @@ export class MundoFisico {
   nivelAgua = -1e9;
   profundidadeMax = 1.0;
   margemMapa = 6;
+  /** Inclinação (1 - normal.y) a partir da qual não se sobe a pé (0,36 ≈ 50°). */
+  inclinacaoMax = 0.36;
   private tmp: Colisor[] = [];
 
   constructor(relevo: Relevo, colisoes: Colisoes) {
@@ -61,6 +63,8 @@ export class MundoFisico {
     return Math.min(a, b);
   }
 }
+
+const _nrm = new THREE.Vector3();
 
 /** Corpo cinemático em forma de cápsula (aproximada por cilindro) para personagens e animais. */
 export class CorpoFisico {
@@ -131,12 +135,28 @@ export class CorpoFisico {
         this.vel.x = 0;
         this.vel.z = 0;
       }
-      // encosta íngreme demais (só no terreno)
+      // encosta íngreme demais (só para quem está no terreno): tira a componente morro acima
+      // do deslocamento, e o personagem escorrega ao longo da encosta
       const hAnt = m.relevo.altura(antX, antZ);
       const hNovo = m.relevo.altura(nx, nz);
-      if (hNovo - hAnt > 0.35 && m.relevo.inclinacao(nx, nz) > 0.42 && this.pos.y < hNovo - 0.2) {
-        nx = antX;
-        nz = antZ;
+      if (hNovo > hAnt && this.pos.y < hAnt + 0.15) {
+        m.relevo.normal(nx, nz, _nrm);
+        if (1 - _nrm.y > m.inclinacaoMax) {
+          const gl = Math.hypot(_nrm.x, _nrm.z) || 1;
+          const gx = _nrm.x / gl;
+          const gz = _nrm.z / gl;
+          const dx = nx - antX;
+          const dz = nz - antZ;
+          const sobe = dx * gx + dz * gz; // < 0: indo contra a descida
+          if (sobe < 0) {
+            nx = antX + dx - gx * sobe;
+            nz = antZ + dz - gz * sobe;
+            if (m.relevo.altura(nx, nz) > hAnt + 0.02 && 1 - m.relevo.normal(nx, nz, _nrm).y > m.inclinacaoMax) {
+              nx = antX;
+              nz = antZ;
+            }
+          }
+        }
       }
     }
 
