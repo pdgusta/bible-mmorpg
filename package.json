@@ -1,0 +1,26 @@
+{
+  "name": "a-semente",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A Semente — RPG 3D bíblico de navegador (MVP: Noé → Abraão)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "versiculos": "node scripts/extrair-versiculos.mjs",
+    "validar": "node scripts/validar-textos.mjs",
+    "e2e": "node e2e/jogar-mvp.mjs"
+  },
+  "devDependencies": {
+    "@types/three": "0.186.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.7",
+    "vitest": "3.2.7"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  }
+}

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+# Fontes bíblicas completas (direitos autorais): não versionar. Ver README.
+fontes/
+e2e/saida/
+*.log
+.DS_Store
