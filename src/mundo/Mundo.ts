@@ -37,6 +37,18 @@ export interface Area {
   aoSair?(p: Personagem): void;
 }
 
+/** Superfície escalável (andaimes, cordas, escadas, paredes de pedra) usada pelo Batedor. */
+export interface Escalada {
+  id: string;
+  /** Pé da escalada (no chão) e saída no topo (já sobre a plataforma). */
+  base: THREE.Vector3;
+  topo: THREE.Vector3;
+  /** Direção para a qual o personagem fica virado enquanto escala. */
+  yaw: number;
+  largura?: number;
+  ativa: boolean;
+}
+
 /**
  * O mundo de uma era: relevo, física, navegação, vegetação, grama, água, estruturas,
  * pontos nomeados, interativos e áreas de gatilho.
@@ -57,6 +69,7 @@ export class Mundo {
   readonly interativos = new Interativos();
   readonly areas = new Map<string, Area>();
   readonly pontos = new Map<string, [number, number]>();
+  readonly escaladas = new Map<string, Escalada>();
   readonly personagens = new Map<string, Personagem>();
   readonly aleatorio: Aleatorio;
   /** Objetos atualizados todo quadro (animais, partículas, portões...). */
