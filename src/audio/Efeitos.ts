@@ -1,5 +1,5 @@
 // Efeitos sonoros sintetizados (one-shots): passos, interface, sopro da troca, brilho da era,
-// sinos de conquista, trovão, sons da obra e da arca, e as vozes dos animais.
+// sinos de conquista, trovão, sons da obra e da arca, da batalha e do caminho (era 2) e as vozes dos animais.
 import { aleatorio, karplusStrong, midiParaHz } from './sintese';
 
 /** O que um efeito recebe para tocar: contexto, saída seca (já posicionada) e envio para o eco. */
@@ -491,6 +491,93 @@ export function tocarEfeito(nome: string, c: CtxSom, t: number, o: OpcoesEfeito)
         env(ga.gain, t + dt, 0.01, v, 0.16);
         osc(c, 'sine', 62, t + dt, t + dt + 0.2, ga).frequency.exponentialRampToValueAtTime(40, t + dt + 0.15);
       }
+      return true;
+    }
+    // ---------------------------------------------------------- batalha e caminho (era 2)
+    case 'alarme': {
+      // toque de chifre de carneiro ao longe: duas notas (quinta ascendente), timbre filtrado e eco largo
+      for (const [m, dt, du] of [[45, 0, 0.55], [52, 0.6, 1.1]] as const) {
+        const ti = t + dt;
+        const ga = g(c, d);
+        env(ga.gain, ti, 0.09, 0.26, du);
+        const f = filtro(c, 'lowpass', 700, 1.2, ga);
+        f.frequency.linearRampToValueAtTime(1500, ti + 0.12);
+        f.frequency.exponentialRampToValueAtTime(800, ti + du);
+        const o = osc(c, 'sawtooth', midiParaHz(m) * 0.97, ti, ti + du + 0.1, f);
+        o.frequency.exponentialRampToValueAtTime(midiParaHz(m), ti + 0.1);
+        osc(c, 'sine', 5.5, ti, ti + du, g(c, o.frequency, 3));
+        const gr = g(c, d);
+        env(gr.gain, ti, 0.03, 0.04, du * 0.8);
+        ruido(c, 'rosa', ti, du, filtro(c, 'bandpass', 1200, 1, gr));
+        ga.connect(g(c, c.eco, 1.1));
+      }
+      return true;
+    }
+    case 'aparar': {
+      // cajado contra cajado: toque seco de madeira com ressonância curta
+      const ga = g(c, d);
+      env(ga.gain, t, 0.001, 0.55, 0.09);
+      ruido(c, 'branco', t, 0.1, filtro(c, 'bandpass', 1900 + r() * 300, 2.5, ga));
+      for (const [f, v, q] of [[520, 0.45, 0.16], [780, 0.28, 0.12], [1240, 0.15, 0.08]] as const) {
+        const gb = g(c, d);
+        env(gb.gain, t, 0.001, v, q);
+        osc(c, 'triangle', f * (0.97 + r() * 0.06), t, t + q + 0.05, gb);
+      }
+      ga.connect(g(c, c.eco, 0.35));
+      return true;
+    }
+    case 'golpe': {
+      // golpe de cajado: deslocamento de ar curto e baque abafado (sem impacto metálico)
+      const ga = g(c, d);
+      env(ga.gain, t, 0.06, 0.15, 0.08);
+      const f = filtro(c, 'bandpass', 600, 1.4, ga);
+      f.frequency.exponentialRampToValueAtTime(1800, t + 0.12);
+      ruido(c, 'rosa', t, 0.16, f);
+      const tb = t + 0.11;
+      const gb = g(c, d);
+      env(gb.gain, tb, 0.002, 0.3, 0.14);
+      osc(c, 'sine', 130 + r() * 20, tb, tb + 0.18, gb).frequency.exponentialRampToValueAtTime(62, tb + 0.12);
+      const gc = g(c, d);
+      env(gc.gain, tb, 0.002, 0.15, 0.06);
+      ruido(c, 'rosa', tb, 0.08, filtro(c, 'lowpass', 1100, 0.7, gc));
+      return true;
+    }
+    case 'discernir': {
+      // revelação suave: notas agudas que se abrem (lídio) sobre um sopro ascendente
+      [81, 85, 88, 93].forEach((m, i) => {
+        const ti = t + i * 0.09;
+        const ga = g(c, d);
+        env(ga.gain, ti, 0.15, 0.07, 1.6);
+        osc(c, 'sine', midiParaHz(m), ti, ti + 1.9, ga);
+        ga.connect(g(c, c.eco, 1.1));
+      });
+      const gr = g(c, d);
+      env(gr.gain, t, 0.5, 0.08, 0.9);
+      const f = filtro(c, 'bandpass', 900, 1.6, gr);
+      f.frequency.exponentialRampToValueAtTime(5000, t + 1.2);
+      ruido(c, 'rosa', t, 1.5, f);
+      gr.connect(g(c, c.eco, 0.8));
+      return true;
+    }
+    case 'pedra': {
+      // pedra solta: estalo, cascalho rolando e um baque grave lá embaixo
+      const ga = g(c, d);
+      env(ga.gain, t, 0.001, 0.3, 0.05);
+      ruido(c, 'branco', t, 0.06, filtro(c, 'bandpass', 2200, 1.5, ga));
+      for (let i = 0; i < 9; i++) {
+        const ti = t + 0.05 + i * 0.07 + r() * 0.05;
+        const gb = g(c, d);
+        env(gb.gain, ti, 0.001, 0.22 * (1 - i / 12), 0.03);
+        ruido(c, 'branco', ti, 0.04, filtro(c, 'bandpass', 3000 - i * 180 + r() * 400, 2, gb));
+      }
+      const gr = g(c, d);
+      env(gr.gain, t + 0.05, 0.05, 0.12, 0.6);
+      ruido(c, 'rosa', t + 0.05, 0.7, filtro(c, 'lowpass', 1800, 0.7, gr));
+      const tb = t + 0.75;
+      const gc = g(c, d);
+      env(gc.gain, tb, 0.003, 0.28, 0.3);
+      osc(c, 'sine', 95, tb, tb + 0.35, gc).frequency.exponentialRampToValueAtTime(48, tb + 0.25);
+      gc.connect(g(c, c.eco, 0.6));
       return true;
     }
   }

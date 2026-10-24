@@ -69,7 +69,7 @@ Grafo: fontes → `busEfeitos` (efeitos + `busAmbiente` 0,8) e `busMusica`; cada
 ```ts
 Audio.iniciarNoPrimeiroGesto()          // ou await Audio.iniciar() num clique/tecla (política de autoplay)
 Audio.ambiente(nome, 0..1, { pos?, alcance? = 40, transicao? = 2 }?)   Audio.silenciarAmbientes()
-Audio.musica('calmo' | 'aventura' | 'prova' | 'gloria' | 'silencio')
+Audio.musica('calmo' | 'aventura' | 'prova' | 'gloria' | 'batalha' | 'silencio')
 Audio.efeito(nome, { volume?, pos?, alcance? = 35, atraso?, superficie?, tipo?, distancia?, tom?, sexo?, duracao?, saltos? }?): boolean
 Audio.volume({ geral?, musica?, efeitos? })  // salvo em localStorage 'aSemente.audio'; Audio.volumes
 Audio.posicaoOuvinte(pos, yawCamera?)  // a cada quadro: atenuação + panorâmica das fontes posicionais
@@ -77,15 +77,16 @@ Audio.silenciar(bool)  Audio.ativo  Audio.estado  Audio.encerrar()
 ```
 Antes de iniciar, `ambiente`/`musica` ficam guardados e `efeito` é ignorado (retorna false).
 - **Ambientes** (`MISTURAS`): vale, canaa, vento, passaros, agua/rio, chuva, tempestade (chuva + vento + trovões), cidade (burburinho, tilintares, martelo), fogueira, noite (grilos), interiorArca/arca (rangidos, chuva abafada, trovões), monte. Cada camada só existe enquanto tem volume.
-- **Música**: calmo (ré dórico, 66 bpm, lira esparsa), aventura (ré dórico, 96 bpm, arpejo + tambor de moldura), prova (mi frígio dominante, 70 bpm, bordão grave, batida), gloria (ré lídio, 78 bpm, pad cheio, arpejos e sinos), silencio. A troca entra no próximo compasso com cruzamento.
-- **Efeitos**: passo (terra, grama, madeira, agua, pedra), clique, abrir, fechar, pegar, sopro (troca; `saltos: 3`), brilho (transição de era), sino, conquista (`tipo`: memoria, armadura, nivel, versiculo, xp; também como nomes diretos), trovao (`distancia`), agua, fogo, asas, martelo, machado, corda, portaArca, tranco, rangido, sussurro, coracao; vozes: balido, mugido, relincho, zurro, grunhido, rugido, barrito, latido, uivo, miado, arrulho/pomba, corvo, grasnado, grito. Os animais berram sozinhos quando agitados/presos e batem asas ao decolar.
+- **Música**: calmo (ré dórico, 66 bpm, lira esparsa), aventura (ré dórico, 96 bpm, arpejo + tambor de moldura), prova (mi frígio dominante, 70 bpm, bordão grave, batida), gloria (ré lídio, 78 bpm, pad cheio, arpejos e sinos), batalha (ré eólio, 108 bpm, i–VI–VII–i, arpejo firme, bordão grave e tambor `D.tdD.tt`; urgente sem ser agressiva), silencio. A troca entra no próximo compasso com cruzamento.
+- **Efeitos**: passo (terra, grama, madeira, agua, pedra), clique, abrir, fechar, pegar, sopro (troca; `saltos: 3`), brilho (transição de era), sino, conquista (`tipo`: memoria, armadura, nivel, versiculo, xp; também como nomes diretos), trovao (`distancia`), agua, fogo, asas, martelo, machado, corda, portaArca, tranco, rangido, sussurro, coracao; da era 2: alarme (chifre de carneiro ao longe, duas notas em quinta), aparar (cajado contra cajado, madeira seca), golpe (deslocamento de ar e baque abafado, sem metal), discernir (notas agudas que se abrem sobre um sopro ascendente), pedra (pedra solta: estalo, cascalho e baque lá embaixo); vozes: balido, mugido, relincho, zurro, grunhido, rugido, barrito, latido, uivo, miado, arrulho/pomba, corvo, grasnado, grito. Os animais berram sozinhos quando agitados/presos e batem asas ao decolar.
 
 ## Verificar
 - `?lab=animais` (todas as espécies, rebanho com Ló, ovelha agitada, pomba na mão de Noé, carneiro no arbusto). Parâmetros: `vista=todos|grandes|grandes2|pequenos|rebanho|aves|carneiro`, `so=<espécie>` (retrato do par), `foco=<espécie>&ang=&zoom=`, `t=<s simulados>`, `andar=<m/s>` (esteira), `rotulos=0`, `parar=1`. Clique liga o áudio.
 - `?lab=animais&mundo=noe&cena=rampa|baias|janela&t=50`: vale real com a arca no estágio 5 (pares subindo a rampa), baias do convés 2, pomba e corvo na janela.
 - `node e2e/foto.mjs "/?lab=animais&vista=pequenos&parar=1" saida.png` (o lab usa `preserveDrawingBuffer` para a foto não sair preta).
-- `npx vitest run src/audio src/entidades` (afinação da lira, ruídos, modos; boids e áreas).
+- `npx vitest run src/audio src/entidades` (afinação da lira, ruídos, modos; cada nome de `EFEITOS` toca num Web Audio falso e o estado `batalha` agenda notas, em `nomes.test.ts`; boids e áreas).
 - Áudio no navegador: `new SistemaAudio().montar(new OfflineAudioContext(2, 44100*3, 44100))`, `efeito(...)`, `agendarAte(t)`, `startRendering()` → RMS (todos os efeitos, estados e ambientes foram medidos assim: sem silêncio nem NaN).
+- Níveis dos sons da era 2 (Chromium headless, volumes padrão, janela de 3 s para efeitos e 12 s para música; RMS / pico em dBFS): alarme −28,5 / −8,0; aparar −41,0 / −10,8; golpe −37,1 / −10,2; discernir −29,3 / −12,9; pedra −33,1 / −9,4; música batalha −27,5 / −8,6. Referências medidas junto: martelo −38,0 / −10,7, machado −38,2 / −11,5, coracao −30,8 / −7,2, aventura −28,9 / −8,0. Golpe e aparar tocam a cada troca da batalha, por isso ficam no nível do martelo e abaixo do limitador (−10 dB).
 
 ## Cuidados e pendências
 - `Audio` sombreia o construtor global `Audio` (HTMLAudioElement) nos módulos que o importam.

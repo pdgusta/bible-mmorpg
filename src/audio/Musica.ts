@@ -4,7 +4,7 @@
 import { acorde, grau, midiParaHz, type Modo } from './sintese';
 import { sino, type CtxSom } from './Efeitos';
 
-export type EstadoMusica = 'calmo' | 'aventura' | 'prova' | 'gloria' | 'silencio';
+export type EstadoMusica = 'calmo' | 'aventura' | 'prova' | 'gloria' | 'batalha' | 'silencio';
 
 interface ConfigEstado {
   tonica: number;
@@ -46,6 +46,15 @@ export const ESTADOS_MUSICA: Record<Exclude<EstadoMusica, 'silencio'>, ConfigEst
     pad: { vol: 0.12, corte: 2300, tipo: 'sawtooth', notas: 4 },
     lira: { vol: 0.4, densidade: 0.92, registro: [7, 18], brilho: 0.7, padrao: [0, 1, 2, 3, 4, 3, 2, 1] },
     sinos: 0.45,
+  },
+  // urgente sem ser agressiva: ré eólio, progressão heroica (i–VI–VII–i), arpejo firme e tambor
+  // mais cheio que o da aventura, com bordão grave por baixo
+  batalha: {
+    tonica: 50, modo: 'eolio', bpm: 108, progressao: [0, 5, 6, 0], compassos: 1,
+    pad: { vol: 0.07, corte: 1300, tipo: 'sawtooth', notas: 3 },
+    lira: { vol: 0.34, densidade: 0.9, registro: [7, 15], brilho: 0.55, padrao: [0, 1, 2, 1, 0, 1, 2, 3] },
+    drone: 0.06,
+    tambor: { padrao: 'D.tdD.tt', vol: 0.3 },
   },
 };
 

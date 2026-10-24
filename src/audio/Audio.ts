@@ -7,7 +7,7 @@
 //   Audio.ambiente('vale', 0.8);             // 'vale','canaa','vento','passaros','agua','chuva','tempestade',
 //                                            // 'cidade','fogueira','noite','interiorArca','monte' (0..1)
 //   Audio.ambiente('agua', 1, { pos: [x, y, z], alcance: 40 }); // fonte posicional simples
-//   Audio.musica('calmo');                   // 'calmo'|'aventura'|'prova'|'gloria'|'silencio'
+//   Audio.musica('calmo');                   // 'calmo'|'aventura'|'prova'|'gloria'|'batalha'|'silencio'
 //   Audio.efeito('passo', { superficie: 'madeira', pos });
 //   Audio.efeito('conquista', { tipo: 'memoria' });
 //   Audio.volume({ musica: 0.6, efeitos: 0.9 });
@@ -47,7 +47,8 @@ export interface Volumes {
 /** Efeitos conhecidos (para menus de teste e validação). */
 export const EFEITOS = [
   'passo', 'clique', 'abrir', 'fechar', 'pegar', 'sopro', 'brilho', 'sino', 'conquista', 'memoria', 'armadura', 'nivel', 'versiculo', 'xp',
-  'trovao', 'agua', 'fogo', 'asas', 'martelo', 'machado', 'corda', 'portaArca', 'tranco', 'rangido', 'sussurro', 'coracao', ...VOZES,
+  'trovao', 'agua', 'fogo', 'asas', 'martelo', 'machado', 'corda', 'portaArca', 'tranco', 'rangido', 'sussurro', 'coracao',
+  'alarme', 'aparar', 'golpe', 'discernir', 'pedra', ...VOZES,
 ];
 
 const CHAVE_VOLUME = 'aSemente.audio';
