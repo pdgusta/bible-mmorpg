@@ -29,7 +29,7 @@ function geometriaTufo(lam: number, seg: number, larg: number, alturaBase: numbe
       const cz = oz + dz * curva;
       const y = alt * t;
       pos.push(cx - px * w, y, cz - pz * w, cx + px * w, y, cz + pz * w);
-      const k = 0.62 + t * 0.55;
+      const k = 0.58 + t * 0.47;
       cor.push(k, k, k, k, k, k);
     }
     for (let s = 0; s < seg; s++) {

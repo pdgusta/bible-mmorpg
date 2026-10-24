@@ -94,7 +94,7 @@ export class Mundo {
     const corGrama = (x: number, z: number, out: THREE.Color) => {
       def.corGrama(x, z, out);
       if (mixChao > 0) {
-        this.terreno.corEm(x, z, tmp).multiplyScalar(1.12);
+        this.terreno.corEm(x, z, tmp).multiplyScalar(1.05);
         out.lerp(tmp, mixChao);
       }
     };

@@ -86,8 +86,22 @@ export function carregarKJV() {
  * hífen + espaço ("multiplicai- vos"). Juntamos o hífen sem tocar nas palavras.
  */
 export function normalizarTipografia(texto) {
-  return texto
-    .replace(/([A-Za-zÀ-ÿ])- (los|las|lo|la|vos|nos|te|me|se|lhe|lhes|o|a|os|as|ei|ás|á|emos|eis|ão|ia|ias|íamos|íeis|iam)\b/g, '$1-$2')
+  let t = texto;
+  for (const [errado, certo] of CORRECOES_FONTE) t = t.split(errado).join(certo);
+  return t
+    // palavras compostas e ênclises separadas por "hífen + espaço" ("Todo- Poderoso", "multiplicai- vos")
+    .replace(/([A-Za-zÀ-ÿ])- ([A-Za-zÀ-ÿ])/g, '$1-$2')
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+/**
+ * Defeitos de digitalização da fonte BKJ conferidos um a um (nunca mudam o sentido do texto):
+ * "A/naxade" aparece 10 vezes e nunca "Arfaxade" (o nome em Gn 10–11, 1 Cr 1 e Lc 3:36);
+ * algumas palavras foram partidas por hifenização de linha.
+ */
+export const CORRECOES_FONTE = [
+  ['A/naxade', 'Arfaxade'],
+  ['des- truirás', 'destruirás'],
+  ['encan- tamentos', 'encantamentos'],
+];

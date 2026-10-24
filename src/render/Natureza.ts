@@ -28,6 +28,13 @@ export interface OpcoesVariante {
   alcanceMedio?: number;
   /** Fração de triângulos do tronco mantida também de perto (árvores: 0,5; 1 = malha original). */
   reduzirTroncoPerto?: number;
+  /**
+   * Recolore as folhas (materiais "Leaves*"): mantém o desenho da textura e troca a cor.
+   * Necessário para as folhas de TwistedTree e Bush_Common, que vêm vermelhas no kit.
+   */
+  corFolha?: string;
+  /** Recolore as partes sólidas (tronco, pedra): ex.: pedras "Rocks" (verde-escuras no kit) → calcário. */
+  corSolido?: string;
 }
 
 interface Silhueta {
@@ -60,7 +67,7 @@ interface Instancia {
 
 interface Variante {
   nome: string;
-  op: Required<Omit<OpcoesVariante, 'tintFolha' | 'tintTronco'>>;
+  op: Required<Omit<OpcoesVariante, 'tintFolha' | 'tintTronco' | 'corFolha' | 'corSolido'>>;
   modelos: Modelo[];
   instancias: Instancia[];
   malhasPerto: THREE.InstancedMesh[][]; // [modelo][parte]
@@ -124,7 +131,7 @@ export class Natureza {
     let nc = 0, nt = 0;
     for (const mod of modelos) for (const p of mod.perto) {
       const mat = p.material as THREE.MeshLambertMaterial;
-      const c = corMedia(mat.map).multiply(mat.color);
+      const c = mat.userData.luminancia ? mat.color.clone() : corMedia(mat.map).multiply(mat.color);
       if (p.folha) { corCopa.add(c); nc++; } else { corTronco.add(c); nt++; }
     }
     if (nc) corCopa.multiplyScalar(1 / nc);
@@ -170,10 +177,18 @@ export class Natureza {
     for (const p of partesBase) {
       const mat = p.material.clone() as THREE.MeshLambertMaterial;
       const tint = p.folha ? op.tintFolha : op.tintTronco;
+      const ehFolhagem = /lea/i.test(p.material.name);
+      const corNova = p.folha ? (ehFolhagem ? op.corFolha : undefined) : op.corSolido;
+      let lum = 0;
+      if (corNova && mat.map) {
+        mat.color.set(corNova);
+        lum = Math.max(0.05, luminanciaMedia(mat.map));
+      }
       if (tint) mat.color.multiply(new THREE.Color(tint));
       p.geometria.computeBoundingSphere();
       raio = Math.max(raio, p.geometria.boundingSphere!.radius + p.geometria.boundingSphere!.center.length());
-      aplicarPatch(mat, { vento: p.folha ? (op.vento ?? 0.12) : (op.vento ?? 0.12) * 0.25, alturaRef: 6, alcance: uAlcance, semVerso: p.folha });
+      aplicarPatch(mat, { vento: p.folha ? (op.vento ?? 0.12) : (op.vento ?? 0.12) * 0.25, alturaRef: 6, alcance: uAlcance, semVerso: p.folha, luminancia: lum });
+      if (lum) mat.userData.luminancia = lum;
       mat.name = `${variante}_${mat.name}`;
       const geoPerto = !p.folha && reduzirPerto < 0.99 ? simplificar(p.geometria, reduzirPerto) : p.geometria;
       perto.push({ geometria: geoPerto, material: mat, folha: p.folha });
@@ -464,6 +479,12 @@ function corMedia(t: THREE.Texture | null): THREE.Color {
   }
   coresMedias.set(t, out);
   return out.clone();
+}
+
+/** Luminância média (linear, como o shader a lê) dos pixels opacos da textura. */
+function luminanciaMedia(t: THREE.Texture): number {
+  const c = corMedia(t);
+  return c.r * 0.299 + c.g * 0.587 + c.b * 0.114;
 }
 
 /** Escurece a base (oclusão falsa) com cores por vértice: y de -0,5 (escuro) a 0,5. */

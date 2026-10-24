@@ -36,12 +36,15 @@ export class PonteAudio {
     this.iniciado = true;
     Audio.iniciarNoPrimeiroGesto();
     const ev = this.jogo.eventos;
-    ev.on('troca:salto', (d: { fase?: string } | undefined) => this.efeito('sopro', { volume: d?.fase === 'descida' ? 0.45 : 0.6 }));
+    ev.on('troca:salto', (d: { i?: number } | undefined) => {
+      if (!d?.i) this.efeito('sopro', { saltos: 3 });
+    });
     ev.on('interacao', () => this.efeito('clique', { volume: 0.5 }));
-    ev.on('memoria', () => this.efeito('memoria'));
-    ev.on('nivel', () => this.efeito('nivel'));
-    ev.on('armadura', () => this.efeito('armadura'));
-    ev.on('atributo', () => this.efeito('brilho', { volume: 0.5 }));
+    ev.on('memoria', () => this.efeito('conquista', { tipo: 'memoria' }));
+    ev.on('nivel', () => this.efeito('conquista', { tipo: 'nivel' }));
+    ev.on('armadura', () => this.efeito('conquista', { tipo: 'armadura' }));
+    ev.on('atributo', () => this.efeito('brilho', { volume: 0.4 }));
+    ev.on('era:transicao', () => this.efeito('brilho'));
     ev.on('prova:inicio', () => this.musica('prova'));
     ev.on('prova:fim', () => {
       if (this.musicaAtual === 'prova') this.musica('calmo');
@@ -73,6 +76,11 @@ export class PonteAudio {
   /** Volumes das Configurações (0..1). */
   volumes(musica: number, efeitos: number) {
     Audio.volume({ musica, efeitos });
+  }
+
+  /** Cliques e abertura/fechamento de menus. */
+  interface(nome: 'clique' | 'abrir' | 'fechar') {
+    this.efeito(nome, { volume: 0.6 });
   }
 
   /** Esquece os pedidos das missões e desliga os ambientes (carregar, novo jogo, título). */

@@ -424,10 +424,10 @@ function definirVariantes(m: Mundo) {
   // madeira de gofer: tradicionalmente identificada com o cipreste (NVT)
   n.definirVariante('cipreste', { modelos: ['Pine_1', 'Pine_2', 'Pine_3', 'Pine_4', 'Pine_5'], tintFolha: '#9cc08a', vento: 0.1, raioTronco: 0.35, alcancePerto: 40, fracaoLonge: 0.28 });
   n.definirVariante('arvore', { modelos: ['CommonTree_1', 'CommonTree_2', 'CommonTree_3', 'CommonTree_4', 'CommonTree_5'], tintFolha: '#d8f0a0', vento: 0.14, raioTronco: 0.4, alcancePerto: 45, fracaoLonge: 0.3 });
-  n.definirVariante('oliveira', { modelos: ['TwistedTree_1', 'TwistedTree_2', 'TwistedTree_3', 'TwistedTree_4', 'TwistedTree_5'], tintFolha: '#b8c8a0', tintTronco: '#c8b8a0', vento: 0.1, raioTronco: 1.0, alcancePerto: 38, fracaoLonge: 0.25, reduzirTronco: 0.35 });
-  n.definirVariante('arbusto', { modelos: ['Bush_Common', 'Bush_Common_Flowers'], tintFolha: '#d0e8a0', vento: 0.08, alcance: 110, alcancePerto: 35 });
-  n.definirVariante('pedra', { modelos: ['Rock_Medium_1', 'Rock_Medium_2', 'Rock_Medium_3'], vento: 0, raioTronco: 1.0, alcance: 200, alcancePerto: 45 });
-  n.definirVariante('seixo', { modelos: ['Pebble_Round_1', 'Pebble_Round_3', 'Pebble_Square_2'], vento: 0, alcance: 55, alcancePerto: 55, sombra: false });
+  n.definirVariante('oliveira', { modelos: ['TwistedTree_1', 'TwistedTree_2', 'TwistedTree_3', 'TwistedTree_4', 'TwistedTree_5'], corFolha: '#97ab6a', tintTronco: '#c8b8a0', vento: 0.1, raioTronco: 1.0, alcancePerto: 38, fracaoLonge: 0.25, reduzirTronco: 0.35 });
+  n.definirVariante('arbusto', { modelos: ['Bush_Common', 'Bush_Common_Flowers'], corFolha: '#7ea44c', vento: 0.08, alcance: 110, alcancePerto: 35 });
+  n.definirVariante('pedra', { modelos: ['Rock_Medium_1', 'Rock_Medium_2', 'Rock_Medium_3'], corSolido: '#bdb4a2', vento: 0, raioTronco: 1.0, alcance: 200, alcancePerto: 45 });
+  n.definirVariante('seixo', { modelos: ['Pebble_Round_1', 'Pebble_Round_3', 'Pebble_Square_2'], corSolido: '#c4bca9', vento: 0, alcance: 55, alcancePerto: 55, sombra: false });
   n.definirVariante('flores', { modelos: ['Flower_3_Group', 'Flower_3_Single', 'Clover_1', 'Plant_1'], vento: 0.12, alcance: 50, alcancePerto: 50, sombra: false });
   n.definirVariante('samambaia', { modelos: ['Fern_1', 'Plant_7'], tintFolha: '#c8e0a0', vento: 0.1, alcance: 60, alcancePerto: 60, sombra: false });
   n.definirVariante('capim', { modelos: ['Grass_Common_Tall', 'Grass_Wispy_Short'], tintFolha: '#e8e0a0', vento: 0.2, alcance: 50, alcancePerto: 50, sombra: false });
@@ -439,7 +439,7 @@ function definirVariantesDepois(m: Mundo) {
   n.definirVariante('arvoreSeca', { modelos: ['DeadTree_1', 'DeadTree_2', 'DeadTree_3'], tintTronco: '#9a8a78', vento: 0.02, raioTronco: 0.4, alcancePerto: 40, reduzirTronco: 0.25 });
   n.definirVariante('arvoreCaida', { modelos: ['DeadTree_1', 'DeadTree_2', 'DeadTree_3'], tintTronco: '#7a6a58', vento: 0, alcance: 140, alcancePerto: 35, reduzirTronco: 0.25 });
   n.definirVariante('broto', { modelos: ['Plant_1', 'Clover_1', 'Grass_Common_Short'], tintFolha: '#b8f088', vento: 0.12, alcance: 45, alcancePerto: 45, sombra: false });
-  n.definirVariante('oliveiraNova', { modelos: ['TwistedTree_2', 'TwistedTree_4'], tintFolha: '#c8e0a0', tintTronco: '#c8b8a0', vento: 0.12, alcance: 120, alcancePerto: 30, fracaoLonge: 0.3, reduzirTronco: 0.35 });
+  n.definirVariante('oliveiraNova', { modelos: ['TwistedTree_2', 'TwistedTree_4'], corFolha: '#a6c474', tintTronco: '#c8b8a0', vento: 0.12, alcance: 120, alcancePerto: 30, fracaoLonge: 0.3, reduzirTronco: 0.35 });
 }
 
 /** Zonas livres de vegetação: estruturas, caminhos, rio, pontos das missões. */

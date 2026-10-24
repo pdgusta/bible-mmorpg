@@ -32,7 +32,7 @@ const DIARIO: Partial<DadosDiario> = {
       resumo: 'No monte de oração, Deus falou com Noé sobre o fim que viria e mandou fazer uma arca. Com Cam, Noé levou os troncos de gofer até o estaleiro e assentou a quilha.' },
     { id: 'a2', era: 'noe', titulo: 'A2 — A viga mestra', status: 'ativa', tipos: ['cooperativo'], refs: ['Gn 6:14', 'Gn 6:15', 'Gn 6:16', 'Ec 4:9', 'Ec 4:12'],
       objetivo: 'Coloque Cam no guincho, troque para Jafé e suba o andaime.',
-      resumo: 'A viga mestra precisa subir até o alto das cavernas. Sozinho, ninguém a ergue: Cam segura o guincho, Jafé amarra a corda lá em cima e Noé fixa a viga.' },
+      resumo: 'A viga mestra precisa subir até o alto do casco. Sozinho, ninguém a ergue: Cam segura o guincho, Jafé amarra a corda lá em cima e Noé fixa a viga.' },
   ],
   escrituras: [
     { ref: 'Gn 6:8', era: 'noe', nota: 'A história de Noé começa pela graça: Deus olhou para ele com favor antes de qualquer obra.' },

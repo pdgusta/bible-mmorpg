@@ -16,7 +16,7 @@ O MVP (era 1, Noé → era 2, Abraão) está **em construção**. Os módulos fo
 | Núcleo, controle, troca, câmeras e transição de era | ✅ pronto (e2e da troca passa) | `tecnico/troca-camera.md` |
 | Sistemas: missões, diálogo, provas, progresso, save | ✅ pronto (testes passam) | `tecnico/sistemas.md` |
 | UI (HUD, diálogo, Diário, menus, roda, provas) | ✅ pronta (demo `?lab=ui`) | `tecnico/ui.md` |
-| Conteúdo da era 1 (prólogo, A1–A6) | ✅ escrito (17 testes) · 🔄 revisão de fidelidade em andamento | `tecnico/era-noe.md`, `tecnico/revisao.md` |
+| Conteúdo da era 1 (prólogo, A1–A6) | ✅ escrito e revisado (fidelidade bíblica e texto) · 🔄 4 ajustes de lógica pedidos pela revisão (animais limpos de 7 em 7, Noé abre a janela, segredo após o altar, animais que fogem se forçados) | `tecnico/era-noe.md`, `tecnico/revisao.md` |
 | Mundo de Canaã | ✅ pronto (`?lab=canaa`, ≤ 92 draw calls) | `tecnico/canaa.md` |
 | Motor visual (vale de Noé, dilúvio, interior da arca, desempenho) | 🔄 em andamento | `tecnico/motor.md` |
 | Animais e áudio | ✅ pronto (23 espécies, rebanho, áudio sintetizado; `?lab=animais`) | `tecnico/animais-audio.md` |
@@ -36,6 +36,7 @@ O MVP (era 1, Noé → era 2, Abraão) está **em construção**. Os módulos fo
   - As fogueiras não iluminam os personagens.
 - **Física:** as encostas não bloqueiam a subida (só um degrau acima de 0,35 m por quadro). O Moriá usa paredes invisíveis, e a câmera ainda colide com elas; a integração vai fazer a câmera ignorar a tag `invisivel`.
 - **Transição de era:** as faixas de revelação do terreno e da vegetação têm larguras diferentes, e a água fica escondida durante a transição.
+- **Fonte BKJ:** os defeitos de digitalização ("A/naxade" → "Arfaxade", palavras partidas por hífen) são corrigidos em `CORRECOES_FONTE` (`scripts/biblia-comum.mjs`).
 - **Sem retratos e sem clipe de oração:** a UI usa monogramas, e a oração usa pose procedural ou o clipe `agachado`.
 - **Diálogo:** abortar uma missão não fecha uma fala já aberta na UI. A integração limpa a UI ao carregar.
 

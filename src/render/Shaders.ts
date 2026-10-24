@@ -53,6 +53,11 @@ export interface OpcoesPatch {
   alcance?: { value: number };
   /** Faces duplas iluminadas como a da frente (folhas, lâminas): sem "verso" escuro. */
   semVerso?: boolean;
+  /**
+   * Recolorir: usa só a luminância da textura (o desenho), e a cor vem de `material.color`.
+   * O valor é a luminância média da textura (vira 1,0). Ver Natureza (corFolha/corSolido).
+   */
+  luminancia?: number;
 }
 
 /** Largura (m) da faixa da "revelação" radial (transição entre eras), igual em todos os materiais. */
@@ -73,6 +78,7 @@ export function aplicarPatch(material: THREE.Material, op: OpcoesPatch = {}) {
   const href = op.alturaRef ?? 4;
   const alcance = op.alcance;
   const semVerso = op.semVerso ?? false;
+  const lum = op.luminancia ?? 0;
   const anterior = material.onBeforeCompile;
   material.onBeforeCompile = (sh, r) => {
     anterior?.call(material, sh, r);
@@ -110,8 +116,18 @@ export function aplicarPatch(material: THREE.Material, op: OpcoesPatch = {}) {
     }
     sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>\n${corpo}`);
     if (semVerso) sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_begin>', GLSL_SEM_VERSO);
+    if (lum > 0) {
+      sh.fragmentShader = sh.fragmentShader.replace(
+        '#include <map_fragment>',
+        `#ifdef USE_MAP
+          vec4 _tex = texture2D( map, vMapUv );
+          float _lum = dot( _tex.rgb, vec3( 0.299, 0.587, 0.114 ) ) / ${lum.toFixed(4)};
+          diffuseColor *= vec4( vec3( clamp( 0.45 + 0.55 * _lum, 0.0, 1.5 ) ), _tex.a );
+        #endif`,
+      );
+    }
   };
-  material.customProgramCacheKey = () => `patch_${vento}_${revelar}_${href}_${alcance ? 'a' : ''}_${semVerso ? 'v' : ''}`;
+  material.customProgramCacheKey = () => `patch_${vento}_${revelar}_${href}_${alcance ? 'a' : ''}_${semVerso ? 'v' : ''}_${lum.toFixed(3)}`;
   return material;
 }
 
