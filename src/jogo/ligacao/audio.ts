@@ -4,6 +4,7 @@
 // serviços da era (ServicosNoe.audio); ela decide o que chega ao Audio.
 import * as THREE from 'three';
 import { Audio, type EstadoMusica, type OpcoesSom } from '../../audio/Audio';
+import { ESTADOS_MUSICA } from '../../audio/Musica';
 import type { Jogo } from '../Jogo';
 import type { Personagem } from '../Personagem';
 
@@ -58,9 +59,14 @@ export class PonteAudio {
     this.aplicar(nome);
   }
 
-  musica(nome: EstadoMusica) {
-    this.musicaAtual = nome;
-    Audio.musica(nome);
+  /**
+   * Muda a música. Um estado que o módulo de áudio ainda não tem (ex.: 'batalha' da era 2)
+   * toca como 'aventura' em vez de quebrar a trilha.
+   */
+  musica(nome: EstadoMusica | (string & {})) {
+    const estado = (nome === 'silencio' || nome in ESTADOS_MUSICA ? nome : 'aventura') as EstadoMusica;
+    this.musicaAtual = estado;
+    Audio.musica(estado);
   }
 
   get musicaEstado(): EstadoMusica {

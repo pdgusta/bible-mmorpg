@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Relevo } from '../mundo/Relevo';
-import { GLSL_RUIDO, GLOBAIS, FAIXA_REVELAR, AFUNDAR_REVELAR } from './Shaders';
+import { GLSL_RUIDO, GLOBAIS, AFUNDAR_REVELAR, glslAfundar } from './Shaders';
 
 export type FuncaoCor = (x: number, z: number, h: number, inclinacao: number, out: THREE.Color) => void;
 
@@ -13,14 +13,17 @@ export type FuncaoCor = (x: number, z: number, h: number, inclinacao: number, ou
 export class Terreno {
   readonly grupo = new THREE.Group();
   readonly material: THREE.MeshLambertMaterial;
-  private blocos: THREE.Mesh[] = [];
+  private blocos: { malha: THREE.Mesh; perto: THREE.BufferGeometry; longe: THREE.BufferGeometry; caixa: THREE.Box3 }[] = [];
+  /** Até esta distância (m) da borda de um bloco ele usa a malha cheia; depois, a de meia resolução. */
+  distanciaPerto = 60;
   private cores: Float32Array;
   private nCor: number;
   private passoCor: number;
   private meio: number;
   /**
    * Uniforms do terreno. uCentro/uRaio são os mesmos objetos de GLOBAIS (a "revelação" da
-   * transição de era move terreno, estruturas, vegetação, grama e água juntos).
+   * transição de era move terreno, estruturas, vegetação, grama e água juntos). O chão afunda
+   * na faixa externa (de uRaio a uRaio + FAIXA_REVELAR), depois de a vegetação sumir.
    */
   readonly uniforms = {
     uRevelar: { value: 1 },
@@ -32,7 +35,7 @@ export class Terreno {
     uMolhado: { value: 0 },
   };
 
-  constructor(relevo: Relevo, cor: FuncaoCor, passoMalha = 2, tamBloco = 64) {
+  constructor(relevo: Relevo, cor: FuncaoCor, passoMalha = 2, tamBloco = 96) {
     this.grupo.name = 'terreno';
     this.material = new THREE.MeshLambertMaterial({ vertexColors: true });
     const u = this.uniforms;
@@ -48,9 +51,7 @@ export class Terreno {
           '#include <begin_vertex>',
           `#include <begin_vertex>
            vec4 mp = modelMatrix * vec4(transformed, 1.0);
-           float dc = distance(mp.xz, uCentro);
-           float afunda = smoothstep(uRaio - ${FAIXA_REVELAR.toFixed(1)}, uRaio, dc);
-           transformed.y -= afunda * ${AFUNDAR_REVELAR.toFixed(1)};
+           transformed.y -= ${glslAfundar('mp.xz')} * ${AFUNDAR_REVELAR.toFixed(1)};
            vNy = normal.y;`,
         )
         .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvMundo = (modelMatrix * vec4(transformed, 1.0)).xyz;');
@@ -113,51 +114,97 @@ export class Terreno {
         const nx = Math.min(porBloco, Math.round((meio - x0) / passoMalha));
         const nz = Math.min(porBloco, Math.round((meio - z0) / passoMalha));
         if (nx <= 0 || nz <= 0) continue;
-        const i0 = bi * porBloco;
-        const j0 = bj * porBloco;
-        const pos = new Float32Array((nx + 1) * (nz + 1) * 3);
-        const nor = new Float32Array((nx + 1) * (nz + 1) * 3);
-        const col = new Float32Array((nx + 1) * (nz + 1) * 3);
-        let k = 0;
-        for (let j = 0; j <= nz; j++) {
-          for (let i = 0; i <= nx; i++) {
-            const x = x0 + i * passoMalha;
-            const z = z0 + j * passoMalha;
-            const h = relevo.altura(x, z);
-            relevo.normal(x, z, n);
-            pos[k] = x; pos[k + 1] = h; pos[k + 2] = z;
-            nor[k] = n.x; nor[k + 1] = n.y; nor[k + 2] = n.z;
-            const kc = ((j0 + j) * this.nCor + (i0 + i)) * 3;
-            col[k] = this.cores[kc]; col[k + 1] = this.cores[kc + 1]; col[k + 2] = this.cores[kc + 2];
-            k += 3;
-          }
-        }
-        const idx: number[] = [];
-        for (let j = 0; j < nz; j++) {
-          for (let i = 0; i < nx; i++) {
-            const a = j * (nx + 1) + i;
-            const b = a + 1;
-            const d = a + (nx + 1);
-            const e = d + 1;
-            // alterna a diagonal para evitar padrão serrilhado
-            if ((i + j) % 2 === 0) idx.push(a, d, b, b, d, e);
-            else idx.push(a, d, e, a, e, b);
-          }
-        }
-        const g = new THREE.BufferGeometry();
-        g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-        g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
-        g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-        g.setIndex(idx);
-        g.computeBoundingSphere();
-        g.computeBoundingBox();
-        const m = new THREE.Mesh(g, this.material);
+        const bloco = { i0: bi * porBloco, j0: bj * porBloco, nx, nz, x0, z0, passo: passoMalha };
+        const perto = this.geometriaBloco(relevo, bloco, 1);
+        const longe = this.geometriaBloco(relevo, bloco, 2);
+        const m = new THREE.Mesh(perto, this.material);
         m.receiveShadow = true;
         m.name = `terreno_${bi}_${bj}`;
         m.matrixAutoUpdate = false;
         this.grupo.add(m);
-        this.blocos.push(m);
+        this.blocos.push({ malha: m, perto, longe, caixa: perto.boundingBox! });
       }
+    }
+  }
+
+  /**
+   * Geometria de um bloco com um vértice a cada `salto` vértices da grade (1 = malha cheia,
+   * 2 = metade da resolução, para longe) e uma saia de 3 m em volta: onde um bloco cheio encosta
+   * num reduzido, a saia tampa a fresta entre as bordas.
+   */
+  private geometriaBloco(
+    relevo: Relevo,
+    b: { i0: number; j0: number; nx: number; nz: number; x0: number; z0: number; passo: number },
+    salto: number,
+  ): THREE.BufferGeometry {
+    const linha = (n: number) => {
+      const v: number[] = [];
+      for (let i = 0; i < n; i += salto) v.push(i);
+      v.push(n);
+      return v;
+    };
+    const is = linha(b.nx);
+    const js = linha(b.nz);
+    const ni = is.length;
+    const nj = js.length;
+    const pos: number[] = [];
+    const nor: number[] = [];
+    const col: number[] = [];
+    const n = new THREE.Vector3();
+    const vertice = (i: number, j: number, dy: number) => {
+      const x = b.x0 + i * b.passo;
+      const z = b.z0 + j * b.passo;
+      relevo.normal(x, z, n);
+      pos.push(x, relevo.altura(x, z) + dy, z);
+      nor.push(n.x, n.y, n.z);
+      const kc = ((b.j0 + j) * this.nCor + (b.i0 + i)) * 3;
+      col.push(this.cores[kc], this.cores[kc + 1], this.cores[kc + 2]);
+      return pos.length / 3 - 1;
+    };
+    for (const j of js) for (const i of is) vertice(i, j, 0);
+    const idx: number[] = [];
+    for (let j = 0; j < nj - 1; j++) {
+      for (let i = 0; i < ni - 1; i++) {
+        const a = j * ni + i;
+        const c = a + 1;
+        const d = a + ni;
+        const e = d + 1;
+        // alterna a diagonal para evitar padrão serrilhado
+        if ((i + j) % 2 === 0) idx.push(a, d, c, c, d, e);
+        else idx.push(a, d, e, a, e, c);
+      }
+    }
+    // saia: a borda repetida 3 m abaixo, com as duas faces (vista de dentro ou de fora do bloco)
+    const borda: number[] = [];
+    for (let i = 0; i < ni; i++) borda.push(i);
+    for (let j = 1; j < nj; j++) borda.push(j * ni + ni - 1);
+    for (let i = ni - 2; i >= 0; i--) borda.push((nj - 1) * ni + i);
+    for (let j = nj - 2; j >= 0; j--) borda.push(j * ni);
+    const baixo = borda.map((v) => vertice(is[v % ni], js[Math.floor(v / ni)], -3));
+    for (let k = 0; k < borda.length - 1; k++) {
+      const a = borda[k], c = borda[k + 1], d = baixo[k], e = baixo[k + 1];
+      idx.push(a, d, c, c, d, e, a, c, d, c, e, d);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.setIndex(idx);
+    g.computeBoundingSphere();
+    g.computeBoundingBox();
+    return g;
+  }
+
+  /**
+   * Escolhe a resolução de cada bloco pela distância da câmera (malha cheia até `distanciaPerto`
+   * da borda do bloco). Barato: chamar a cada quadro.
+   */
+  atualizar(camera: THREE.Vector3) {
+    const d2 = this.distanciaPerto * this.distanciaPerto;
+    for (const b of this.blocos) {
+      const dx = Math.max(b.caixa.min.x - camera.x, 0, camera.x - b.caixa.max.x);
+      const dz = Math.max(b.caixa.min.z - camera.z, 0, camera.z - b.caixa.max.z);
+      b.malha.geometry = dx * dx + dz * dz < d2 ? b.perto : b.longe;
     }
   }
 
@@ -184,7 +231,7 @@ export class Terreno {
   }
 
   dispose() {
-    for (const b of this.blocos) b.geometry.dispose();
+    for (const b of this.blocos) { b.perto.dispose(); b.longe.dispose(); }
     this.material.dispose();
   }
 }

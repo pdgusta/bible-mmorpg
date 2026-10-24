@@ -23,46 +23,55 @@ Estado do código ao sair: `npx tsc --noEmit` dá 0 erros, `npx vitest run` pass
 | UI | ✅ (demo `?lab=ui`) | `tecnico/ui.md` |
 | Animais e áudio | ✅ (`?lab=animais`) | `tecnico/animais-audio.md` |
 | Mundo de Canaã | ✅ (`?lab=canaa`, ≤ 92 draw calls) | `tecnico/canaa.md` |
-| Conteúdo da era 1 | ✅ escrito e revisado · ⏳ 5 ajustes de lógica pendentes (abaixo) | `tecnico/era-noe.md`, `tecnico/revisao.md` |
+| Conteúdo da era 1 | ✅ escrito, revisado e com os 5 ajustes de lógica da revisão (branch `frente/era-noe`) | `tecnico/era-noe.md`, `tecnico/revisao.md` |
 | Conteúdo da era 2 | ✅ escrito, testado e revisado · ⏳ ligação na integração (abaixo) | `tecnico/era-abraao.md` |
-| Motor visual do vale de Noé | 🟡 parcial (abaixo) | briefing: `agentes/motor.md` |
-| Integração (fluxo da partida, ligações, e2e) | 🟡 parcial (abaixo) | briefing: `agentes/integracao.md` |
+| Motor visual do vale de Noé | ✅ arte, transição, física e orçamento (abaixo) | `tecnico/motor.md` |
+| Integração (fluxo da partida, ligações, e2e) | ✅ era 1 → transição → B1 jogável (e2e `integracao.mjs --transicao`) · ⏳ `jogar-mvp` até o fim de B5 | `tecnico/integracao.md` |
 | Deploy (GitHub Pages) | ✅ workflow pronto (ativar em *Settings → Pages → GitHub Actions*) | `README.md` |
 
 ## O que ficou pela metade, frente por frente
 
 Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam caminhos de um scratchpad da nuvem (`/tmp/claude-0/...`) que **não existem mais**: ignore esses caminhos e salve as fotos em `e2e/saida/` (fora do git).
 
-### 1. Integração (`agentes/integracao.md`)
+### 1. Integração (`agentes/integracao.md`, `tecnico/integracao.md`)
 
-**Já existe:**
-- `src/jogo/Partida.ts` (670 linhas): modos carregando, título e jogo; `novoJogo`, `continuar`, `carregar`, `salvar`, `sairParaTitulo`, `atualizarDiario`.
-- `src/jogo/eras.ts`: registro `ERAS`, `ORDEM_ERAS = ['noe', 'abraao']` e as interfaces `DefEra`, `EraAtiva` e `AtalhosEra`.
-- `src/jogo/ligacao/`:
-  - `noe.ts` implementa `ServicosNoe`;
-  - `abraao.ts` implementa `ServicosAbraao` (não verificado);
-  - `audio.ts` liga o áudio aos eventos;
-  - `comum.ts`;
-  - `depuracao.ts` trata `?dev&missao=a3` e `?dev&auto=1`.
-- `src/jogo/inicio.ts` (entrada) e `e2e/utilidades.mjs`.
-
-**Ao parar:** o agente ia fazer um teste rápido da tela de título. **Ninguém viu o jogo integrado rodando ainda.**
+**Feito (frente/integracao, no computador local):**
+- O jogo integrado roda do título até B1. `node e2e/integracao.mjs` cobre:
+  - carregamento, título sobre o vale, Novo jogo, prólogo;
+  - A1 com HUD, objetivo, andar, Diário (J), pausa (Esc);
+  - salvar no espaço 1; depois muda posição e flag, sai para o título e carrega pelo menu, conferindo que voltam.
+- Com `--transicao`, ele joga a era 1 inteira pelos atalhos: A6 (arco-íris), transição com a genealogia de Sem a Abrão, que é limpa no fim, e B1 jogável com Abrão em Canaã. Fotos em `e2e/saida/integracao/`.
+- Junção de `frente/era-noe` (5 ajustes e o cervo) e de `frente/era-abraao` (c4cff7f) na `frente/integracao`.
+- Era 2 ligada (`src/jogo/ligacao/abraao.ts`):
+  - `ERA_ABRAAO` com jogáveis, NPCs e início;
+  - `ServicosAbraao` completo (rebanhos em `mundo.atualizaveis`, NPCs de cena, entrada, `aCadaQuadro`, créditos);
+  - segredos, reconstrução pelas flags e atalhos;
+  - `ligarServicosAbraao(null)` e `ERA_ABRAAO.limparCena()` ao descartar o mundo.
+- Créditos e fim:
+  - `ContextoEra.creditos()` mostra o resumo (memórias, segredos, tempo) e a tela de créditos, e resolve ao fechar;
+  - depois de B5, a Partida volta ao título;
+  - `?dev&auto=1` fecha os créditos sozinho.
+- Áudio:
+  - `PonteAudio.musica` toca `aventura` quando o estado não existe no módulo de áudio (`batalha`, até a T-007), em vez de quebrar a trilha (`Musica.definir` lia `cfg.drone` de `undefined`);
+  - efeitos desconhecidos (`alarme`, `aparar`, `golpe`, `discernir`, `pedra`) só geram um aviso no console;
+  - `Ceu.estrelas` fica opcional: o céu de B4 usa só a noite até o motor ler a propriedade.
+- Dois defeitos corrigidos:
+  - **Tela de carregamento por cima do jogo:** `Jogo.carregarBase` deixava `ativos.aoProgresso` ligado, e qualquer modelo carregado depois (os animais da A4) reabria a tela. Agora o callback é desligado no fim da carga base.
+  - **A4 travava:** `Arca.definirEstagio` troca os colisores do casco mas não refaz `mundo.nav`, montada com a arca no estágio 0, e os animais ficavam presos na ponta oeste do casco. O adaptador em `ligacao/noe.ts` (`refazerNavegacaoComArca`) refaz a navegação a cada estágio. O conserto definitivo é uma linha em `Arca.definirEstagio` (`this.mundo.nav?.reconstruir()`); quando ele entrar, remova o adaptador.
+- `npm run validar` funciona no Windows (`fileURLToPath` em `scripts/biblia-comum.mjs`); `playwright` é dependência de desenvolvimento.
 
 **Falta:**
-1. Abrir `/` e conferir: carregamento, título sobre o vale, Novo jogo, prólogo e A1 jogável (HUD, Diário, pausa, save).
-2. Pendências recebidas dos outros módulos:
-   - `CameraTerceira` deve ignorar colisores com tag `invisivel` (paredes invisíveis do Moriá).
-   - `camera.tremer(int, s)` e `camera.balanco(int)` para a era 1.
-   - `removerPersonagem(id)` e `progresso cristo(id)`.
-   - `canaa.ceu = jogo.ceu`.
-   - A transição de era deve usar `aoNome: (n, i) => ui.genealogia(n, i)` e chamar `ui.genealogia(null)` no fim.
-   - Iniciar B1 depois de A6 (A6 não tem `proxima` de propósito).
-3. Escrever `e2e/jogar-mvp.mjs` (o `npm run e2e` aponta para ele):
-   - joga a era 1 por `jogarEraNoe` (`src/eras/noe/atalhos.ts`) e a era 2 pelos atalhos dela;
-   - tira fotos dos momentos-chave;
-   - simula o websocket do Vite, como em `e2e/teste-troca.mjs`.
-4. Medir `jogo.render.gl.info.render` em 3 vistas.
-5. Escrever `docs/tecnico/integracao.md`.
+1. `e2e/jogar-mvp.mjs` (`npm run e2e`) até o fim de B5 e os créditos. O miolo já está no `--transicao` de `integracao.mjs`; a era 2 tem `jogarEraAbraao` ligado aos atalhos.
+2. Medir `jogo.render.gl.info.render` em 3 vistas, no preset médio (inclusive A4, com cerca de 29 animais).
+3. Robustez do `Animal`: quando o caminho está bloqueado, o animal treme no lugar, `semProgresso` oscila abaixo de 5 s e `travado()` nunca dispara (`src/entidades/Animal.ts`). Com a navegação certa isso não aparece, mas um bloqueio novo trava a missão de novo.
+4. Sons da era 2 (T-007, Gofer): música `batalha` e os efeitos acima.
+
+**Teste instável:** o teste da prova de ira (`tests/Provas.test.ts:171`, anterior a esta frente) pode estourar o tempo com a máquina carregada (vários agentes e o Chromium rodando); sozinho, passa.
+
+**Dicas para o e2e no Windows:**
+- No Git Bash, use `MSYS_NO_PATHCONV=1` antes de `node e2e/foto.mjs "/..."`.
+- Com o laço parado (`jogo.manual = true; jogo.renderizarManual = false`), só as fotos renderizam: até A1 leva uns 2 min, e com `--transicao` uns 14 min.
+- Com o laço rodando no SwiftShader, o `page.screenshot` estoura o tempo.
 
 ### 2. Conteúdo da era 2 (`tecnico/era-abraao.md`)
 
@@ -83,31 +92,38 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 
 ### 3. Motor visual (`agentes/motor.md`)
 
-**Já existe:**
-- `src/render/Chuva.ts`;
-- `Arca.ts` e `construir.ts` muito ampliados: estados do dilúvio, interior, `pontoArca`, viga mestra e andaime, todos usados pela era 1 e pelos testes;
-- ajustes em `Ceu`, `Shaders`, `Fisica` e `Mundo`.
+**O que o motor tem hoje** (branch `frente/motor`; API e detalhes em `tecnico/motor.md`):
+- **Vale de Noé completo:** relevo, rio com vau, cidade, estaleiro, bosque e platô. A `MundoNoe` tem estados do dilúvio (`definirEstado`), água animável, interior da arca, `pontoArca`, viga mestra, andaime, árvores de gofer e altar. A chuva (`Chuva.ts`) usa 1 draw call.
+- **Vegetação (`Natureza`):**
+  - três níveis de detalhe: perto com sombra, longe com folhagem reduzida e silhueta de ~100 triângulos com normais macias;
+  - perto e silhueta limitados pelo preset;
+  - troncos simplificados com solda de vértices;
+  - cor por variante (`corFolha`/`corSolido`), usada no vale para oliveiras, arbustos, pedras e seixos;
+  - sombras com vento e revelação (`customDepthMaterial`).
+- **Céu e luz:** ciclo do dia, nuvens brancas e fofas, tempestade, arco-íris e glória dourada. A neblina é suave e mais rala no alto, então as montanhas do horizonte guardam o relevo.
+- **Terreno:** blocos de 96 m com malha de 2 m perto e de 4 m longe, mais saias contra frestas; modos lama e molhado. A grama tem a base na cor do chão e a ponta clara.
+- **Transição de era:** duas faixas encadeadas em `Shaders.ts`. A vegetação e a grama somem primeiro; depois o terreno, as estruturas e a água afundam ou se apagam. Nada flutua.
+- **Física:** inclinação máxima a pé, que vale também no ar; quem fica numa encosta íngreme escorrega e não pula (`CorpoFisico.naEncosta`). Testes em `src/mundo/Fisica.test.ts`.
+- **Orçamento (preset médio, 7 vistas):** no máximo 128 draw calls e 579 mil triângulos. Tabela em `tecnico/motor.md`.
 
-**Ao parar:** reescrevia `src/render/Natureza.ts` para ter um terceiro LOD (silhuetas de longe). As mudanças em `Ceu.ts` e `Shaders.ts` foram commitadas no meio do trabalho: **confira visualmente**.
+**Para outras frentes (fora do escopo desta):**
+- **Canaã (`src/eras/abraao/construir.ts`):** trocar o `recolorirFolhas()` pela cor por variante em `definirVariantes`: `oliveira` com `corFolha: '#b4c0a2'` (sem `tintFolha`), `arbusto` com `corFolha: '#a9b583'`, `arbustoVerde` com `corFolha: '#86b860'` e `pedra` com `corSolido: '#c9bea6'`; depois apagar as duas chamadas e a função. Hoje as silhuetas de longe das oliveiras de Canaã saem avermelhadas, porque a cor média vem da textura original. A fórmula é outra (`0,45 + 0,55·lum/média` em vez de `0,55 + 1,6·lum`): confira as cores em `?lab=canaa`.
+- **Canaã (`estruturas.ts`):** a faixa de encolher está escrita à mão (`uRaio - 20.0`); trocar por `glslEncolher()` de `Shaders.ts`.
+- **Transição (`src/camera/TransicaoEra.ts`):** a `FOLGA_TERRENO` não tem efeito (o `uRaio` do terreno é o mesmo objeto do `GLOBAIS`); a folga agora mora nas faixas de `Shaders.ts` e a constante pode sair.
+- **Personagens:** cada humano tem ~22 mil triângulos e projeta sombra: 4 em cena pesam ~180 mil, o maior custo do vale. Um LOD para os humanos é o próximo ganho.
+- **Câmera:** a câmera de 3ª pessoa entra na copa das árvores (a tela fica verde-escura); ela não colide com folhagem.
 
-**Falta:**
-- **Cor da vegetação:** o kit traz folhas de TwistedTree e Bush_Common vermelhas e rochas verde-escuras. Crie uma opção de cor por variante na `Natureza`, use-a no vale de Noé e troque o `recolorirFolhas()` de Canaã por ela.
-- **Outros problemas de arte:**
-  - grama com pontas escuras;
-  - nuvens que parecem bolhas bege;
-  - montanhas do horizonte chapadas;
-  - árvores de longe que viram manchas escuras.
-- **Transição de era:** alinhar as faixas de revelação (`FAIXA_REVELAR` em `Shaders.ts` e o afundamento do `Terreno`) e dar revelação à água.
-- **Física:** inclinação máxima no `CorpoFisico`; hoje as encostas não bloqueiam a subida.
-- **Desempenho:** medir o vale (≤ 150 draw calls e ≤ 600 mil triângulos no preset médio) e escrever `docs/tecnico/motor.md`.
+### 4. Ajustes de lógica da era 1 (pedidos pela revisão; aplicados na branch `frente/era-noe`)
 
-### 4. Ajustes de lógica da era 1 (pedidos pela revisão; nada aplicado ainda)
+1. **Gn 7:2:** ✅ os animais limpos (ovelha, cabra, boi e os cervos da gruta) chegam de 7 em 7 em A4: três casais e um macho para o altar (leitura registrada em `tecnico/era-noe.md`). O objetivo conta espécies e o banner mostra Gn 7:2.
+2. **Gn 8:6:** ✅ Jafé só solta as amarras (`a5Amarras`); Noé abre a janela em `soltarCorvo` (narrador Gn 8:6).
+3. **Ensinamento 9:** ✅ `segredoEstacoes` só fica ativo depois da flag `a6Altar` (`depoisDe` em `SEGREDOS_INTERATIVOS`).
+4. **Ensinamento 6:** ✅ forçados por quem não sabe acalmar, os agitados fogem (`Animal.fugirDe`, que agora mantém o susto) até Sem acalmá-los.
+5. ✅ Sem tem uma fala curta de ficção no planejamento de A2.
 
-1. **Gn 7:2:** animais limpos (ovelha, cabra, boi) chegam de 7 em 7 em A4.
-2. **Gn 8:6:** quem abre a janela é Noé (`soltarCorvo`/`definirJanela`); Jafé só solta as amarras.
-3. **Ensinamento 9:** `segredoEstacoes` só fica ativo depois da flag `a6Altar` (`registrarSegredosNoe`).
-4. **Ensinamento 6:** animais agitados forçados fogem (`Animal.fugirDe`) e precisam ser acalmados por Sem.
-5. Uma fala curta de ficção para Sem em A2, porque o objetivo diz "Fale com Sem, Cam e Jafé".
+Pendências:
+- `docs/ROTEIRO.md` (A4 "0/8 pares" e "par perdido", A5 "Jafé abre a cobertura") e `docs/tecnico/revisao.md` §8 (pendências 1 a 4) ainda descrevem o estado antigo.
+- Medir as draw calls de A4 no jogo integrado: no pior caso há cerca de 29 animais ao mesmo tempo.
 
 ## Problemas conhecidos (arte)
 

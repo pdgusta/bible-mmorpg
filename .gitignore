@@ -5,3 +5,5 @@ fontes/
 e2e/saida/
 *.log
 .DS_Store
+# Pastas de papel dos recrutas do Maestri
+.maestri/

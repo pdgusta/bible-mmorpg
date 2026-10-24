@@ -1,8 +1,9 @@
 // Utilidades compartilhadas pelos scripts de texto bíblico.
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-export const RAIZ = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+export const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const FONTES = path.join(RAIZ, 'fontes');
 export const SAIDA = path.join(RAIZ, 'src', 'data', 'biblia', 'versiculos.json');
 

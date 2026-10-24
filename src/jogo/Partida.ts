@@ -73,6 +73,7 @@ export class Partida {
       jogo, ui, s, audio: this.audio,
       transicaoEra: (nomes) => this.transicao(nomes),
       cristo: (id) => this.desbloquearCristo(id),
+      creditos: () => this.creditos(),
     };
     this.dev = new Depuracao(this);
   }
@@ -382,6 +383,8 @@ export class Partida {
     const seg = ERAS[m.era]?.seguinte;
     if (!seg) {
       this.ui.aviso('Fim desta parte da jornada. Obrigado por jogar!', 'info');
+      // depois que o motor de missões terminar de encerrar a missão (e o autosave)
+      setTimeout(() => void this.voltarAoTitulo(), 1500);
       return;
     }
     if (this.eraId !== seg.era) return;
@@ -390,6 +393,39 @@ export class Partida {
       if (this.s.missoes.definicao(seg.missao)) this.iniciarSeNaoComecou(seg.missao);
       else this.ui.aviso(`${defEra(seg.era).nome}: a jornada continua em breve.`, 'info');
     }, 0);
+  }
+
+  /**
+   * Créditos do MVP: o resumo da jornada e depois a tela de créditos; resolve quando ela fecha.
+   * O resumo vai na camada do título, que fica acima do fade preto com que a B5 termina
+   * (os avisos ficam abaixo dele).
+   */
+  private async creditos(): Promise<void> {
+    const prog = this.s.progresso;
+    const min = Math.round(prog.tempoJogado / 60);
+    const tempo = min >= 60 ? `${Math.floor(min / 60)} h ${min % 60} min` : `${min} min`;
+    await this.ui.titulo(
+      'Fim da jornada',
+      `Memórias: ${prog.memorias.length} de ${MEMORIAS.todas().length} · Segredos: ${prog.segredos.length} · Tempo de jornada: ${tempo}`,
+    );
+    this.ui.menusC.abrir('creditos');
+    // tempo real: com o menu aberto o jogo fica pausado e aCadaQuadro não roda
+    return new Promise((r) => {
+      const t = setInterval(() => {
+        if (this.ui.menusC.topo() === 'creditos') return;
+        clearInterval(t);
+        r();
+      }, 250);
+    });
+  }
+
+  /** Fim da última era: volta ao título com o menu aberto ("Continuar" leva ao último save). */
+  private async voltarAoTitulo() {
+    if (this.modo !== 'jogo') return;
+    await this.ui.fade(true, 1);
+    this.limparSessao();
+    this.entrarTitulo(true);
+    void this.ui.fade(false, 1.2);
   }
 
   private desbloquearCristo(id: string) {

@@ -6,7 +6,7 @@ import type { EstadoMissao } from '../../jogo/contratos';
 import type { Personagem } from '../../jogo/Personagem';
 import { Interativos, type Interativo } from '../../jogo/Interacoes';
 import {
-  PARES_A4, PAR_PERDIDO, idAcalmar, resolverLugar, type LugarNoe, type MundoBase,
+  PARES_A4, ESPECIE_PERDIDA, idAcalmar, resolverLugar, type LugarNoe, type MundoBase,
 } from './interativos';
 import { missaoNoe } from './missoes';
 import { IDS_JOGAVEIS_NOE } from './personagens';
@@ -252,8 +252,8 @@ export const ATALHOS_NOE: Record<string, Record<string, Atalho>> = {
     async parPerdido(t) {
       if (!t.flag('a4AchouPar')) await t.usar('gruta', 'jafe');
       const fim = t.etapaMudou();
-      await t.usar(idAcalmar(PAR_PERDIDO), 'sem');
-      await t.manterAte('sem', 'portaArca', fim, 'o par perdido na arca');
+      await t.usar(idAcalmar(ESPECIE_PERDIDA), 'sem');
+      await t.manterAte('sem', 'portaArca', fim, 'os cervos perdidos na arca');
     },
     async entrar(t) {
       await t.manterAte('ativo', { arca: 'porta' }, t.etapaMudou(), 'a família na arca');
@@ -284,7 +284,7 @@ export const ATALHOS_NOE: Record<string, Record<string, Atalho>> = {
       if (!fim()) await t.prova();
     },
     async janela(t) {
-      if (!t.flag('janelaAberta')) await t.usar('janela', 'jafe');
+      if (!t.flag('a5Amarras') && !t.flag('janelaAberta')) await t.usar('janela', 'jafe');
       if (!t.flag('a5Corvo')) await t.usar('soltarCorvo', 'noe');
       for (const [flag, volta] of [['a5Pomba1', true], ['a5Pomba2', true], ['a5Pomba3', false]] as const) {
         if (t.flag(flag)) continue;
