@@ -66,7 +66,7 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 
 ### 2. Conteúdo da era 2 (`tecnico/era-abraao.md`)
 
-**Pronto em `src/eras/abraao/`:** `personagens`, `memorias`, `cristo`, `interativos`, `mecanicas`, `missoes` (B1–B5 completas, B5 termina nos créditos), `servicos`, `atalhos` (`jogarEraAbraao`) e `index` (`ERA_ABRAAO`), com `tests/era-abraao.test.ts` (16 testes: cada missão, a era inteira, idempotência e a era jogada só pelos atalhos). Revisão de fidelidade feita pelo checklist de `tecnico/revisao.md`; os desvios do ROTEIRO e as pendências estão em `tecnico/era-abraao.md`.
+**Pronto em `src/eras/abraao/`:** `personagens`, `memorias`, `cristo`, `interativos`, `mecanicas`, `missoes` (B1–B5 completas, B5 termina nos créditos), `servicos`, `atalhos` (`jogarEraAbraao`) e `index` (`ERA_ABRAAO`), com `tests/era-abraao.test.ts` (16 testes: cada missão, a era inteira, idempotência e a era jogada só pelos atalhos). Revisão de fidelidade feita pelo checklist de `tecnico/revisao.md`; os desvios do ROTEIRO e as pendências estão em `tecnico/era-abraao.md`. A T-005 corrigiu a etapa `pe` de B5, que terminava sozinha, e trocou o `recolorirFolhas()` de Canaã por `corFolha`/`corSolido`.
 
 **O que a integração precisa para ligar a era** (`src/jogo/ligacao/abraao.ts`, hoje provisório: não usa nada de `src/eras/abraao/index.ts`):
 1. `ERA_ABRAAO_JOGO`: trocar os jogáveis provisórios por `JOGAVEIS_ABRAAO` e preencher `npcs: NPCS_ABRAAO`, `missoes: MISSOES_ABRAAO`, `memorias: MEMORIAS_ABRAAO`, `cristo: CRISTO_ABRAAO`, `missaoInicial: 'b1'`. Sem `seguinte` (última era do MVP).
@@ -111,7 +111,7 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 
 ## Problemas conhecidos (arte)
 
-- **Canaã:** as tendas parecem caixas escuras; o Moriá parece uma cúpula cinza irregular; as fogueiras não iluminam os personagens.
+- **Canaã:** a passada de arte da T-005 resolveu as tendas (`tendaPelos`), o Moriá (estratos, lajes e mato) e a luz das fogueiras (2 `PointLight`). Há fotos antes/depois em `e2e/saida/` (fora do git). O modo `cam=` do `?lab=canaa` renderiza tudo preto; use `ponto`/`pos` com `yaw`.
 - **Personagens:** não há retratos (a UI usa monogramas) nem clipe de oração (pose procedural `humano.oracao`).
 - **Áudio:** os níveis foram equilibrados só por medição. Ouça e ajuste.
 

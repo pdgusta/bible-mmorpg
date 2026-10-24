@@ -14,7 +14,7 @@ import {
 } from './mapa';
 import {
   CORES_CANAA, Fogueiras, Porteira, aldeia, alforje, casaPedra, cavaleteLancas, cercadoCativos, cocho,
-  despojos, marcoMirante, muroPedra, pedraMemorial, tear, tendaDesmontada, utensilios,
+  despojos, marcoMirante, muroPedra, pedraMemorial, tear, tendaDesmontada, tendaPelos, utensilios,
 } from './estruturas';
 
 export type LugarAcampamento = 'betel' | 'manre';
@@ -107,24 +107,19 @@ export class MundoCanaa {
     this.construirMoria();
     construirSegredos(m);
     this.construirAltares();
-    // fogueiras: 3 draw calls para todas
+    // fogueiras: 3 draw calls para todas (e 2 luzes que seguem o foco)
     this.fogueiras.construir();
     m.estruturas.add(this.fogueiras.grupo);
-    m.atualizaveis.add({
-      atualizar: (dt, t) => {
-        this.fogueiras.noite = this.ceu ? this.ceu.noite : this.noiteManual;
-        this.fogueiras.atualizar(dt, t);
-      },
+    m.aoAtualizar.add((dt, t, _camera, foco) => {
+      this.fogueiras.noite = this.ceu ? this.ceu.noite : this.noiteManual;
+      this.fogueiras.focar(foco);
+      this.fogueiras.atualizar(dt, t);
     });
     // estado inicial (antes da navegação, para ela já nascer certa)
     this.definirAcampamento('betel');
     this.definirAcampamentoInimigo(false);
     for (const a of ALTARES) this.definirAltar(a, 'oculto');
     m.finalizar();
-    // a textura de folhas das árvores retorcidas é avermelhada (outono): recolore para oliveira/mato
-    recolorirFolhas(m, /Leaves_TwistedTree$/, { oliveira: '#b4c0a2', arbusto: '#a9b583', arbustoVerde: '#86b860' });
-    // e as rochas do kit são verde-escuras: calcário claro
-    recolorirFolhas(m, /Rocks$/, { pedra: '#c9bea6' });
   }
 
   // ------------------------------------------------------------------ API
@@ -227,7 +222,7 @@ export class MundoCanaa {
     const servos = zona(m, `acampamento_${lugar}`, lugar === 'betel' ? 121 : 131, (c) => {
       def.servos.forEach((s, i) => {
         em(c, m, s.pos[0], s.pos[1], s.yaw, () => {
-          c.tenda(s.w, s.d, s.h, i % 2 ? CORES_CANAA.tendaCabra2 : CORES_CANAA.tendaCabra, CORES_CANAA.tendaListra);
+          tendaPelos(c, s.w, s.d, s.h, i % 2 ? CORES_CANAA.tendaCabra2 : CORES_CANAA.tendaCabra, i % 2 ? CORES_CANAA.tendaCabra : CORES_CANAA.tendaCabra2);
           c.em(s.w * 0.5 + 0.6, 0, 1.2, 0, () => utensilios(c, r, 3));
         });
       });
@@ -257,7 +252,7 @@ export class MundoCanaa {
       const grande = t === 'tendaAbrao';
       const montada = zona(m, `${t}_${lugar}`, grande ? 7 : 9, (c) => {
         em(c, m, p.pos[0], p.pos[1], p.yaw, () => {
-          c.tenda(grande ? 6.6 : 5.6, grande ? 5 : 4.4, grande ? 2.6 : 2.4, grande ? CORES_CANAA.tendaCabra : CORES_CANAA.tendaCabra2, CORES_CANAA.tendaListra);
+          tendaPelos(c, grande ? 6.6 : 5.6, grande ? 5 : 4.4, grande ? 2.6 : 2.4, grande ? CORES_CANAA.tendaCabra : CORES_CANAA.tendaCabra2, grande ? CORES_CANAA.tendaCabra2 : CORES_CANAA.tendaCabra);
           c.em(-1.2, 0, 0.6, 0, () => utensilios(c, r, 3));
           if (!grande) c.em(2.6, 0, 3.4, 0.3, () => c.jarro(0, 0, 1.3));
         });
@@ -324,13 +319,13 @@ export class MundoCanaa {
         const z = cz + Math.sin(a) * raio;
         const yaw = Math.atan2(cx - x, cz - z);
         em(c, m, x, z, yaw, () => {
-          c.tenda(5.2 + (i % 3) * 0.6, 4.2, 2.3 + (i % 2) * 0.3, i % 2 ? CORES_CANAA.tendaInimiga2 : CORES_CANAA.tendaInimiga, CORES_CANAA.listraInimiga);
+          tendaPelos(c, 5.2 + (i % 3) * 0.6, 4.2, 2.3 + (i % 2) * 0.3, i % 2 ? CORES_CANAA.tendaInimiga2 : CORES_CANAA.tendaInimiga, i % 2 ? CORES_CANAA.tendaInimiga : CORES_CANAA.tendaInimiga2, CORES_CANAA.listraInimiga);
           c.em(-2, 0, 2.6, 0, () => utensilios(c, r, 2));
         });
       });
       // a tenda do rei, maior, ao norte
       em(c, m, cx + 2, cz - 19, 0, () => {
-        c.tenda(8, 6, 3.1, '#6a2a26', CORES_CANAA.ouro);
+        tendaPelos(c, 8, 6, 3.1, '#6a2a26', CORES_CANAA.tendaInimiga, CORES_CANAA.ouro);
         c.cilindro(0, 0, 3.6, 0.05, 0.06, 4.4, CORES.madeiraEscura, 5);
         c.caixa(0.6, 3.5, 3.6, 1.1, 0.7, 0.03, '#a03a2a', { raio: 0, ao: 0 });
       });
@@ -483,6 +478,26 @@ export class MundoCanaa {
         const bx = p.x + Math.cos(ang) * 2.4;
         const bz = p.z + Math.sin(ang) * 2.4;
         em(c, m, bx, bz, -ang + Math.PI / 2, () => c.caixa(0, 0, 0, 2.2, 0.5, 0.8, CORES_CANAA.calcario, { raio: 0.15 }));
+      }
+      // lajes de calcário saindo das faces íngremes dos estratos: tiram o ar de cúpula lisa
+      {
+        const rl = new Aleatorio(2205);
+        for (let a = 0; a < Math.PI * 2; a += 0.12) {
+          for (let dd = 12; dd < MORIA.raioBase - 3; dd += 2.2) {
+            const x = sx + (Math.cos(a) * dd) / fatorRaioMoria(a);
+            const z = sz + (Math.sin(a) * dd) / fatorRaioMoria(a);
+            if (rel.inclinacao(x, z) < 0.2 || !rl.chance(0.55)) continue;
+            const rt = T.rota(x, z);
+            if (rt.d < rt.w + 4) continue;
+            const [lx, ly, lz] = [rl.entre(2.4, 4.6), rl.entre(0.5, 0.95), rl.entre(1.2, 2)];
+            // assenta pela borda de baixo (de fora e das pontas): a laje sai da encosta sem flutuar
+            const ca = Math.cos(a), sa = Math.sin(a);
+            const yb = Math.min(y(x + ca * lz * 0.8, z + sa * lz * 0.8), y(x - sa * lx * 0.8, z + ca * lx * 0.8), y(x + sa * lx * 0.8, z - ca * lx * 0.8));
+            c.em(x, yb - 0.1, z, -a - Math.PI / 2, () => {
+              c.esfera(0, 0, 0, 1, rl.chance(0.5) ? CORES_CANAA.calcarioQuente : CORES_CANAA.calcario, lx, ly, lz, 1);
+            });
+          }
+        }
       }
       // coroa de rochas no topo (deixa a boca do caminho livre)
       const yTopo = y(sx, sz);
@@ -670,39 +685,6 @@ export class MundoCanaa {
 
 // ------------------------------------------------------------------ utilidades
 
-/**
- * Troca a cor da textura de folhas pela cor dada (mantém o desenho e o recorte da textura, em tons
- * de cinza). Só mexe nos materiais desta Natureza (clonados por variante).
- */
-function recolorirFolhas(m: Mundo, material: RegExp, cores: Record<string, string>) {
-  const feitos = new Set<THREE.Material>();
-  m.natureza.grupo.traverse((o) => {
-    const im = o as THREE.InstancedMesh;
-    if (!im.isInstancedMesh) return;
-    const mat = im.material as THREE.MeshLambertMaterial;
-    if (feitos.has(mat) || !material.test(mat.name)) return;
-    const cor = cores[mat.name.split('_')[0]];
-    if (!cor) return;
-    feitos.add(mat);
-    mat.color.set(cor);
-    const anterior = mat.onBeforeCompile;
-    mat.onBeforeCompile = (sh, r) => {
-      anterior.call(mat, sh, r);
-      sh.fragmentShader = sh.fragmentShader.replace(
-        '#include <map_fragment>',
-        `#ifdef USE_MAP
-          vec4 _tex = texture2D( map, vMapUv );
-          float _lum = dot( _tex.rgb, vec3( 0.299, 0.587, 0.114 ) );
-          diffuseColor *= vec4( vec3( 0.55 + _lum * 1.6 ), _tex.a );
-        #endif`,
-      );
-    };
-    const chave = mat.customProgramCacheKey.bind(mat);
-    mat.customProgramCacheKey = () => `${chave()}_recolorido`;
-    mat.needsUpdate = true;
-  });
-}
-
 function materialPedras() {
   const mat = new THREE.MeshLambertMaterial({ vertexColors: true, emissive: '#000000' });
   aplicarPatch(mat, { revelar: true });
@@ -799,14 +781,14 @@ function criarPorteira(m: Mundo, nome: NomePorteira, cur: DefCurral) {
 
 function definirVariantes(m: Mundo) {
   const n = m.natureza;
-  n.definirVariante('oliveira', { modelos: ['TwistedTree_1', 'TwistedTree_4'], tintFolha: '#c9d2b8', tintTronco: '#cdbda4', vento: 0.08, raioTronco: 1.0, alcance: 160, alcancePerto: 42, reduzirTronco: 0.2, fracaoLonge: 0.62 });
+  n.definirVariante('oliveira', { modelos: ['TwistedTree_1', 'TwistedTree_4'], corFolha: '#b4c0a2', tintTronco: '#cdbda4', vento: 0.08, raioTronco: 1.0, alcance: 160, alcancePerto: 42, reduzirTronco: 0.2, fracaoLonge: 0.62 });
   n.definirVariante('carvalho', { modelos: ['CommonTree_3', 'CommonTree_5'], tintFolha: '#b4cf80', tintTronco: '#b8a890', vento: 0.1, raioTronco: 0.45, alcance: 230, alcancePerto: 48, reduzirTronco: 0.3 });
   n.definirVariante('carvalhoGrande', { modelos: ['CommonTree_1'], tintFolha: '#b0cc7c', tintTronco: '#b0a088', vento: 0.07, raioTronco: 0.42, alcance: 300, alcancePerto: 70, reduzirTronco: 0.3 });
   n.definirVariante('arvoreJordao', { modelos: ['CommonTree_5'], tintFolha: '#a8dc74', vento: 0.13, raioTronco: 0.4, alcance: 230, alcancePerto: 40, reduzirTronco: 0.25, fracaoLonge: 0.3 });
   n.definirVariante('cipreste', { modelos: ['Pine_5'], tintFolha: '#7fa070', vento: 0.07, raioTronco: 0.3, alcance: 220, alcancePerto: 45 });
-  n.definirVariante('arbusto', { modelos: ['Bush_Common'], tintFolha: '#c7cf98', vento: 0.07, alcance: 130, alcancePerto: 38 });
-  n.definirVariante('arbustoVerde', { modelos: ['Bush_Common'], tintFolha: '#a2d47c', vento: 0.08, alcance: 170, alcancePerto: 38 });
-  n.definirVariante('pedra', { modelos: ['Rock_Medium_1', 'Rock_Medium_3'], vento: 0, raioTronco: 1.0, alcance: 190, alcancePerto: 60, reduzirTronco: 0.5 });
+  n.definirVariante('arbusto', { modelos: ['Bush_Common'], corFolha: '#a9b583', vento: 0.07, alcance: 130, alcancePerto: 38 });
+  n.definirVariante('arbustoVerde', { modelos: ['Bush_Common'], corFolha: '#86b860', vento: 0.08, alcance: 170, alcancePerto: 38 });
+  n.definirVariante('pedra', { modelos: ['Rock_Medium_1', 'Rock_Medium_3'], corSolido: '#c9bea6', vento: 0, raioTronco: 1.0, alcance: 190, alcancePerto: 60, reduzirTronco: 0.5 });
   n.definirVariante('flores', { modelos: ['Flower_3_Group'], vento: 0.12, alcance: 48, alcancePerto: 48, sombra: false });
   n.definirVariante('capim', { modelos: ['Grass_Common_Tall'], tintFolha: '#f4dc98', vento: 0.2, alcance: 42, alcancePerto: 42, sombra: false });
 }
@@ -914,6 +896,16 @@ function vegetacao(m: Mundo, T: TerrenoCanaa) {
     densidade: (x, z) => livre(x, z) * planalto(x, z) * (0.08 + Math.max(0, r.fbm(x * 0.025, z * 0.025, 2)) * 0.25 +
       (dManre(x, z) < 60 ? 0.12 : 0) + anel(x, z, CANAA.valeDa, 30, 60) * 0.18),
   });
+  // Moriá: mato seco e algumas oliveiras nos patamares dos estratos (quebram a rocha nua)
+  const caixaMoria = { x0: msx - MORIA.raioBase - 4, x1: msx + MORIA.raioBase + 4, z0: msz - MORIA.raioBase - 4, z1: msz + MORIA.raioBase + 4 };
+  espalhar(m, 'arbusto', {
+    ...caixaMoria, espacamento: 5, escala: [0.9, 1.6], inclinacaoMax: 0.14, semente: 112,
+    densidade: (x, z) => livre(x, z) * noMoria(x, z) * (0.3 + Math.max(0, r.fbm(x * 0.06, z * 0.06, 2)) * 0.5),
+  });
+  espalhar(m, 'oliveira', {
+    ...caixaMoria, espacamento: 11, escala: [0.26, 0.36], inclinacaoMax: 0.12, semente: 113,
+    densidade: (x, z) => livre(x, z) * noMoria(x, z) * 0.22,
+  });
   // pedras calcárias: mais nas encostas, nos montes e no Moriá
   espalhar(m, 'pedra', {
     espacamento: 10, escala: [0.5, 1.5], afundar: 0.4, semente: 121,
@@ -1008,8 +1000,8 @@ function construirManre(m: Mundo, fog: Fogueiras) {
   // Aner, Escol e Manre, amorreus aliados de Abrão (Gn 14:13): duas tendas e um fogo
   const [ax, az] = m.ponto('aliadosManre');
   zona(m, 'aliadosManre', 1413, (c) => {
-    em(c, m, ax - 3.5, az - 2, 0.9, () => c.tenda(5, 4, 2.2, '#5a4434', '#d8c090'));
-    em(c, m, ax + 3.5, az - 3, -0.6, () => c.tenda(4.6, 3.8, 2.1, '#4a3a2e', '#d8c090'));
+    em(c, m, ax - 3.5, az - 2, 0.9, () => tendaPelos(c, 5, 4, 2.2, '#6a5440', '#5a4434', '#d8c090'));
+    em(c, m, ax + 3.5, az - 3, -0.6, () => tendaPelos(c, 4.6, 3.8, 2.1, '#5a4636', '#6a5440', '#d8c090'));
     em(c, m, ax, az + 2.5, 0, () => c.fogueira());
     em(c, m, ax + 4, az + 3, 0.3, () => alforje(c));
   });
