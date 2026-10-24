@@ -365,12 +365,11 @@ export const carneiro: ConstrutorProcedural = (sexo) => {
   m.osso('cabeca', 'pescoco', 0, 0.86, 0.44);
   m.parte('pescoco', elipsoide([0, 0.78, 0.38], [0.16, 0.17, 0.15], 0), la, { porFace: fofo });
   // cabeça: rosto castanho, focinho mais claro, topete de lã
-  m.parte('cabeca', elipsoide([0, 0.89, 0.5], [0.095, 0.1, 0.12], 0, [0.3, 0, 0]), rosto);
-  m.parte('cabeca', octaedro([0, 0.82, 0.6], [0.07, 0.075, 0.11]), '#8f6f56');
-  m.parte('cabeca', octaedro([0, 0.82, 0.7], [0.03, 0.02, 0.012]), '#3a2a22');
+  m.parte('cabeca', elipsoide([0, 0.89, 0.5], [0.1, 0.105, 0.13], 0), rosto);
+  m.parte('cabeca', elipsoide([0, 0.83, 0.6], [0.07, 0.074, 0.1], 0, [0.25, 0, 0]), '#8f6f56');
   m.parte('cabeca', octaedro([0, 0.97, 0.47], [0.09, 0.065, 0.085]), la);
   for (const s of [1, -1]) m.parte('cabeca', octaedro([0.11 * s, 0.86, 0.47], [0.075, 0.022, 0.04], [0, 0.3 * s, -0.35 * s]), rosto);
-  olhos(m, 'cabeca', 0.074, 0.92, 0.56, 0.017);
+  olhos(m, 'cabeca', 0.07, 0.92, 0.55, 0.018);
   if (sexo === 'macho') {
     // chifres em espiral com sulcos: sobem, vão para trás, descem em volta da orelha e voltam à frente
     const sulco = '#b2966a';

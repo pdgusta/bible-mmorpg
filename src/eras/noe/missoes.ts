@@ -15,7 +15,7 @@ import { NOE } from './mapa';
 import { servicosNoe, type AnimalNoe, type NomePontoArca, type OpcoesAnimalNoe, type ServicosNoe } from './servicos';
 import {
   ANIMAIS_BAIAS, CONVERSAS_A6, ENCORAJAVEIS, INTERATIVO_FALAR_SEM, PARES_A4, PAR_PERDIDO, TOTAL_PARES,
-  idConversa, interativoAcalmar, interativoConversa, interativoEncorajar, ponto2, registrarDefs, registrarEtapa,
+  garantirEscalada, idConversa, interativoAcalmar, interativoConversa, interativoEncorajar, ponto2, registrarDefs, registrarEtapa,
   resolverLugar, type AjusteInterativo, type LugarNoe, type MundoBase, type RegistroInterativos,
 } from './interativos';
 import {
@@ -499,6 +499,8 @@ const A2: DefMissao = {
           enc: [feito(c, 'a2Encaixe1'), feito(c, 'a2Encaixe2')],
         };
         s.vale.vigaMestra.definirAltura(est.altura);
+        // o motor registra a escalada do andaime; esta é só a reserva
+        garantirEscalada(c.mundo as MundoBase, 'andaime', 'andaimeBase', 'andaimeTopo');
         const encaixar = (n: 0 | 1) => (p: Personagem) => {
           if (!est.amarrada || est.enc[n]) return;
           est.enc[n] = true;

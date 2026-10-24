@@ -361,7 +361,7 @@ function provaDemo(ui: UI, duvida: boolean) {
 
 function barraDeTeste(ui: UI, versiculo: (ref: string) => { ref: string; referenciaExtenso: string; bkj: string; nvt: string | null; kjv: string | null }) {
   const barra = document.createElement('div');
-  barra.style.cssText = 'position:fixed;left:50%;bottom:0.6rem;transform:translateX(-50%);z-index:2;display:flex;flex-wrap:wrap;gap:0.3rem;justify-content:center;max-width:90vw;font:600 12px Nunito,sans-serif';
+  barra.style.cssText = 'position:fixed;left:50%;bottom:0.6rem;transform:translateX(-50%);z-index:0;display:flex;flex-wrap:wrap;gap:0.3rem;justify-content:center;max-width:90vw;font:600 12px Nunito,sans-serif';
   const b = (t: string, f: () => void) => {
     const x = document.createElement('button');
     x.textContent = t;

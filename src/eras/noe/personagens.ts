@@ -24,6 +24,8 @@ const antes = (e: Omit<EntradaRotina, 'senao'>, extra?: string): EntradaRotina =
 // ------------------------------------------------------------------------------ jogáveis
 
 const ROTINA_NOE: EntradaRotina[] = [
+  // depois do dilúvio (vem primeiro: a primeira entrada válida é a que vale)
+  { de: 0, ate: 24, lugar: 'altarPlato', descricao: 'junto do altar', vagar: 5, se: FLAG_DEPOIS },
   // antes da arca ficar pronta
   antes({ de: 5, ate: 7, lugar: 'orarMonte', descricao: 'orando no monte', olhar: 'centroVale' }),
   antes({ de: 7, ate: 12, lugar: 'quilha', atividade: 'consertar', segurar: 'martelo', descricao: 'trabalhando na arca', vagar: 6 }),
@@ -34,37 +36,38 @@ const ROTINA_NOE: EntradaRotina[] = [
   { de: 5, ate: 7, lugar: 'orarMonte', descricao: 'orando no monte', se: FLAG_ARCA_PRONTA, senao: FLAG_DENTRO_ARCA },
   { de: 7, ate: 19, lugar: 'portaArca', descricao: 'cuidando da arca', vagar: 6, se: FLAG_ARCA_PRONTA, senao: FLAG_DENTRO_ARCA },
   { de: 19, ate: 5, lugar: 'casa', descricao: 'descansando em casa', vagar: 3, se: FLAG_ARCA_PRONTA, senao: FLAG_DENTRO_ARCA },
-  // depois do dilúvio
-  { de: 0, ate: 24, lugar: 'altarPlato', descricao: 'junto do altar', vagar: 5, se: FLAG_DEPOIS },
 ];
 
 const ROTINA_SEM: EntradaRotina[] = [
+  // depois do dilúvio (vem primeiro: a primeira entrada válida é a que vale)
+  { de: 0, ate: 24, lugar: 'altarPlato', descricao: 'junto do altar', vagar: 4, se: FLAG_DEPOIS },
   antes({ de: 6, ate: 11, lugar: 'curral', atividade: 'colher', descricao: 'cuidando dos animais', vagar: 5 }),
   antes({ de: 11, ate: 13, lugar: 'cavalete', segurar: 'cesto', descricao: 'levando comida ao estaleiro', olhar: 'quilha' }),
   antes({ de: 13, ate: 19, lugar: 'curral', atividade: 'regar', segurar: 'jarro', descricao: 'dando água aos animais', vagar: 5 }),
   antes({ de: 19, ate: 6, lugar: 'fogueiraCasa', atividade: 'sentado', descricao: 'à fogueira com a família' }),
   { de: 6, ate: 19, lugar: 'curral', atividade: 'colher', descricao: 'cuidando dos animais', vagar: 6, se: FLAG_ARCA_PRONTA, senao: FLAG_DENTRO_ARCA },
   { de: 19, ate: 6, lugar: 'fogueiraCasa', atividade: 'sentado', descricao: 'à fogueira com a família', se: FLAG_ARCA_PRONTA, senao: FLAG_DENTRO_ARCA },
-  { de: 0, ate: 24, lugar: 'altarPlato', descricao: 'junto do altar', vagar: 4, se: FLAG_DEPOIS },
 ];
 
 const ROTINA_CAM: EntradaRotina[] = [
+  // depois do dilúvio (vem primeiro: a primeira entrada válida é a que vale)
+  { de: 0, ate: 24, lugar: 'descidaPlato', descricao: 'olhando o vale lavado', vagar: 6, se: FLAG_DEPOIS },
   antes({ de: 6, ate: 12, lugar: 'corteLenha', atividade: 'cortar', segurar: 'machado', descricao: 'cortando lenha no bosque' }),
   antes({ de: 12, ate: 18, lugar: 'pilhaTroncos', segurar: 'tronco', descricao: 'carregando troncos', vagar: 6 }),
   antes({ de: 18, ate: 6, lugar: 'fogueiraCasa', atividade: 'sentado', descricao: 'à fogueira com a família' }),
   { de: 6, ate: 19, lugar: 'celeiro', descricao: 'arrumando o celeiro', vagar: 5, se: FLAG_ARCA_PRONTA, senao: FLAG_DENTRO_ARCA },
   { de: 19, ate: 6, lugar: 'fogueiraCasa', atividade: 'sentado', descricao: 'à fogueira com a família', se: FLAG_ARCA_PRONTA, senao: FLAG_DENTRO_ARCA },
-  { de: 0, ate: 24, lugar: 'descidaPlato', descricao: 'olhando o vale lavado', vagar: 6, se: FLAG_DEPOIS },
 ];
 
 const ROTINA_JAFE: EntradaRotina[] = [
+  // depois do dilúvio (vem primeiro: a primeira entrada válida é a que vale)
+  { de: 0, ate: 24, lugar: 'descidaPlato', descricao: 'explorando o monte', vagar: 12, se: FLAG_DEPOIS },
   antes({ de: 6, ate: 9, lugar: 'bordaBosque', descricao: 'explorando a borda do bosque', vagar: 14 }),
   antes({ de: 9, ate: 12, lugar: 'margemRio', descricao: 'explorando o rio', vagar: 12 }),
   antes({ de: 12, ate: 18, lugar: 'andaimeBase', atividade: 'interagir', descricao: 'trabalhando no andaime', vagar: 4 }),
   antes({ de: 18, ate: 6, lugar: 'fogueiraCasa', atividade: 'sentado', descricao: 'à fogueira com a família' }),
   { de: 6, ate: 19, lugar: 'margemRio', descricao: 'olhando o horizonte', vagar: 14, se: FLAG_ARCA_PRONTA, senao: FLAG_DENTRO_ARCA },
   { de: 19, ate: 6, lugar: 'fogueiraCasa', atividade: 'sentado', descricao: 'à fogueira com a família', se: FLAG_ARCA_PRONTA, senao: FLAG_DENTRO_ARCA },
-  { de: 0, ate: 24, lugar: 'descidaPlato', descricao: 'explorando o monte', vagar: 12, se: FLAG_DEPOIS },
 ];
 
 export const NOE_JOGAVEL: DefPersonagem = {
@@ -111,10 +114,10 @@ export const IDS_JOGAVEIS_NOE = JOGAVEIS_NOE.map((d) => d.id);
 
 function rotinaMulher(manha: EntradaRotina, tarde: EntradaRotina): EntradaRotina[] {
   return [
+    { de: 0, ate: 24, lugar: 'altarPlato', descricao: 'junto do altar', vagar: 6, se: FLAG_DEPOIS },
     { ...manha, senao: FLAG_DENTRO_ARCA },
     { ...tarde, senao: FLAG_DENTRO_ARCA },
     { de: 18, ate: 6, lugar: 'fogueiraCasa', atividade: 'sentado', descricao: 'à fogueira com a família', senao: FLAG_DENTRO_ARCA },
-    { de: 0, ate: 24, lugar: 'altarPlato', descricao: 'junto do altar', vagar: 6, se: FLAG_DEPOIS },
   ];
 }
 
