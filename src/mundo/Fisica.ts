@@ -65,6 +65,8 @@ export class MundoFisico {
 }
 
 const _nrm = new THREE.Vector3();
+/** Aceleração (m/s²) morro abaixo de quem está de pé numa encosta íngreme demais. */
+const ESCORREGAR = 40;
 
 /** Corpo cinemático em forma de cápsula (aproximada por cilindro) para personagens e animais. */
 export class CorpoFisico {
@@ -81,6 +83,8 @@ export class CorpoFisico {
   /** Desativa a gravidade (escalando, sentado em posto). */
   semGravidade = false;
   tempoNoAr = 0;
+  /** De pé no terreno numa encosta acima de `inclinacaoMax` (escorrega e não pula). */
+  naEncosta = false;
   private tmp: Colisor[] = [];
   colidiuParede = false;
 
@@ -135,11 +139,11 @@ export class CorpoFisico {
         this.vel.x = 0;
         this.vel.z = 0;
       }
-      // encosta íngreme demais (só para quem está no terreno): tira a componente morro acima
-      // do deslocamento, e o personagem escorrega ao longo da encosta
+      // encosta íngreme demais (para quem está no terreno ou vai tocá-lo, inclusive no fim de um
+      // pulo): tira a componente morro acima do deslocamento, e o personagem anda ao longo da encosta
       const hAnt = m.relevo.altura(antX, antZ);
       const hNovo = m.relevo.altura(nx, nz);
-      if (hNovo > hAnt && this.pos.y < hAnt + 0.15) {
+      if (hNovo > hAnt && Math.min(this.pos.y, ny) < hNovo + 0.15) {
         m.relevo.normal(nx, nz, _nrm);
         if (1 - _nrm.y > m.inclinacaoMax) {
           const gl = Math.hypot(_nrm.x, _nrm.z) || 1;
@@ -171,9 +175,24 @@ export class CorpoFisico {
       this.noChao = true;
       this.chaoColisor = colisor;
       this.tempoNoAr = 0;
+      // de pé numa encosta íngreme do terreno (ex.: caiu de um pulo nela): escorrega morro abaixo
+      // e não pode pular (senão os pulos viram escada)
+      this.naEncosta = false;
+      if (!colisor && !this.fantasma && !this.semGravidade) {
+        m.relevo.normal(nx, nz, _nrm);
+        const excesso = 1 - _nrm.y - m.inclinacaoMax;
+        if (excesso > 0) {
+          this.naEncosta = true;
+          const gl = Math.hypot(_nrm.x, _nrm.z) || 1;
+          const a = Math.min(1, excesso * 8) * ESCORREGAR * dt;
+          this.vel.x += (_nrm.x / gl) * a;
+          this.vel.z += (_nrm.z / gl) * a;
+        }
+      }
     } else {
       this.noChao = false;
       this.chaoColisor = null;
+      this.naEncosta = false;
       this.tempoNoAr += dt;
     }
     // teto (pisos acima da cabeça, ex.: conveses da arca)
@@ -190,7 +209,7 @@ export class CorpoFisico {
   }
 
   pular(forca = 7.2) {
-    if (!this.noChao) return false;
+    if (!this.noChao || this.naEncosta) return false;
     this.vel.y = forca;
     this.noChao = false;
     return true;
