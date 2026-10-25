@@ -53,6 +53,8 @@ export class Humano {
   visivel = true;
   /** Distância (m) da câmera em que o corpo passa ao nível de longe (volta ao de perto 2 m antes). */
   static distanciaLonge = 18;
+  /** Distância de longe só deste humano (figurantes de uma multidão); null usa a `distanciaLonge`. */
+  distanciaLongePropria: number | null = null;
   private longe = false;
   private descartado = false;
 
@@ -112,7 +114,7 @@ export class Humano {
     this.malha.onBeforeRender = (_r, _c, camera, geometria) => {
       const e = this.malha.matrixWorld.elements;
       const d = Math.hypot(camera.position.x - e[12], camera.position.y - e[13], camera.position.z - e[14]);
-      this.longe = d > Humano.distanciaLonge - (this.longe ? 2 : 0);
+      this.longe = d > (this.distanciaLongePropria ?? Humano.distanciaLonge) - (this.longe ? 2 : 0);
       if (this.longe) geometria.setDrawRange(nPerto, nLonge);
       else geometria.setDrawRange(0, nPerto);
     };

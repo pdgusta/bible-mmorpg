@@ -1,6 +1,7 @@
 // Depuração e e2e (só com ?dev ou pelo window.partida.dev): joga a era pelos atalhos dela,
 // avança o tempo de jogo em modo manual (sem esperar a renderização), passa as falas
 // sozinho e para em "capturas" (momentos de foto) até o e2e liberar.
+import { Animal } from '../../entidades/Animal';
 import type { Partida } from '../Partida';
 import type { AtalhosEra } from '../eras';
 import { esperarJogo, estadoMissaoAtual } from './comum';
@@ -77,6 +78,22 @@ export class Depuracao {
     ];
   }
 
+  /**
+   * Animais vivos e o centro deles no chão (o e2e mede a A4 no pior caso). O e2e não pode
+   * importar o Animal pelo Vite: um módulo editado depois que o servidor subiu vem com `?t=`,
+   * e o import da página carrega outra instância, com `Animal.todos` vazio.
+   */
+  animais(): { n: number; x: number; z: number } {
+    let x = 0;
+    let z = 0;
+    for (const a of Animal.todos) {
+      x += a.raiz.position.x;
+      z += a.raiz.position.z;
+    }
+    const n = Animal.todos.size;
+    return { n, x: n ? x / n : 0, z: n ? z / n : 0 };
+  }
+
   /** Liga capturas pelo nome (ou todas, sem argumento). */
   ligarCapturas(nomes?: string[]) {
     for (const c of this.lista()) if (!nomes || nomes.includes(c.nome)) this.capturas.add(c.nome);
@@ -103,8 +120,13 @@ export class Depuracao {
     return this.p.s.provas.resolverAutomaticamente();
   }
 
-  /** Começa a jogar a era atual pelos atalhos (não espera; use avancar()). */
+  /**
+   * Começa a jogar a era atual pelos atalhos (não espera; use avancar()). Recusa se já há
+   * atalhos rodando: dois runners dividiriam o mesmo `fim`, e o avancar pararia de avançar o
+   * tempo quando o primeiro acabasse (com ?dev&missao, o pularPara roda depois do modo 'jogo').
+   */
   jogar(ate?: string) {
+    if (this.jogando && !this.fim) throw new Error('dev.jogar: pularPara em andamento (os atalhos já rodam); espere dev.fim && !jogo.manual');
     this.fim = false;
     this.erro = null;
     this.p.ui.dialogoC.velocidade = 0;

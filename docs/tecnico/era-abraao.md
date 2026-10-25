@@ -12,7 +12,7 @@ O mundo (`mapa.ts`, `construir.ts`/`MundoCanaa`, `estruturas.ts`, `aparencias.ts
 | `memorias.ts` | 10 memórias. `poDaTerra` é o segredo; `estrelas` e `jeovaJire` têm força 0 (são o resultado de uma prova). |
 | `cristo.ts` | `bencaoNacoes`, `melquisedeque`, `justica`, `cordeiro`. A entrada `semente` é da era 1 e se completa em B5. |
 | `interativos.ts` | `INTERATIVOS_ABRAAO` por etapa (`"b2.separar"`), `registrarEtapa`, `registrarDefs`, `registrarSegredosAbraao` (o pó da terra, ativo depois da flag `b2Percorrer`), `PONTOS_USADOS_ABRAAO` e `PONTOS_RESERVA` (só `bastidor`). |
-| `mecanicas.ts` | Mecânicas em tempo real testáveis sem navegador: `Furtividade` (B3, cones das tochas), `Batalha` (B3, aparar e desarmar; ninguém morre), `Juntos` (B5, pai e filho a até 12 m). |
+| `mecanicas.ts` | Mecânicas em tempo real testáveis sem navegador: `Furtividade` (B3, cones das tochas), `Batalha` (B3, aparar e desarmar; ninguém morre), `Juntos` (B5, pai e filho a até 12 m), o caminho em trechos (`caminhoFe`, `trechoRevelado`, `avancoNoCaminho`: B1, ensinamento 11) e o brilho dos despojos pela distância (`brilhoDespojos`, `DESPOJOS`: B3, ensinamento 15). |
 | `missoes.ts` | `MISSOES_ABRAAO` (B1–B5), `reconstruirMundoAbraao(s, mundo, flags)`, `mecanicaAbraao()` (mecânica em andamento, para os atalhos), `limparCenaAbraao()`. |
 | `servicos.ts` | `ServicosAbraao`: tudo que as missões usam além do `CtxMissao`. Também `ligarServicosAbraao` e `servicosAbraao`. |
 | `atalhos.ts` | `ATALHOS_ABRAAO`, `resolverEtapaAbraao` e `jogarEraAbraao(ambiente)`, que joga a era inteira pelas APIs do jogo (usado pelo e2e). |
@@ -26,23 +26,77 @@ O mundo (`mapa.ts`, `construir.ts`/`MundoCanaa`, `estruturas.ts`, `aparencias.ts
 
 | Missão | Etapas (ids) | Mecânica principal |
 |---|---|---|
-| B1 | `chegada`, `altarMore`, `acampar`, `invocar` | altares (`construirAltar`, herdado de Noé) e tendas em dupla (posto no mastro + amarrar) |
+| B1 | `chegada`, `altarMore`, `acampar`, `invocar` | altares (`construirAltar`, herdado de Noé), o caminho de Moré ao monte revelado em trechos e tendas em dupla (posto no mastro + amarrar) |
 | B2 | `muitos`, `separar`, `pastores`, `abraoELo`, `percorrer`, `manre` | rebanhos com boids e porteiras em posto; escolha moral; 4 mirantes |
-| B3 | `noticia`, `dividir`, `ataque`, `libertar`, `melquisedeque`, `nemUmFio` | furtividade, batalha, cativos, dízimo, prova de tentação |
+| B3 | `noticia`, `dividir`, `ataque`, `libertar`, `melquisedeque`, `nemUmFio` | furtividade, batalha, cativos, dízimo, prova de tentação diante dos despojos que brilham |
 | B4 | `visao`, `fora`, `duvida`, `creu` | prova da dúvida (memórias das duas eras acendem estrelas) |
 | B5 | `nomes`, `prova`, `pe`, `subida`, `altar`, `carneiro`, `promessa` | Isaque amarra a corda, discernir no fosso, "juntos", prova do medo; créditos |
 
 Regras (as mesmas da era 1):
-- **Etapa idempotente.** Flags dizem o que já foi feito; `reconstruirMundoAbraao` restaura acampamento, tendas, altares, acampamento inimigo, corda, noite, estrelas e o elenco; a etapa recomeça pulando o que já está feito. Abortada no meio, não deixa interativos nem `aCadaQuadro` ligados (há teste).
+- **Etapa idempotente.** Flags dizem o que já foi feito; `reconstruirMundoAbraao` restaura acampamento, tendas, altares, acampamento inimigo, despojos de Savé (e o brilho), corda, noite, estrelas e o elenco; a etapa recomeça pulando o que já está feito. Abortada no meio, não deixa interativos nem `aCadaQuadro` ligados (há teste).
 - **Estado de módulo:** `missoes.ts` guarda os animais de cena e os rebanhos de B2 entre etapas. Quando o mundo de Canaã for descartado (novo jogo, sair para o título), chame `ERA_ABRAAO.limparCena()`.
-- **Flags principais:** `legadoAplicado`/`legadoNoe`, `elencoAbraao`, `acampamento`, `tendaMontada_*`, `altar_*`, `loPartiu`, `emManre`, `b2Percorrer`, `b3Noite`, `inimigoVisivel`, `b4Noite`, `b4Estrelas`, `nomeAbraao`, `nomeSara`, `isaqueNasceu`, `cordaAmarrada`, `b5EscalarLiberado`, `b5Altar`; as de progresso de cada etapa (`b1AltarMore`, `b3_cativo3`…) estão em `missoes.ts` (procure `marcar(`).
+- **Flags principais:** `legadoAplicado`/`legadoNoe`, `elencoAbraao`, `acampamento`, `tendaMontada_*`, `altar_*`, `loPartiu`, `emManre`, `b2Percorrer`, `b3Noite`, `inimigoVisivel`, `despojosSave`, `despojosAcesos`, `b4Noite`, `b4Estrelas`, `nomeAbraao`, `nomeSara`, `isaqueNasceu`, `cordaAmarrada`, `b5EscalarLiberado`, `b5Altar`; as de progresso de cada etapa (`b1AltarMore`, `b3_cativo3`…) estão em `missoes.ts` (procure `marcar(`).
 - **Legado de Noé** (início de B1): +1 fé a cada 2 segredos da era 1 (até +2), +1 domínio se A3 foi vencida na primeira tentativa (`a3PrimeiraTentativa`), avisos "Legado de Noé: …" e a flag `legadoNoe` com as linhas para o Diário.
+
+## Ensinamentos 11 e 15 (T-009)
+
+- **11, Sair pela fé (B1 `acampar`, Hb 11:8).** O caminho de Moré ao monte entre Betel e Ai (`TRILHA_BETEL` em `mapa.ts` + `acampamentoBetel`) é dividido em trechos de 24 m (`CAMINHO_FE.passo`). O objetivo (bússola e marcador na tela) aponta só para o fim do trecho revelado; o trecho seguinte se abre quando o jogador chega a 7 m dele (`CAMINHO_FE.revelar`) ou já o passou ao longo do caminho, e nunca volta. O destino só aparece no último trecho. Não há mapa de tela inteira, então nada em `src/ui` mudou. A chegada continua sendo `c.chegar('ativo', 'acampamentoBetel', 18)`: quem corta caminho também chega.
+- **15, Não amar as riquezas (B3, Gn 14:21-24).** Os bens trazidos de volta (Gn 14:16) aparecem em duas pilhas no vale de Savé (ponto `despojosSave`, a ~8 m do dízimo) no fade de `melquisedeque`. Em `nemUmFio`, antes da oferta do rei de Sodoma, o brilho acende (`acenderDespojos(true)`). O `MundoCanaa` calcula a força a cada quadro pela distância do foco (o jogador): plena até 4 m, apagada a 18 m (`brilhoDespojos`). É um efeito passivo, e nenhum passo espera o jogador se afastar. A recusa vale `XP.prova` (60, "Resistir a uma tentação" no DESIGN §6): nenhum item dá XP no jogo, e o maior prêmio por achar algo é o segredo (25). As pilhas somem no fade de B4 (`visao`): o rei de Sodoma levou os seus bens (Gn 14:24).
+- **Custo:** a zona dos despojos é 1 draw call; o brilho (`BrilhoDespojos` em `estruturas.ts`, halos instanciados + disco no chão, o mesmo shader aditivo das fogueiras) são 2, e 0 quando a força é ~0. Nenhuma luz nova.
+- **No jogo integrado (T-014):** em B1, o marcador e a bússola apontam para o fim do trecho (24 m, depois o trecho seguinte), nunca para o monte. Em B3, na prova "Nem um fio", os despojos brilham a ~8 m de Abrão. Fotos `e2e/saida/t014-b1-trecho{1,2}.png` e `t014-b3-prova-despojos.png`. Na época o `?dev&missao=bN` só procurava a missão na era 1, e as fotos usaram um script que reordenava `ORDEM_ERAS`; desde a T-011 o novo jogo começa pela era da missão (`eraDaMissao`), e `?dev&missao=b3` chega direto a Canaã.
+- **Revelação na transição:** o vértice do brilho (fogueiras e despojos) encolhe pela faixa do motor, `glslEncolher` de `src/render/Shaders.ts`, e não por uma cópia da conta.
+
+## Orçamento de B3 (T-016)
+
+**Como foi medido:**
+- `?dev&missao=b3&q=medio`, jogada pelos atalhos com a etapa segurada: a batalha em andamento em Dã e a prova "Nem um fio" em Savé;
+- 640×360, com `jogo.render.gl.info.render` lido logo depois de `jogo.renderizar()`. Os números incluem a passada de sombra;
+- além das vistas fixas, uma varredura gira a câmera em 8 direções no mesmo ponto, e a tabela traz a pior;
+- o teto é o do preset médio: 150 draw calls e 600 mil triângulos.
+
+**O que pesa:**
+- O cenário sozinho varia de 170 a 370 mil triângulos e de 70 a 120 draw calls, conforme a direção.
+- Cada corpo tem de 20 a 25 mil triângulos de perto e de 5 a 6 mil de longe (a partir de 18 m). A sombra usa sempre o de longe.
+- O corpo custa 1 draw call, mais 1 quando projeta sombra, e é desenhado mesmo fora da tela (`frustumCulled = false`). Por isso pesa em qualquer direção.
+
+**Redução (`figurantesDeB3` em `missoes.ts`):**
+- Da noite de Dã ao fim de `nemUmFio`, os 17 figurantes (`FIGURANTES_B3`: 4 servos, 3 aliados amorreus, 4 cativos e 6 guerreiros do oriente) passam ao corpo de longe a 6 m (`LOD_FIGURANTES_B3`, por `humano.distanciaLongePropria`) e não projetam sombra (`malha.castShadow`).
+- Os jogáveis, Melquisedeque e o rei de Sodoma não mudam. A multidão manteve o tamanho.
+- O estado fica na flag `figurantesB3`: `garantirNPC` ajusta quem é criado depois (os guerreiros, os cativos), e `reconstruirMundoAbraao` segue a flag no carregar (`tests/era-abraao.test.ts`, "orçamento de B3").
+
+| Vista | Antes (draw calls / triângulos) | Depois |
+|---|---|---|
+| Dã (a): câmera de jogo atrás de Abrão, para o acampamento | 125 / 465 mil | 108 / 370 mil |
+| Dã (a), pior direção | **155 a 159** / 573 mil | 138 / 461 mil |
+| Dã (b): larga, a 30 m, na pior direção | **161** / 587 mil | 128 / 447 mil |
+| Dã (c): Abrão no meio do acampamento | 111 / 437 mil | 93 / 324 mil |
+| Dã (c), pior direção | 151 / **608 mil** | 134 / 446 mil |
+| Savé (a): câmera de jogo no dízimo, para os despojos e o povo | 111 / 470 mil | 100 / 411 mil |
+| Savé (b): larga, a 30 m | 117 / 467 mil | 106 / 409 mil |
+| Savé (c): para Salém | 109 / 490 mil | 98 / 414 mil |
+| Savé (d): Abrão a ~4 m do centro do povo | 115 / **703 mil** | 104 / 467 mil |
+| Savé (d), pior direção | não medida | 101 / 543 mil |
+
+**Notas:**
+- A medição do Gofer (151 draw calls, 1,17 M) foi feita antes do LOD dos humanos (T-008). As colunas "antes" já têm o LOD e não têm o ajuste dos figurantes.
+- Em Savé, a vista (d) é a que o jogador alcança: na prova, nada o prende ao dízimo.
+- **Histerese:** o corpo de perto vai até 6 m, e o de longe só volta a 4 m. Com 8 m, a vista (d) dava 516 mil quando os figurantes já estavam no corpo de perto e passaria de 600 mil na pior direção. Por isso ficou 6 m.
+- **Variantes medidas na vista (d) de Savé, direção fixa:**
+  - 8 m com sombra: 574 mil;
+  - 10 m sem sombra: 547 mil;
+  - 10 m com sombra: 606 mil.
+- **Legibilidade:** o povo e os cativos continuam legíveis. No close a ~6 m em 1280×720, o corpo de longe não se distingue do de perto (`depois-e-close-{perto,longe}.png`).
+- **O que se nota:** sob o sol de Savé, os figurantes ficam sem sombra no chão. Na noite de Dã, isso não se percebe.
+- **Fotos** (em `e2e/saida/t016/`, fora do git):
+  - `antes-*.png` e `depois-*.png`: Savé, vistas a a e;
+  - `da-antes-*.png` e `da-depois-*.png`: Dã, com `-pior` para a pior direção;
+  - `var-d-*.png`: as variantes.
 
 ## O que `ServicosAbraao` exige e de quem
 
 | Serviço | Implementação |
 |---|---|
-| `canaa` | `MundoCanaa` direto: `acampamento`, `cordaAmarrada`, `definirAcampamento`, `montarTenda`, `abrirPorteira`, `porteiraAberta`, `dentroCurral`, `definirAltar`, `estadoAltar`, `definirAcampamentoInimigo`, `amarrarCordaMoria`, `revelarPedras`, `aoCairFosso` |
+| `canaa` | `MundoCanaa` direto: `acampamento`, `cordaAmarrada`, `definirAcampamento`, `montarTenda`, `abrirPorteira`, `porteiraAberta`, `dentroCurral`, `definirAltar`, `estadoAltar`, `definirAcampamentoInimigo`, `definirDespojos`, `acenderDespojos`, `amarrarCordaMoria`, `revelarPedras`, `aoCairFosso` |
 | `ceu` | `Ceu`: `hora`, `gloria`, `pausado` e `estrelas?` (0..1, Gn 15:5; o `Ceu` ainda não tem: sem ele, B4 só usa a noite) |
 | `audio` | `ambiente('canaa' \| 'noite' \| 'vento', i)`, `musica('calmo' \| 'aventura' \| 'prova' \| 'gloria' \| 'silencio' \| 'batalha')`, `efeito('fogo' \| 'corda' \| 'brilho' \| 'alarme' \| 'aparar' \| 'golpe' \| 'discernir' \| 'pedra')` |
 | `animais` | `criar(e, x, z, {y, yaw, sexo, tom})` → `criarAnimal` (espécies `ovelha`, `jumento`, `carneiro`; `tom` escurece a lã das ovelhas de Ló); `rebanho(animais)` → `Rebanho` atualizado a cada quadro; `soltarRebanho(r)` |
@@ -93,6 +147,15 @@ Aceitas pelo dono do projeto em 24/10/2026; o `docs/ROTEIRO.md` foi atualizado p
 | Cristo `melquisedeque` | "Ele aponta para Jesus, sacerdote para sempre, que nos abençoa e intercede por nós." | "A carta o compara ao Filho de Deus: ele aponta para Jesus, o sacerdote que permanece para sempre." | "Intercede" está fora de Hb 7:1-3; Hb 7:3 sustenta a comparação com o Filho de Deus. |
 | Cristo `justica` | refs Gn 15:6, Rm 4:3; "…somos justificados pela fé, não pelas obras. A mesma justiça é dada a quem crê naquele que ressuscitou Jesus dentre os mortos." | refs + Gl 3:8; "…é pela fé que Deus declara alguém justo. Esse é o evangelho anunciado de antemão a Abraão: em Cristo, a mesma justiça chega pela fé a gente de todas as nações." | As duas frases dependiam de versos de Romanos 4 fora das refs e ausentes do `versiculos.json`. |
 
+**T-009 (ensinamentos 11 e 15).** Aceito pelo Maestro; o `docs/ROTEIRO.md` foi atualizado na seção de B3 (passos 5 e 6). O B1 não mudou de texto: só o alvo da bússola, que o ROTEIRO não fixa. Nenhuma fala mudou.
+
+| Onde | Antes | Depois | Por quê |
+|---|---|---|---|
+| B1 `acampar`, alvo do objetivo | `acampamentoBetel` desde o início | o fim do trecho revelado; `acampamentoBetel` só no último trecho | Ensinamento 11: o destino se abre conforme se obedece (Hb 11:8). |
+| B3 `melquisedeque` | Savé sem os bens | duas pilhas de despojos em Savé | Gn 14:16 (trouxe de volta todos os bens); o dízimo é "a décima parte dos despojos". |
+| B3 `nemUmFio` | os despojos não brilhavam | brilho dourado aceso antes de Gn 14:21, que desbota sozinho com a distância; sem passo novo | Ensinamento 15. Efeito passivo: quem recusa sem se afastar também avança. |
+| B4 `visao` | (não havia despojos) | os despojos somem no fade | Gn 14:24: os bens ficaram com o rei de Sodoma. |
+
 Fora da revisão, o ROTEIRO também passou a dizer o que o código já fazia: postos de mastro e porteira com o verbo `usar`, o interativo `amarrarCorda` no ponto `cordaMoria` e "quem manda aqui sou eu" (era "quem mandar").
 
 ## Testes (`npx vitest run tests/era-abraao.test.ts`)
@@ -103,6 +166,9 @@ Um mundo de Canaã falso (`CanaaFalsa` com a mesma geometria dos currais e acamp
 - pontos usados, inícios e rotinas existem no mapa;
 - cada missão do início ao fim; o legado de Noé; a era inteira em sequência (memórias, armadura `calcado`/`escudo`/`couraca`, Cristo, nomes, elenco final, altares, sem NPC de cena nem animal esquecido, créditos);
 - idempotência por etapa (abortar depois de 2 ações, reconstruir e recomeçar);
+- ensinamento 11: os trechos do caminho (passo, só para a frente, destino só no fim) e, em B1, a sequência de alvos do objetivo enquanto o jogador anda pela trilha;
+- ensinamento 15: a curva do brilho e, em B3, os despojos acesos na prova, o XP da recusa (`XP.prova` > `XP.segredo`), nada que prenda o jogador, o carregar pelas flags e os despojos fora de cena em B4;
+- o orçamento de B3: em Manre nada muda; na batalha de Dã (também os guerreiros criados depois) e na prova de Savé, os figurantes ficam com o LOD de 6 m e sem sombra, e os outros não mudam; depois de B3 todos voltam ao padrão, e o carregar segue a flag;
 - a era jogada só pelos atalhos.
 
 ## Revisão (checklist de `docs/tecnico/revisao.md`)
@@ -118,7 +184,7 @@ Planilha: `node scripts/planilha-falas.mjs abraao e2e/saida/planilha-abraao` (34
 - Objetivos que eram só substantivo ("No vale de Savé.", "O topo do monte."), a dica de "Está escrito" no formato do jogo (e sem citar o escudo, que só vem em B4) e a dica do altar com o nome da época (`Abrão pode…` / `Abraão pode…`).
 
 **Pendências que exigem lógica ou decisão (fora do escopo de texto):**
-1. **Ensinamento 11** ("o caminho até a terra é revelado em trechos"): B1 não revela o mapa aos poucos; só há objetivos para Moré e Betel.
-2. **Ensinamento 15** ("o brilho desbota quando o jogador se afasta"): os despojos não brilham nas missões; depende da prova de tentação do sistema de provas.
+1. ~~**Ensinamento 11**~~: feito na T-009 (ver "Ensinamentos 11 e 15").
+2. ~~**Ensinamento 15**~~: feito na T-009 (ver "Ensinamentos 11 e 15").
 3. **Ensinamento 16** diz que o jogador entrega o dízimo antes da bênção, mas Gn 14:19-20 põe a bênção antes do dízimo, e o jogo segue o texto. Recomendação: corrigir a linha 16 de `docs/ENSINAMENTOS.md`.
 4. Sara tem a descrição fixa "Mulher de Abrão." também em B5.

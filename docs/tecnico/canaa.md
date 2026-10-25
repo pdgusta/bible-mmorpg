@@ -23,12 +23,17 @@ porteiraAberta(nome): boolean;  dentroCurral(nome: 'curralAbrao' | 'curralLo', x
 definirAltar(nome: 'altarMore' | 'altarBetel' | 'altarManre' | 'altarMoria', estado: 'oculto' | 'construido' | 'aceso')
 estadoAltar(nome): EstadoAltar
 definirAcampamentoInimigo(visivel: boolean)   // Dã: tendas, 6 fogos, cativos, despojos (começa oculto)
+definirDespojos(visivel: boolean)             // Savé: duas pilhas de despojos em 'despojosSave' (B3; começa oculto)
+acenderDespojos(sim: boolean)                 // brilho dourado sobre elas; a força vem da distância do foco (abaixo)
+despojosVisiveis: boolean; despojosAcesos: boolean
 amarrarCordaMoria(sim: boolean)               // mostra a corda e ativa a escalada 'cordaMoria'
 revelarPedras(t: number)                      // 0..1: firmes douradas, soltas vermelhas (Q discernir)
 readonly pedrasMoria: { x, y, z, firme }[];  aoCairFosso: ((p: Personagem) => void) | null
 ```
-Estado inicial: acampamento em Betel com tendas montadas, porteiras fechadas, altares ocultos, inimigos ocultos, corda solta. Tudo é idempotente (pode ser reaplicado a partir das flags ao carregar um save).
+Estado inicial: acampamento em Betel com tendas montadas, porteiras fechadas, altares ocultos, inimigos ocultos, despojos de Savé ocultos e apagados, corda solta. Tudo é idempotente (pode ser reaplicado a partir das flags ao carregar um save).
 Pontos **dinâmicos** (mudam com `definirAcampamento`): `acampamento`, `tendaAbrao`, `tendaSara`, `fogueiraAcampamento`.
+
+**Despojos de Savé (ensinamento 15).** `definirDespojos` mostra ou esconde as pilhas (1 draw call; colisores e navegação refeitos num raio de 8 m). `acenderDespojos` só liga o brilho: a cada quadro, `MundoCanaa` calcula a força pela distância do foco (o jogador) até `despojosSave`, com `brilhoDespojos` de `mecanicas.ts` (pleno até 4 m, apagado a 18 m), e passa a `BrilhoDespojos` (`estruturas.ts`). São halos instanciados e um disco no chão, o mesmo shader aditivo das fogueiras: 2 draw calls, nenhum quando a força é ~0, e nenhuma luz. Com os despojos ocultos o brilho fica apagado, mesmo aceso. A missão guarda as flags `despojosSave` e `despojosAcesos` e as reaplica em `reconstruirMundoAbraao`.
 
 ## Pontos nomeados (x, z)
 | Missão | Pontos | Uso |
@@ -45,7 +50,7 @@ Pontos **dinâmicos** (mudam com `definirAcampamento`): `acampamento`, `tendaAbr
 | B3 | da (40,−128), flancoSul (44,−150), flancoOeste (10,−190), flancoLeste (80,−192), acampamentoInimigo (45,−188), fugaInimigos (46,−217) | vale de Dã à noite; rotas cobertas em `ROTAS_FLANCO` |
 | B3 | sentinela1 (22,−166), sentinela2 (68,−166), sentinela3 (27,−160), sentinela4 (33,−199) | início das rondas em `ROTAS_SENTINELAS` (1–3 vai-e-volta, 4 laço) |
 | B3 | cativos (59,−198), cativo1..5 (57,−196.5)(59.5,−196)(61.5,−197.5)(57.5,−199.5)(60.5,−200), despojos (30,−197) | cercado de cordas e pilhas de despojos |
-| B3 | save (−25,98), salem (−6,80), altarSalem (3,85), melquisedeque (−2,88), dizimo (−6,90), chegadaSodoma (30,104) | vale de Savé, casa e altar de Melquisedeque, mesa de pão e vinho |
+| B3 | save (−25,98), salem (−6,80), altarSalem (3,85), melquisedeque (−2,88), dizimo (−6,90), despojosSave (−12,95), chegadaSodoma (30,104) | vale de Savé, casa e altar de Melquisedeque, mesa de pão e vinho; os bens trazidos de volta, a ~8 m do dízimo |
 | B4 | ceuEstrelas (−86,134) | outeiro aberto (sem árvores) a ~35 m da tenda em Manre |
 | B5 | servosMoria (36,103), peMoria (42,106), degrausMoria (43.5,120), paredeMoria (55.4,129.4), cordaMoria (59.5,132.3) | pé (servos, jumento), trecho 1 |
 | B5 | estreitoMoria (78.3,143.5), fossoMoria (82.8,148.8), estreitoFim (88.5,165), patamarMoria (84,181), subidaFinal (72,192.5), topoMoria (52,172), altarMoria (50.5,170.6), arbustoCarneiro (56.8,176.6) | trechos 2–4 e topo |
