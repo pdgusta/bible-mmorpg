@@ -159,6 +159,9 @@ export class Animal {
   private opIr: OpcoesIr = {};
   private semProgresso = 0;
   private melhorDist = Infinity;
+  /** Vezes seguidas que travou no mesmo lugar (a nova rota não adiantou). */
+  private travadas = 0;
+  private ondeTravou = new THREE.Vector3();
   private anterior: { estado: EstadoAnimal; alvo: { posicao: THREE.Vector3 } | null; dist: number; raio: number; centro: THREE.Vector3 } | null = null;
   private fugirDePos = new THREE.Vector3();
   private fugirT = 0;
@@ -318,6 +321,7 @@ export class Animal {
     this.caminho = pts;
     this.semProgresso = 0;
     this.melhorDist = Infinity;
+    this.travadas = 0;
     return new Promise((r) => (this.pendente = r));
   }
 
@@ -644,8 +648,14 @@ export class Animal {
       }
       return;
     }
-    // preso atrás de algo: fora da tela, reposiciona; na tela, tenta a navegação
+    // preso atrás de algo: fora da tela, reposiciona; na tela, tenta a navegação. Se travar de
+    // novo no mesmo lugar (tremendo entre dois desvios, rota velha ou sem rota), reposiciona
+    // também na tela, com um fade curto, para a missão não ficar esperando para sempre.
     if (this.travado(d, dt, 5)) {
+      const pos = this.raiz.position;
+      if (Math.hypot(pos.x - this.ondeTravou.x, pos.z - this.ondeTravou.z) > 3) this.travadas = 0;
+      this.ondeTravou.copy(pos);
+      this.travadas++;
       const fora = performance.now() - this.vistoEm > 1000;
       if (d < 2.5) {
         // perto o bastante (alguém no caminho): considera alcançado
@@ -655,8 +665,12 @@ export class Animal {
           this.estado = 'parado';
           this.concluir();
         }
-      } else if (fora) {
+      } else if (fora || this.travadas >= 2) {
         this.teleportar(alvo.x, alvo.z, this.raiz.position.y);
+        if (!fora) {
+          this.opacidade = Math.min(this.opacidade, 0.01);
+          this.fade(1, 0.6);
+        }
       } else if (this.mundo.nav && !this.opIr.direto) {
         const c = this.mundo.nav.caminho(this.raiz.position.x, this.raiz.position.z, alvo.x, alvo.z);
         if (c && c.length > 1) this.caminho.splice(0, 1, ...c.slice(1).map(([x, z]) => new THREE.Vector3(x, 0, z)));

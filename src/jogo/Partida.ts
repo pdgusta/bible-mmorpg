@@ -16,7 +16,7 @@ import {
   UI, servicosBiblia, type AcoesUI, type Configuracoes, type CristoDiario, type DadosDiario, type IdSlot, type InfoSlot,
   type PersonagemDiario,
 } from '../ui/UI';
-import { ERAS, NOMES_ERAS, ORDEM_ERAS, defEra, type ContextoEra, type EraAtiva } from './eras';
+import { ERAS, NOMES_ERAS, ORDEM_ERAS, defEra, eraDaMissao, type ContextoEra, type EraAtiva } from './eras';
 import { PonteAudio } from './ligacao/audio';
 import { Depuracao } from './ligacao/depuracao';
 
@@ -208,7 +208,10 @@ export class Partida {
 
   // ===================================================================== fluxo
 
-  /** Novo jogo: a primeira era do começo (reaproveita o mundo do título se ainda estiver limpo). */
+  /**
+   * Novo jogo: a primeira era do começo (reaproveita o mundo do título se ainda estiver limpo).
+   * Com `?dev&missao=b3`, começa pela era que tem a missão.
+   */
   async novoJogo() {
     if (this.ocupado) return;
     this.ocupado = true;
@@ -217,7 +220,8 @@ export class Partida {
       await this.ui.fade(true, 0.7);
       this.limparSessao();
       this.s.novoJogo();
-      const def = defEra(ORDEM_ERAS[0]);
+      const missaoDev = this.opcoesDev.missao;
+      const def = defEra((missaoDev && eraDaMissao(missaoDev)) || ORDEM_ERAS[0]);
       this.eraId = def.id;
       if (!this.era || this.era.def.id !== def.id || this.era.sujo) await this.montarEra(def.id, 0);
       else this.era.posicoesIniciais();

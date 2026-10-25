@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { MeshoptSimplifier } from 'three/examples/jsm/libs/meshopt_simplifier.module.js';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { extrairPartes, type ParteModelo } from './Ativos';
 import { aplicarPatch } from './Shaders';
+import { simplificarIndice } from './Simplificar';
 import { Aleatorio } from '../core/aleatorio';
 
 export interface OpcoesVariante {
@@ -57,6 +57,17 @@ interface Modelo {
   sombras: THREE.Material[];
   raio: number;
   sil: Silhueta | null;
+  /** Caixa da folhagem das árvores (centro e semi-eixos, espaço do modelo), para `copas()`. */
+  copa: [number, number, number, number, number, number] | null;
+}
+
+/** Copa de uma árvore em pé, no mundo (ver `Natureza.copas`). */
+export interface Copa {
+  x: number;
+  z: number;
+  y0: number;
+  y1: number;
+  raio: number;
 }
 
 interface Instancia {
@@ -111,6 +122,7 @@ export class Natureza {
   private frustum = new THREE.Frustum();
   private projTela = new THREE.Matrix4();
   private construida = false;
+  private versao_ = 0;
   distanciaMax = 230;
 
   constructor(cenaNatureza: THREE.Object3D) {
@@ -172,6 +184,12 @@ export class Natureza {
       (p.folha ? caixaFolha : caixaTronco).union(p.geometria.boundingBox!);
     }
     let sil: Silhueta | null = null;
+    let copa: Modelo['copa'] = null;
+    if (arvore) {
+      const c = caixaFolha.getCenter(new THREE.Vector3());
+      const t = caixaFolha.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+      copa = [c.x, c.y, c.z, t.x, t.y, t.z];
+    }
     if (arvore && (op.alcanceMedio ?? 105) < 1e5) {
       const c = caixaFolha.getCenter(new THREE.Vector3());
       const t = caixaFolha.getSize(new THREE.Vector3()).multiplyScalar(0.5);
@@ -212,7 +230,7 @@ export class Natureza {
         : reduzir ? simplificar(p.geometria, reduzir) : p.geometria;
       longe.push({ geometria: geoLonge, material: mat, folha: p.folha });
     }
-    return { nome, perto, longe, sombras, raio, sil };
+    return { nome, perto, longe, sombras, raio, sil, copa };
   }
 
   adicionar(variante: string, x: number, y: number, z: number, ry: number, s: number, aleatorio?: Aleatorio, rx = 0) {
@@ -220,6 +238,7 @@ export class Natureza {
     if (!v) throw new Error(`Variante não definida: ${variante}`);
     const m = aleatorio ? Math.floor(aleatorio.proximo() * v.modelos.length) : 0;
     v.instancias.push({ x, y, z, ry, s, m, rx, oculta: false });
+    this.versao_++;
     if (this.construida) this.construirVariante(v);
     return v.instancias.length - 1;
   }
@@ -229,6 +248,7 @@ export class Natureza {
     const v = this.variantes.get(variante);
     if (!v || !v.instancias[indice]) return;
     v.instancias[indice].m = modelo % v.modelos.length;
+    this.versao_++;
     if (this.construida) this.construirVariante(v);
   }
 
@@ -238,6 +258,7 @@ export class Natureza {
     if (!v || !v.instancias[indice]) return;
     v.instancias[indice].oculta = oculta;
     this.ultimoFoco.set(1e9, 0, 0);
+    this.versao_++;
   }
 
   instancia(variante: string, indice: number): Readonly<Instancia> | null {
@@ -324,6 +345,7 @@ export class Natureza {
       v.instancias = [];
     }
     this.ultimoFoco.set(1e9, 0, 0);
+    this.versao_++;
   }
 
   atualizar(dt: number, camera: THREE.Camera, foco: THREE.Vector3, forcar = false) {
@@ -393,6 +415,33 @@ export class Natureza {
         for (const im of v.malhasLonge[mi] ?? []) { im.count = contL[mi]; im.visible = contL[mi] > 0; im.instanceMatrix.needsUpdate = true; }
       });
       for (const im of [v.silCopa, v.silTronco]) if (im) { im.count = contS; im.visible = contS > 0; im.instanceMatrix.needsUpdate = true; }
+    }
+  }
+
+  /** Muda a cada instância adicionada, escondida, trocada de modelo ou limpa (quem guarda `copas()` refaz). */
+  get versao() {
+    return this.versao_;
+  }
+
+  /**
+   * Copas das árvores em pé (caixa da folhagem de cada instância visível, já na escala e no giro
+   * dela), só de leitura: a câmera de 3ª pessoa usa para não entrar na folhagem.
+   */
+  *copas(): Generator<Copa> {
+    for (const v of this.variantes.values()) {
+      for (const i of v.instancias) {
+        const c = v.modelos[i.m]?.copa;
+        if (!c || i.oculta || i.rx) continue;
+        const [cx, cy, cz, rx, ry, rz] = c;
+        const cos = Math.cos(i.ry), sen = Math.sin(i.ry);
+        yield {
+          x: i.x + (cx * cos + cz * sen) * i.s,
+          z: i.z + (-cx * sen + cz * cos) * i.s,
+          y0: i.y + (cy - ry) * i.s,
+          y1: i.y + (cy + ry) * i.s,
+          raio: Math.max(rx, rz) * i.s,
+        };
+      }
     }
   }
 
@@ -580,57 +629,11 @@ function geoTronco() {
   return _geoTronco;
 }
 
-// o simplificador (WASM) fica pronto bem antes de o mundo ser montado; se não estiver, usa a malha cheia
-let simplificadorPronto = false;
-MeshoptSimplifier.ready.then(() => { simplificadorPronto = true; });
-
 /** Simplifica uma malha indexada (troncos de longe, árvores secas) mantendo os atributos. */
 function simplificar(g: THREE.BufferGeometry, fracao: number): THREE.BufferGeometry {
-  const idx = g.index;
-  if (!simplificadorPronto || !idx) return g;
-  // solda os vértices por posição: as costuras de UV e de normal duplicam vértices, e para o
-  // simplificador cada costura vira uma borda travada (o tronco da oliveira não passava de 7212 → 6540
-  // triângulos; soldado, chega a 30% com erro de 0,3%)
-  const pa = g.attributes.position;
-  const chaves = new Map<string, number>();
-  const solda = new Uint32Array(pa.count);
-  const originais: number[][] = [];
-  for (let i = 0; i < pa.count; i++) {
-    const k = `${Math.round(pa.getX(i) * 1e4)},${Math.round(pa.getY(i) * 1e4)},${Math.round(pa.getZ(i) * 1e4)}`;
-    let w = chaves.get(k);
-    if (w === undefined) {
-      w = originais.length;
-      chaves.set(k, w);
-      originais.push([]);
-    }
-    originais[w].push(i);
-    solda[i] = w;
-  }
-  const pos = new Float32Array(originais.length * 3);
-  originais.forEach(([i], w) => { pos[w * 3] = pa.getX(i); pos[w * 3 + 1] = pa.getY(i); pos[w * 3 + 2] = pa.getZ(i); });
-  const ind = new Uint32Array(idx.count);
-  for (let i = 0; i < idx.count; i++) ind[i] = solda[idx.getX(i)];
-  const alvo = Math.max(3, Math.floor((idx.count * fracao) / 3) * 3);
-  const [novo] = MeshoptSimplifier.simplify(ind, pos, 3, alvo, 0.02, ['LockBorder']);
-  if (novo.length < 3) return g;
-  // volta aos vértices originais: num vértice de costura, escolhe para o triângulo inteiro o lado
-  // de UV mais coerente (o de menor perímetro em UV), para a textura não esticar
-  const uv = g.attributes.uv;
-  const saida = new Uint32Array(novo.length);
-  const uvDist = (a: number, b: number) => Math.abs(uv.getX(a) - uv.getX(b)) + Math.abs(uv.getY(a) - uv.getY(b));
-  for (let t = 0; t < novo.length; t += 3) {
-    const ca = originais[novo[t]], cb = originais[novo[t + 1]], cc = originais[novo[t + 2]];
-    let melhor = [ca[0], cb[0], cc[0]];
-    if (uv && ca.length + cb.length + cc.length > 3) {
-      let menor = Infinity;
-      for (const a of ca) for (const b of cb) for (const c of cc) {
-        const d = uvDist(a, b) + uvDist(b, c) + uvDist(c, a);
-        if (d < menor) { menor = d; melhor = [a, b, c]; }
-      }
-    }
-    saida[t] = melhor[0]; saida[t + 1] = melhor[1]; saida[t + 2] = melhor[2];
-  }
+  const ind = simplificarIndice(g, fracao);
+  if (!ind) return g;
   const out = g.clone();
-  out.setIndex(new THREE.BufferAttribute(saida, 1));
+  out.setIndex(new THREE.BufferAttribute(ind, 1));
   return out;
 }

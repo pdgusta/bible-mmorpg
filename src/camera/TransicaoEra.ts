@@ -27,9 +27,12 @@ export interface OpcoesTransicaoEra {
 /** Raio (m) a partir do qual o mundo começa a se dissolver / até onde se revela. */
 const RAIO_TOTAL = 420;
 const RAIO_INFINITO = 1e6;
-const RAIO_TERRENO_INFINITO = 99999;
-/** O terreno afunda numa faixa de 25 m e os objetos encolhem em 20 m: o chão vai atrás. */
-const FOLGA_TERRENO = 15;
+
+/**
+ * Raio (m) da órbita em volta do rosto no close. Mais perto que isso a cabeça enche a tela e o
+ * plano próximo corta o turbante e o manto.
+ */
+const RAIO_CLOSE = 1.5;
 
 const suave = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 
@@ -106,16 +109,11 @@ export async function transicaoEra(jogo: Jogo, op: OpcoesTransicaoEra): Promise<
   const olhar = new THREE.Vector3();
   const tmp = new THREE.Vector3();
   const centroRosto = new THREE.Vector3();
-  const unif = () => jogo.mundo?.terreno.uniforms;
+  // o terreno usa os mesmos uniforms (GLOBAIS); as faixas de Shaders.ts afundam o chão depois
+  // de a vegetação e as estruturas encolherem (nada flutua)
   const definirRaio = (r: number, centro: THREE.Vector3) => {
     GLOBAIS.uCentro.value.set(centro.x, centro.z);
     GLOBAIS.uRaio.value = r;
-    const u = unif();
-    if (u) {
-      u.uCentro.value.set(centro.x, centro.z);
-      // o chão afunda um pouco depois de a vegetação e as estruturas encolherem (nada flutua)
-      u.uRaio.value = r + FOLGA_TERRENO;
-    }
   };
   /** Esconde quem está fora do raio (pessoas não usam o "patch" de revelação). */
   const visibilidade = (r: number, centro: THREE.Vector3, exceto: Personagem) => {
@@ -136,7 +134,7 @@ export async function transicaoEra(jogo: Jogo, op: OpcoesTransicaoEra): Promise<
     const olhar0 = c.position.clone().addScaledVector(tmp, Math.max(3, cam.distancia));
     const o0 = orbitaDe(centroRosto, c.position);
     const angFrente = Math.atan2(de.frente().x, de.frente().z) + 0.32;
-    const o1: Orbita = { ang: o0.ang + wrapAngle(angFrente - o0.ang), raio: 0.95, altura: 0.04 };
+    const o1: Orbita = { ang: o0.ang + wrapAngle(angFrente - o0.ang), raio: RAIO_CLOSE + 0.15, altura: 0.06 };
     de.humano.olharPara = centroRosto.clone().add(de.frente().multiplyScalar(3)).add(new THREE.Vector3(0, 2.2, 0));
     await durante(jogo, 2.6, (k) => {
       const s = suave(k);
@@ -156,7 +154,7 @@ export async function transicaoEra(jogo: Jogo, op: OpcoesTransicaoEra): Promise<
     await durante(jogo, 3.2, (k, dt) => {
       nomes.atualizar(dt);
       rosto(de, centroRosto);
-      posOrbita(centroRosto, { ang: o1.ang + k * 0.12, raio: lerp(o1.raio, 0.8, k), altura: o1.altura }, c.position);
+      posOrbita(centroRosto, { ang: o1.ang + k * 0.12, raio: lerp(o1.raio, RAIO_CLOSE, k), altura: o1.altura }, c.position);
       c.lookAt(centroRosto);
       const r = lerp(RAIO_TOTAL, 1.5, easeInOut(k));
       definirRaio(r, centro);
@@ -173,7 +171,7 @@ export async function transicaoEra(jogo: Jogo, op: OpcoesTransicaoEra): Promise<
       nomes.atualizar(dt);
       respiro += dt;
       rosto(de, centroRosto);
-      posOrbita(centroRosto, { ang: o1.ang + 0.12 + respiro * 0.03, raio: 0.8, altura: o1.altura }, c.position);
+      posOrbita(centroRosto, { ang: o1.ang + 0.12 + respiro * 0.03, raio: RAIO_CLOSE, altura: o1.altura }, c.position);
       c.lookAt(centroRosto);
     });
     await construcao;
@@ -195,7 +193,6 @@ export async function transicaoEra(jogo: Jogo, op: OpcoesTransicaoEra): Promise<
 
     // clarão dourado: a troca acontece no auge da luz
     await durante(jogo, 0.45, (k) => filtro.aplicar(lerp(0.8, 1, k), easeIn(k)));
-    novo.terreno.uniforms.uRaio.value = FOLGA_TERRENO;
     GLOBAIS.uRaio.value = 0;
     jogo.definirMundo(novo);
     const prot = op.criarProtagonista(novo);
@@ -214,7 +211,7 @@ export async function transicaoEra(jogo: Jogo, op: OpcoesTransicaoEra): Promise<
     }
     rosto(prot, centroRosto);
     const angFrente2 = Math.atan2(prot.frente().x, prot.frente().z) + 0.32;
-    const oRosto: Orbita = { ang: angFrente2, raio: 0.8, altura: 0.04 };
+    const oRosto: Orbita = { ang: angFrente2, raio: RAIO_CLOSE, altura: 0.06 };
     posOrbita(centroRosto, oRosto, c.position);
     c.lookAt(centroRosto);
     prot.humano.olharPara = centroRosto.clone().add(prot.frente().multiplyScalar(3)).add(new THREE.Vector3(0, 1.6, 0));
@@ -252,8 +249,6 @@ export async function transicaoEra(jogo: Jogo, op: OpcoesTransicaoEra): Promise<
   } finally {
     // estado limpo mesmo se algo falhar
     GLOBAIS.uRaio.value = RAIO_INFINITO;
-    const u = unif();
-    if (u) u.uRaio.value = RAIO_TERRENO_INFINITO;
     const m = jogo.mundo;
     if (m) {
       for (const p of m.personagens.values()) p.humano.visivel = true;

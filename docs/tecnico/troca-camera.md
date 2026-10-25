@@ -2,7 +2,7 @@
 
 Arquivos:
 - `src/jogo/{Jogo,Personagem,IA,Interacoes,Controle,Troca}.ts`
-- `src/camera/{CameraTerceira,CameraTroca,Cinematica,TransicaoEra}.ts`
+- `src/camera/{CameraTerceira,Copas,CameraTroca,Cinematica,TransicaoEra}.ts`
 - `e2e/teste-troca.mjs`
 
 ## Jogo (`src/jogo/Jogo.ts`)
@@ -66,6 +66,7 @@ Arquivos:
 - **`CameraTerceira`:**
   - `encaixar(pos, yaw, fisica?)`, `entradaMouse`, `atualizar(dt, foco, fisica)`, `frente()`, `direita()`, `yaw`, `pitch`, `distancia`, `distanciaAlvo`, `externo`.
   - 5 raios evitam atravessar paredes (raios laterais que nascem dentro de uma parede são ignorados).
+  - `copas` (uma `CopasCamera`, ligada pelo `Jogo.definirMundo` com a `Natureza` do mundo): o raio central também para antes da copa das árvores (elipsoide de 85% da caixa da folhagem; a copa que já contém o pivô não conta). Ver `Natureza.copas()` em `tecnico/motor.md`.
   - No gamepad, a câmera volta para trás do personagem.
 - **`Cinematica`** (implementa `ServicoCinematica`):
   - `para(pos, alvo, dur)` faz uma curva que passa por cima do relevo.
@@ -86,7 +87,7 @@ Chamada: `transicaoEra(jogo, {de, criarMundo, criarProtagonista, nomes, aoNome?,
 Detalhes:
 - Os nomes da genealogia saem por `aoNome`. Ligue `(n, i) => ui.genealogia(n, i)` e, no fim, chame `ui.genealogia(null)`.
 - Emite 'era:transicao' quando recebe `eras`.
-- **Atenção:** as faixas de revelação têm larguras diferentes. A vegetação e as estruturas encolhem numa faixa de 20 m, e o terreno afunda em 25 m. A transição soma 15 m de folga ao `uRaio` do terreno. A água não tem revelação: a malha fica escondida durante a transição.
+- **Atenção:** o terreno usa os mesmos uniforms (`GLOBAIS.uCentro`/`uRaio`). As faixas de `Shaders.ts` vêm encadeadas: a vegetação e as instâncias encolhem nos 20 m de dentro, e o terreno e as estruturas afundam nos 20 m de fora (ver `tecnico/motor.md`). A transição só escreve nos `GLOBAIS`. A água não tem revelação: a malha fica escondida durante a transição.
 
 ## Teste (`node e2e/teste-troca.mjs [pasta] [--era]`)
 
@@ -104,4 +105,4 @@ Detalhes:
 
 - Cinemática em trilho com vários pontos.
 - Cair ao soltar no meio da escalada: hoje o E só solta perto da base ou do topo.
-- Alinhar as faixas de revelação de `Shaders.ts` e `Terreno.ts` e dar revelação à água (tarefa do motor).
+- Dar revelação à água (tarefa do motor).

@@ -124,6 +124,7 @@ export function aplicarPatch(material: THREE.Material, op: OpcoesPatch = {}) {
   material.userData.patch = true;
   const vento = op.vento ?? 0;
   const revelar = op.revelar ?? true;
+  material.userData.revelar = revelar;
   const href = op.alturaRef ?? 4;
   const alcance = op.alcance;
   const semVerso = op.semVerso ?? false;
@@ -176,6 +177,17 @@ export function aplicarPatch(material: THREE.Material, op: OpcoesPatch = {}) {
   };
   material.customProgramCacheKey = () => `patch_${vento}_${revelar}_${href}_${alcance ? 'a' : ''}_${semVerso ? 'v' : ''}_${lum.toFixed(3)}`;
   return material;
+}
+
+let sombraRevelar: THREE.MeshDepthMaterial | null = null;
+
+/**
+ * Material de sombra (customDepthMaterial) das malhas não instanciadas com revelação: afunda
+ * na mesma faixa que o material visível. Sem alcance: na passada de sombra, cameraPosition é o da luz.
+ */
+export function materialSombraRevelar() {
+  sombraRevelar ??= aplicarPatch(new THREE.MeshDepthMaterial(), { revelar: true }) as THREE.MeshDepthMaterial;
+  return sombraRevelar;
 }
 
 /** Ruído de valor 2D em GLSL (usado no terreno e na grama para variar as cores do chão). */

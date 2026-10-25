@@ -10,7 +10,7 @@ import { Agua } from '../render/Agua';
 import { Ruido, Aleatorio } from '../core/aleatorio';
 import { Interativos } from '../jogo/Interacoes';
 import type { Personagem } from '../jogo/Personagem';
-import { aplicarPatch } from '../render/Shaders';
+import { GLOBAIS, aplicarPatch, materialSombraRevelar } from '../render/Shaders';
 
 export interface DefMapa {
   nome: string;
@@ -78,6 +78,7 @@ export class Mundo {
   readonly atualizaveis = new Set<{ atualizar(dt: number, t: number): void }>();
   /** Atualizações que precisam da câmera (chuva, luzes que seguem o foco...). */
   readonly aoAtualizar = new Set<(dt: number, t: number, camera: THREE.Camera, foco: THREE.Vector3) => void>();
+  private sombrasNaRevelacao = false;
 
   constructor(def: DefMapa, cenaNatureza: THREE.Object3D) {
     this.def = def;
@@ -138,8 +139,23 @@ export class Mundo {
         mat.userData.patch = true;
       }
     });
+    this.prepararSombras(obj);
     this.estruturas.add(obj);
     return colisores.map((c) => this.colisoes.adicionar(c));
+  }
+
+  /**
+   * Dá às malhas não instanciadas com revelação (estruturas, animais) a sombra que afunda junto.
+   * Sem isso a passada de sombra usa o material de profundidade padrão e a sombra fica parada.
+   * Materiais com recorte por alfa ficam com a sombra padrão (perderiam o recorte).
+   */
+  prepararSombras(raiz: THREE.Object3D = this.grupo) {
+    raiz.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || (m as THREE.InstancedMesh).isInstancedMesh || m.customDepthMaterial) return;
+      const mats = Array.isArray(m.material) ? m.material : [m.material];
+      if (mats.every((mat) => mat.userData.revelar && !(mat.alphaTest > 0))) m.customDepthMaterial = materialSombraRevelar();
+    });
   }
 
   adicionarArea(a: Omit<Area, 'dentro'>) {
@@ -153,6 +169,7 @@ export class Mundo {
     this.colisoesArvores();
     this.natureza.construir();
     this.nav = new Navegacao(this.fisica, 1);
+    this.prepararSombras();
   }
 
   /** (Re)cria os colisores dos troncos a partir da vegetação atual (tag 'arvore'). */
@@ -174,6 +191,11 @@ export class Mundo {
     this.terreno.atualizar(camera.position);
     this.natureza.atualizar(dt, camera, camera.position);
     this.grama.atualizar(foco);
+    // revelação em curso: alcança o que entrou direto em `estruturas` depois do finalizar (uma vez por revelação)
+    if (GLOBAIS.uRaio.value < 1e5) {
+      if (!this.sombrasNaRevelacao) this.prepararSombras();
+      this.sombrasNaRevelacao = true;
+    } else this.sombrasNaRevelacao = false;
     for (const a of this.atualizaveis) a.atualizar(dt, t);
     for (const f of this.aoAtualizar) f(dt, t, camera, foco);
   }
