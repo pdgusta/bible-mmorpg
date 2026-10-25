@@ -6,16 +6,16 @@ Renderização (`src/render/*`), mundo físico (`src/mundo/*`), o vale de Noé (
 | Arquivo | Papel |
 |---|---|
 | `src/render/Renderizador.ts` | `WebGLRenderer` (sRGB, ACES, sombras PCF), `PRESETS` de qualidade (`baixo`/`medio`/`alto`) e escala dinâmica de resolução. |
-| `src/render/Shaders.ts` | Uniforms globais (`GLOBAIS`: tempo, vento, revelação), `aplicarPatch` (vento, alcance, revelação, face sem verso, recolorir por luminância), faixas da revelação (`glslEncolher`/`glslAfundar`), neblina atmosférica (chunks `fog_*` substituídos), `GLSL_RUIDO`. |
+| `src/render/Shaders.ts` | Uniforms globais (`GLOBAIS`: tempo, vento, revelação), `aplicarPatch` (vento, alcance, revelação, face sem verso, recolorir por luminância), faixas da revelação (`glslEncolher`/`glslAfundar`), neblina atmosférica (chunks `fog_*` substituídos; `ALTURA_NEBLINA_CHEIA`: até onde a neblina além do `far` esconde tudo), `GLSL_RUIDO`. |
 | `src/render/Ceu.ts` | Cúpula do céu (ciclo do dia, sol/lua, estrelas, arco-íris, tempestade, glória dourada), nuvens instanciadas, luzes (sol com sombra, hemisférica), neblina e modo interior. `Ceu.atual` é o céu ativo. |
 | `src/render/Terreno.ts` | Malha do relevo em blocos de 96 m (culling por frustum), cada um com malha cheia (2 m) e de meia resolução (4 m) e saia de 3 m contra frestas; `atualizar(posCamera)` (chamado pelo `Mundo`) troca pela distância (`distanciaPerto` = 60 m). Cores por vértice, ruído de detalhe, modo lama (`uLama`), chão molhado (`uMolhado`), afundamento da revelação. `corEm(x, z)` dá a cor do chão (a grama copia). |
-| `src/render/Grama.ts` | Grama instanciada em dois anéis em volta do foco (perto: lâminas curvas; longe: retas), refeita a cada 4 m; `definirPerfil` troca densidade, cor e altura (brotos depois do dilúvio). |
+| `src/render/Grama.ts` | Grama instanciada em dois anéis em volta do foco (perto: lâminas curvas; longe: retas), refeita a cada 4 m; `definirPerfil` troca densidade, cor e altura (brotos depois do dilúvio). `atualizar(foco, camera?)`: com a câmera, cada anel passa ao seu InstancedMesh só os blocos de 6 m que entram no frustum (continua 1 draw call por anel; o buffer é reescrito quando esse conjunto muda). A caixa de cada bloco é a das bases mais o maior alcance de uma lâmina como o shader a deforma: tufo, escala máxima, vento de agora (`uVento`, 2,4 na tempestade) e a dobra de quem pisa (constantes `ONDA_*`, `DOBRA`, `ESC_*`, as mesmas do shader). |
 | `src/render/Agua.ts` | Plano de água com cor por profundidade (textura de alturas), espuma, ondas, reflexo do céu, turbidez, recorte (casco da arca) e nível animável. |
 | `src/render/Natureza.ts` | Vegetação e rochas do `natureza.glb` instanciadas por variante, com 3 níveis de detalhe e cor por variante. Ver abaixo. |
 | `src/render/Chuva.ts` | Chuva em 1 draw call: riscos numa caixa que acompanha a câmera, posição calculada no shader. `definir(alvo, segundos)`. |
 | `src/render/Simplificar.ts` | `simplificarIndice(g, fracao, op)`: índice simplificado pelo meshopt sobre os vértices originais, com solda por posição (e pelas influências de ossos, em malhas com esqueleto) e escolha do lado da costura por um atributo (`uv` nas árvores, `color` nos humanos). `simplificadorPronto` resolve quando o WASM carrega. Testes em `Simplificar.test.ts`. |
 | `src/render/Ativos.ts` | Carregador glTF com cache (meshopt) e `extrairPartes` (malhas → Lambert, folha × sólido). |
-| `src/mundo/Mundo.ts` | `Mundo`: relevo, colisões, física, terreno, natureza, grama, água, estruturas, interativos, áreas, pontos, escaladas, personagens. |
+| `src/mundo/Mundo.ts` | `Mundo`: relevo, colisões, física, terreno, natureza, grama, água, estruturas, interativos, áreas, pontos, escaladas, personagens. A cada quadro tira do desenho (camada 0 desligada, na cor e na sombra) as estruturas inteiras além do `far` da neblina, pela profundidade de vista, e abaixo de `ALTURA_NEBLINA_CHEIA` (`cortarNaNeblina`): a cidade vista do interior da arca, por exemplo. Fica quem tem material `fog: false` e quem projeta sombra e cabe (com 3 m de folga) no volume de sombra do sol (`luzSombra`, padrão `Ceu.atual.sol`): o three testa as camadas da câmera principal também na passada de sombra. |
 | `src/mundo/Relevo.ts` | Campo de alturas em grade (passo 1 m), `altura`, `normal`, `inclinacao`, raio contra o terreno; formas auxiliares (`achatar`, `fatorBorda`, `distPolilinha`). |
 | `src/mundo/Fisica.ts` | `MundoFisico` (chão com pisos de colisores, água funda, inclinação máxima) e `CorpoFisico` (cápsula cinemática). Testes em `Fisica.test.ts`. |
 | `src/mundo/Colisao.ts` | Colisores caixa/cilindro/rampa numa grade espacial; empurrão, topo, raio. |
@@ -97,6 +97,32 @@ O LOD dos humanos (T-008, `tecnico/personagens.md`) tira de 66 a 82 mil triângu
 
 O que pesa (vista do céu, com o LOD dos humanos): terreno, grama (~85 mil), personagens (os 4 de perto ≈ 120 mil, com a sombra barata), oliveiras de perto (com sombra) e a cidade (~50 mil, uma malha com sombra).
 
+### Vistas do jogo (T-017)
+
+Medidas nos momentos do e2e (`e2e/jogar-mvp.mjs`), chegando a eles com `?q=medio&dev&missao=<missão>` e as capturas da depuração; 960 × 540, um `jogo.renderizar()` (a sombra conta junto). Base: `frente/integracao` 326fb65, já com a T-008.
+
+| Vista | Momento | Antes (calls / triângulos) | Depois | Grama antes → depois |
+|---|---|---|---|---|
+| a1-deus | primeira fala de Deus, `a1.orar` | 133 / 458 mil | 133 / 435 mil | 62 → 39 mil |
+| troca | troca aérea para Cam, 1,15 s | 106 / 339 mil | 106 / 339 mil | 19 → 19 mil (do alto, tudo na tela) |
+| a3-prova | a prova de pregar, `a3.pregar` | 63 / 507 mil | 63 / 507 mil | 1 → 0 mil |
+| a4-animais | pico (23 a 29 animais), câmera para eles | 128 / 469 mil | 130 / 468 mil* | 24 → 21 mil |
+| a5-arca | `a5.fontes`, interior da arca | 71 / 456 mil | 70 / 395 mil | 11 → 0 mil; cidade 50 → 0 mil |
+| b4-estrelas | `b4.duvida`, a prova na tela (só céu) | 52 / 337 mil | 51 / 265 mil | 75 → 2 mil |
+
+\* os animais chegam por caminhos diferentes a cada jogo; os 2 calls a mais são deles, não da grama.
+
+As medidas da T-013 (até 752 mil em b4) eram de uma base sem a T-008: os draw calls batem, só os triângulos caíram.
+
+Conferido com a tabela da integração (`npm run e2e`, T-018/T-020, no ESTADO): o "antes" bate em a1-deus, a3-prova, a5-arca e b4-estrelas, e lá a b4 vem depois da transição de era de verdade. A a4 dá 130 / 471 mil (os animais variam). A troca dá 98 calls lá e 106 aqui, com os mesmos 339 mil triângulos; hipótese: o quadro da foto cai num ponto diferente do voo da troca.
+
+O que mudou:
+- **Grama com culling por blocos, sem draw call a mais:** as instâncias de cada anel ficam agrupadas em blocos de 6 m, cada um com a sua caixa, e o InstancedMesh recebe só os blocos que entram no frustum. Ele é reescrito (só a parte usada) quando esse conjunto muda.
+- **Estruturas além da neblina saem do desenho:** quando a caixa inteira está além do `far` (pela profundidade de vista) e abaixo de `ALTURA_NEBLINA_CHEIA`, sem material `fog: false` e sem poder projetar sombra no volume de sombra do sol. A camada vale para a cor e para a sombra; por isso, quem pode sombrear um chão ainda na tela fica. Do interior da arca (neblina a 70 m) a cidade sai.
+
+Como medir: o script de medição da T-017 (fora do git, em `e2e/saida/`) faz isto. Depois de editar um arquivo com o vite no ar, **reinicie o vite antes de medir**: os módulos alterados (e quem os importa) passam a ser servidos com `?t=`, e um `import('/src/entidades/Animal.ts')` no teste vira outra instância, com `Animal.todos` vazio.
+
 ## Problemas conhecidos
 - Silhuetas e versões de longe não projetam sombra; a troca perto → longe (37 m no médio) faz a sombra da árvore sumir de uma vez.
 - Instâncias de perto fora do frustum (a mais de 10 m) não são desenhadas, então a sombra de uma árvore atrás da câmera pode faltar.
+- O culling da grama é pelo frustum da câmera: grama não projeta sombra, então nada falta na sombra. Morro acima, a caixa de um bloco pode passar da altura da câmera e ele é desenhado mesmo olhando o céu (é conservador).

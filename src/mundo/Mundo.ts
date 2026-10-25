@@ -10,7 +10,8 @@ import { Agua } from '../render/Agua';
 import { Ruido, Aleatorio } from '../core/aleatorio';
 import { Interativos } from '../jogo/Interacoes';
 import type { Personagem } from '../jogo/Personagem';
-import { GLOBAIS, aplicarPatch, materialSombraRevelar } from '../render/Shaders';
+import { GLOBAIS, ALTURA_NEBLINA_CHEIA, aplicarPatch, materialSombraRevelar } from '../render/Shaders';
+import { Ceu } from '../render/Ceu';
 
 export interface DefMapa {
   nome: string;
@@ -79,6 +80,10 @@ export class Mundo {
   /** Atualizações que precisam da câmera (chuva, luzes que seguem o foco...). */
   readonly aoAtualizar = new Set<(dt: number, t: number, camera: THREE.Camera, foco: THREE.Vector3) => void>();
   private sombrasNaRevelacao = false;
+  /** Estruturas tiradas do desenho por estarem inteiras além da neblina (ver `cortarNaNeblina`). */
+  private naNeblina = new Set<THREE.Object3D>();
+  /** Luz que projeta sombra (padrão: o sol do `Ceu.atual`). */
+  luzSombra: THREE.DirectionalLight | null = null;
 
   constructor(def: DefMapa, cenaNatureza: THREE.Object3D) {
     this.def = def;
@@ -190,7 +195,7 @@ export class Mundo {
   atualizar(dt: number, t: number, camera: THREE.Camera, foco: THREE.Vector3) {
     this.terreno.atualizar(camera.position);
     this.natureza.atualizar(dt, camera, camera.position);
-    this.grama.atualizar(foco);
+    this.grama.atualizar(foco, camera);
     // revelação em curso: alcança o que entrou direto em `estruturas` depois do finalizar (uma vez por revelação)
     if (GLOBAIS.uRaio.value < 1e5) {
       if (!this.sombrasNaRevelacao) this.prepararSombras();
@@ -198,6 +203,41 @@ export class Mundo {
     } else this.sombrasNaRevelacao = false;
     for (const a of this.atualizaveis) a.atualizar(dt, t);
     for (const f of this.aoAtualizar) f(dt, t, camera, foco);
+    this.cortarNaNeblina(camera);
+  }
+
+  /**
+   * Tira do desenho (camada 0 desligada, na cor e na sombra) as estruturas inteiras além do `far`
+   * da neblina e abaixo de ALTURA_NEBLINA_CHEIA, onde o shader as pintaria só com a cor da
+   * neblina: a cidade vista do interior da arca (neblina a 70 m), por exemplo. Mede pela
+   * profundidade de vista do canto mais próximo da caixa, como a neblina (`vFogDepth`), não pela
+   * distância. Estrutura com algum material sem neblina (`fog: false`, ex.: chamas) fica.
+   * A camada vale também para a passada de sombra (o three testa as camadas da câmera principal),
+   * então fica também quem projeta sombra e cabe no volume de sombra do sol: a sombra dele pode
+   * cair num chão que ainda está na tela.
+   */
+  private cortarNaNeblina(camera: THREE.Camera) {
+    const fog = (this.grupo.parent as THREE.Scene | null)?.fog;
+    const far = fog && (fog as THREE.Fog).isFog ? (fog as THREE.Fog).far : Infinity;
+    for (const o of this.naNeblina) if (o.parent !== this.estruturas) mostrarNaCamada0(o, true, this.naNeblina);
+    camera.getWorldPosition(_cam);
+    camera.getWorldDirection(_dir);
+    const sol = this.luzSombra ?? Ceu.atual?.sol ?? null;
+    let volumeSombra: THREE.Frustum | null = null;
+    if (sol?.castShadow && far < Infinity) {
+      sol.updateMatrixWorld();
+      sol.target.updateMatrixWorld();
+      sol.shadow.updateMatrices(sol);
+      volumeSombra = sol.shadow.getFrustum();
+    }
+    for (const o of this.estruturas.children) {
+      let esconder = false;
+      if (far < Infinity && o.visible) {
+        _caixa.setFromObject(o);
+        if (!_caixa.isEmpty() && _caixa.max.y < ALTURA_NEBLINA_CHEIA) esconder = profundidadeMinima(_caixa, _cam, _dir) > far && todaNaNeblina(o) && !podeSombrear(o, _caixa, volumeSombra);
+      }
+      if (esconder !== this.naNeblina.has(o)) mostrarNaCamada0(o, !esconder, this.naNeblina);
+    }
   }
 
   /** Verifica áreas de gatilho para um personagem. */
@@ -229,4 +269,49 @@ export class Mundo {
     });
     for (const p of this.personagens.values()) p.dispose();
   }
+}
+
+const _cam = new THREE.Vector3();
+const _dir = new THREE.Vector3();
+const _caixa = new THREE.Box3();
+const _caixaSombra = new THREE.Box3();
+/** Folga (m) da caixa contra o volume de sombra. */
+const FOLGA_SOMBRA = 3;
+
+/** Menor profundidade de vista (ao longo de `dir`, a partir de `cam`) dos 8 cantos da caixa. */
+function profundidadeMinima(c: THREE.Box3, cam: THREE.Vector3, dir: THREE.Vector3) {
+  const x = Math.min((c.min.x - cam.x) * dir.x, (c.max.x - cam.x) * dir.x);
+  const y = Math.min((c.min.y - cam.y) * dir.y, (c.max.y - cam.y) * dir.y);
+  const z = Math.min((c.min.z - cam.z) * dir.z, (c.max.z - cam.z) * dir.z);
+  return x + y + z;
+}
+
+/** Se todos os materiais visíveis do objeto recebem neblina (os `fog: false` aparecem além dela). */
+function todaNaNeblina(raiz: THREE.Object3D) {
+  let toda = true;
+  raiz.traverseVisible((o) => {
+    const m = (o as THREE.Mesh).material;
+    if (toda && m) toda = (Array.isArray(m) ? m : [m]).every((mat) => (mat as { fog?: boolean }).fog !== false);
+  });
+  return toda;
+}
+
+/**
+ * Se o objeto projeta sombra e a caixa dele (com folga: o sol pode ser reposicionado depois, no
+ * mesmo quadro) entra no volume da câmera de sombra.
+ */
+function podeSombrear(raiz: THREE.Object3D, caixa: THREE.Box3, volume: THREE.Frustum | null) {
+  if (!volume) return false;
+  let projeta = false;
+  raiz.traverseVisible((o) => {
+    if ((o as THREE.Mesh).isMesh && o.castShadow) projeta = true;
+  });
+  return projeta && volume.intersectsBox(_caixaSombra.copy(caixa).expandByScalar(FOLGA_SOMBRA));
+}
+
+/** Liga ou desliga a camada 0 (a da câmera e da luz) de um objeto e de tudo dentro dele. */
+function mostrarNaCamada0(raiz: THREE.Object3D, mostrar: boolean, escondidos: Set<THREE.Object3D>) {
+  raiz.traverse((o) => (mostrar ? o.layers.enable(0) : o.layers.disable(0)));
+  if (mostrar) escondidos.delete(raiz);
+  else escondidos.add(raiz);
 }

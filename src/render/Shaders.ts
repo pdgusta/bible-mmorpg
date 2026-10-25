@@ -17,6 +17,11 @@ export const GLOBAIS = {
 // relevo, em vez de virarem recortes chapados da cor da neblina.
 /** Altitudes (m) entre as quais a neblina afina, e quanto ela afina no topo (0..1). */
 const NEBLINA_ALT = { base: 14, topo: 75, alivio: 0.4 };
+/**
+ * Até esta altitude (m) a neblina além do `far` esconde tudo; acima dela o alívio do alto deixa
+ * passar mais de ~2% da cor (smoothstep(0,13) ≈ 0,05, vezes o alívio de 0,4).
+ */
+export const ALTURA_NEBLINA_CHEIA = NEBLINA_ALT.base + 0.13 * (NEBLINA_ALT.topo - NEBLINA_ALT.base);
 THREE.ShaderChunk.fog_pars_vertex = /* glsl */ `
 #ifdef USE_FOG
   varying float vFogDepth;
