@@ -1353,7 +1353,7 @@ const A5: DefMissao = {
           soltar(ida);
           return ave;
         };
-        const noeSolta = (id: string) => interacaoDe(c, id, 'noe', 'Quem solta as aves é Noé.');
+        const noeSolta = (id: string) => interacaoDe(c, id, 'noe', 'Noé pode soltar as aves.');
 
         // Jafé sobe e solta as amarras; quem abre a janela é Noé (Gn 8:6)
         if (!feito(c, 'a5Amarras') && !feito(c, 'janelaAberta')) {
@@ -1367,7 +1367,7 @@ const A5: DefMissao = {
         if (!feito(c, 'a5Corvo')) {
           const abrir = !feito(c, 'janelaAberta');
           c.objetivo(abrir ? 'Noé: abra a janela e solte o corvo (Gn 8:6-7).' : 'Noé: solte o corvo pela janela.', [arca('escadaJanela')]);
-          await comEtapa(c, 'a5.corvo', abrir ? {} : { soltarCorvo: { rotulo: 'Soltar o corvo' } }, () => interacaoDe(c, 'soltarCorvo', 'noe', abrir ? 'Noé pode abrir a janela.' : 'Quem solta as aves é Noé.'));
+          await comEtapa(c, 'a5.corvo', abrir ? {} : { soltarCorvo: { rotulo: 'Soltar o corvo' } }, () => interacaoDe(c, 'soltarCorvo', 'noe', abrir ? 'Noé pode abrir a janela.' : 'Noé pode soltar as aves.'));
           if (abrir) {
             s.vale.arca.definirJanela(true);
             s.ceu.hora = 10;

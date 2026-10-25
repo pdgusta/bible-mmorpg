@@ -548,7 +548,7 @@ const B1: DefMissao = {
         if (!feito(c, 'b1AltarMore')) {
           c.objetivo(`${nome(c, 'abraao')}: construa um altar ao Senhor junto ao carvalho de Moré.`, ['altarMore']);
           c.dica('Segure E no lugar do altar. Aprendido nos dias de Noé.');
-          const p = await comEtapa(c, 'b1.altarMore', {}, () => interacaoDe(c, 'altarMore', 'abraao', 'Quem constrói o altar é Abrão.'));
+          const p = await comEtapa(c, 'b1.altarMore', {}, () => interacaoDe(c, 'altarMore', 'abraao', 'Abrão pode construir o altar.'));
           definirAltar(c, 'altarMore', 'aceso');
           s.audio.efeito('fogo');
           c.xp(p.id, 'construir');
@@ -647,7 +647,7 @@ const B1: DefMissao = {
           if (feito(c, 'b1AltarBetel')) reg.tirar('altarBetel');
           else {
             c.objetivo(`${nome(c, 'abraao')}: construa um altar entre Betel e Ai.`, ['altarBetel']);
-            const p = await interacaoDe(c, 'altarBetel', 'abraao', 'Quem constrói o altar é Abrão.');
+            const p = await interacaoDe(c, 'altarBetel', 'abraao', 'Abrão pode construir o altar.');
             definirAltar(c, 'altarBetel', 'aceso');
             s.audio.efeito('fogo');
             c.xp(p.id, 'construir');
@@ -657,7 +657,7 @@ const B1: DefMissao = {
           await c.dialogo([narrador('Gn 12:8')]);
           c.objetivo(`${nome(c, 'abraao')}: invoque o nome do Senhor junto ao altar.`, ['orarBetel']);
           c.dica('Segure E para orar.');
-          await interacaoDe(c, 'orarBetel', 'abraao', 'Junto ao altar, é Abrão quem invoca o nome do Senhor.');
+          await interacaoDe(c, 'orarBetel', 'abraao', 'Abrão pode invocar o nome do Senhor.');
         });
         c.memoria('altarBetel');
         c.xp('abraao', 'disciplina');
@@ -909,7 +909,7 @@ const B2: DefMissao = {
         ['pastorAbrao1', 'pastorLo1'].forEach((id, i) => aproximarSeLonge(c, id, poco, 8, i + 1));
         esperarAli(c, ['pastorAbrao1', 'pastorLo1']);
         c.objetivo(`${nome(c, 'abraao')}: fale com os pastores junto ao poço.`, ['poco']);
-        await comEtapa(c, 'b2.pastores', {}, () => interacaoDe(c, 'falarPastores', 'abraao', 'Quem fala com os pastores é Abrão.'));
+        await comEtapa(c, 'b2.pastores', {}, () => interacaoDe(c, 'falarPastores', 'abraao', 'Abrão pode falar com os pastores.'));
         controlarSe(c, 'abraao');
         c.versiculo('Fp 2:3');
         const i = await c.escolha(ficcao('narrador', 'Os pastores esperam. O que Abrão dirá?'), OPCOES_PASTORES);
@@ -1049,7 +1049,7 @@ const B2: DefMissao = {
         }
         if (!feito(c, 'b2AltarManre')) {
           c.objetivo(`${nome(c, 'abraao')}: construa um altar ao Senhor em Manre.`, ['altarManre']);
-          const p = await comEtapa(c, 'b2.manre', {}, () => interacaoDe(c, 'altarManre', 'abraao', 'Quem constrói o altar é Abrão.'));
+          const p = await comEtapa(c, 'b2.manre', {}, () => interacaoDe(c, 'altarManre', 'abraao', 'Abrão pode construir o altar.'));
           definirAltar(c, 'altarManre', 'aceso');
           s.audio.efeito('fogo');
           c.xp(p.id, 'construir');
@@ -1440,7 +1440,7 @@ const B3: DefMissao = {
         } else await c.fade(false, 0.6);
         if (!feito(c, 'b3Dizimo')) {
           c.objetivo(`${nome(c, 'abraao')}: entregue a Melquisedeque a décima parte dos despojos.`, ['dizimo']);
-          await comEtapa(c, 'b3.melquisedeque', {}, () => interacaoDe(c, 'dizimo', 'abraao', 'Quem entrega o dízimo é Abrão.'));
+          await comEtapa(c, 'b3.melquisedeque', {}, () => interacaoDe(c, 'dizimo', 'abraao', 'Abrão pode entregar o dízimo.'));
           c.treinar('abraao', 'humildade', 0.5);
           marcar(c, 'b3Dizimo');
         }
@@ -1859,7 +1859,7 @@ const B5: DefMissao = {
         esperarAli(c, ['isaque']);
         if (!feito(c, 'b5AltarFeito')) {
           c.objetivo(`${nome(c, 'abraao')}: construa o altar no alto do monte.`, ['altarMoria']);
-          await comEtapa(c, 'b5.altar', {}, () => interacaoDe(c, 'altarMoria', 'abraao', 'Quem constrói o altar é Abraão.'));
+          await comEtapa(c, 'b5.altar', {}, () => interacaoDe(c, 'altarMoria', 'abraao', 'Abraão pode construir o altar.'));
           definirAltar(c, 'altarMoria', 'construido');
           marcar(c, 'b5AltarFeito');
         }
@@ -1907,7 +1907,7 @@ const B5: DefMissao = {
           carneiro.prender();
           await c.dialogo([narrador('Gn 22:13', 'E Abraão levantou seus olhos, e olhou, e eis detrás dele um carneiro, preso pelos chifres em um arbusto;')]);
           c.objetivo('Olhe ao redor.', ['arbustoCarneiro']);
-          await comEtapa(c, 'b5.carneiro', {}, () => interacaoDe(c, 'carneiro', 'abraao', 'Quem toma o carneiro é Abraão.'));
+          await comEtapa(c, 'b5.carneiro', {}, () => interacaoDe(c, 'carneiro', 'abraao', 'Abraão pode tomar o carneiro.'));
           // a oferta é mostrada só como fogo no altar
           await c.cena(async () => {
             await c.fade(true, 0.8);
