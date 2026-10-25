@@ -21,7 +21,7 @@ const log = (msg) => console.log(`[${segundos(Date.now() - t0)} s] ${msg}`);
 
 const { nav, pag, erros } = await abrir({ largura: W, altura: H });
 
-/** Medidas de cada vista: {era, vista, missao, calls, triangulos, animais}. */
+/** Medidas de cada vista: {era, vista, etapa, calls, triangulos, animais}. */
 const medidas = [];
 let numFoto = 0;
 
@@ -46,9 +46,9 @@ async function foto(nome, { medir = true, arquivo } = {}) {
     log(`foto: ${arq}`);
     return null;
   }
-  const ctx = await pag.evaluate(() => ({ era: window.partida.eraId, missao: window.partida.s.missoes.missaoAtual }));
-  const m = { era: ctx.era, vista: nome, missao: ctx.missao ?? '-', ...info, animais: await animais() };
-  log(`foto: ${arq} · ${m.calls} draw calls · ${Math.round(m.triangulos / 1000)} mil triângulos · ${m.animais} animais`);
+  const ctx = await pag.evaluate(() => ({ era: window.partida.eraId, etapa: window.partida.dev.etapaAtual() }));
+  const m = { era: ctx.era, vista: nome, etapa: ctx.etapa || '-', ...info, animais: await animais() };
+  log(`foto: ${arq} · ${m.etapa} · ${m.calls} draw calls · ${Math.round(m.triangulos / 1000)} mil triângulos · ${m.animais} animais`);
   return m;
 }
 
@@ -86,11 +86,11 @@ function imprimirTabela() {
   if (!medidas.length) return;
   const mil = (n) => `${Math.round(n / 1000)} mil`;
   console.log(`\nOrçamento no preset ${Q} (${W} × ${H}; as draw calls contam a passada de sombra):`);
-  console.log('| Era | Vista | Missão | Draw calls | Triângulos | Animais | |');
+  console.log('| Era | Vista | Etapa | Draw calls | Triângulos | Animais | |');
   console.log('|---|---|---|---|---|---|---|');
   for (const m of medidas) {
     const acima = [m.calls > LIMITE_CALLS && `> ${LIMITE_CALLS} calls`, m.triangulos > LIMITE_TRI && `> ${mil(LIMITE_TRI)} triângulos`].filter(Boolean);
-    console.log(`| ${m.era} | ${m.vista} | ${m.missao} | ${m.calls} | ${mil(m.triangulos)} | ${m.animais} | ${acima.length ? `ACIMA: ${acima.join(', ')}` : 'ok'} |`);
+    console.log(`| ${m.era} | ${m.vista} | ${m.etapa} | ${m.calls} | ${mil(m.triangulos)} | ${m.animais} | ${acima.length ? `ACIMA: ${acima.join(', ')}` : 'ok'} |`);
   }
   const acima = medidas.filter((m) => m.calls > LIMITE_CALLS || m.triangulos > LIMITE_TRI);
   console.log(acima.length ? `\n${acima.length} vista(s) acima do orçamento: ${acima.map((m) => m.vista).join(', ')}` : '\nTodas as vistas dentro do orçamento.');
@@ -121,8 +121,7 @@ await pararSeErro('título');
 
 // ------------------------------------------------------------------ preparo da página
 // - o resumo da jornada ("Fim da jornada") fica fixo na tela até a foto;
-// - os créditos não são fechados pela depuração antes da foto;
-// - momentos de foto da era 2 (a depuração só tem os da era 1).
+// - os créditos não são fechados pela depuração antes da foto.
 await pag.evaluate(() => {
   const p = window.partida;
   const ui = p.ui;
@@ -157,20 +156,48 @@ v(await pag.evaluate(() => window.partida.s.missoes.missaoAtual === 'prologo'), 
 await pararSeErro('Novo jogo');
 
 /**
- * Momentos de foto além das capturas da depuração: [nome, condição na página, atraso em s de
- * jogo depois que a condição fica verdadeira]. A condição roda a cada 2 s de jogo (e não na
- * volta de uma captura, para não medir o mesmo quadro duas vezes).
+ * Momentos de foto além das capturas da depuração (que só tem as da era 1):
+ * [nome, era, missão, etapa, pronto, espera]. O atalho da etapa é envolvido: antes de resolvê-la,
+ * espera `pronto` (a batalha em andamento, a prova na tela), mais `espera` s de jogo, e segura a
+ * etapa até a foto, que vira uma captura da depuração (o jogo para no passo em que ela dispara).
  */
 const MOMENTOS = [
-  ['a4-animais', () => window.partida.dev.etapaAtual() === 'a4.animais', 0],
-  ['b1-canaa', () => window.partida.dev.etapaAtual() === 'b1.altarMore', 1],
-  ['b2-manre', () => window.partida.dev.etapaAtual() === 'b2.manre', 0],
-  ['b3-ataque', () => window.partida.dev.etapaAtual() === 'b3.ataque', 2],
-  ['b4-estrelas', () => window.partida.dev.etapaAtual() === 'b4.duvida', 0],
-  ['b5-moria', () => window.partida.dev.etapaAtual() === 'b5.altar', 0],
+  ['a4-animais', 'noe', 'a4', 'animais', null, 0],
+  ['b1-canaa', 'abraao', 'b1', 'altarMore', null, 1],
+  ['b2-manre', 'abraao', 'b2', 'manre', null, 0],
+  ['b3-batalha', 'abraao', 'b3', 'ataque', 'batalha', 1.5],
+  ['b4-estrelas', 'abraao', 'b4', 'duvida', 'prova', 0.5],
+  ['b5-moria', 'abraao', 'b5', 'altar', null, 0],
 ];
-const feitos = new Set();
-const vistos = new Map();
+await pag.evaluate(async (momentos) => {
+  const dev = window.partida.dev;
+  const tabelas = {
+    noe: (await import('/src/eras/noe/atalhos.ts')).ATALHOS_NOE,
+    abraao: (await import('/src/eras/abraao/atalhos.ts')).ATALHOS_ABRAAO,
+  };
+  const { mecanicaAbraao } = await import('/src/eras/abraao/missoes.ts');
+  const prontos = {
+    batalha: () => mecanicaAbraao()?.nome === 'batalha',
+    prova: () => window.partida.s.provas.emProva,
+  };
+  window.mvp.momento = null;
+  for (const [nome, era, missao, etapa, pronto, espera] of momentos) {
+    const original = tabelas[era][missao]?.[etapa];
+    if (!original) throw new Error(`momento ${nome}: sem atalho ${era}/${missao}.${etapa}`);
+    tabelas[era][missao][etapa] = async (t) => {
+      if (!dev.feitas.has(nome)) {
+        if (pronto) await t.esperarAte(prontos[pronto], `o momento ${nome} (${pronto})`);
+        if (espera) await t.a.esperar(espera);
+        window.mvp.momento = nome;
+        await t.esperarAte(() => dev.feitas.has(nome), `a foto ${nome}`);
+        window.mvp.momento = null;
+      }
+      return original(t);
+    };
+  }
+  const lista = dev.lista.bind(dev);
+  dev.lista = () => [...lista(), ...momentos.map(([nome]) => ({ nome, quando: () => window.mvp.momento === nome }))];
+}, MOMENTOS);
 // na A4 os animais vão chegando: a cada 5 animais a mais, mede de novo com a câmera virada
 // para eles; a tabela fica com a medida de mais draw calls
 let a4 = null;
@@ -193,23 +220,12 @@ async function jogarEra(eraId, limiteMin) {
     for (const e of novas) log(`etapa: ${e}`);
     await pararSeErro(`era ${eraId}`);
     if (r.captura) {
-      await fotoMedida(r.captura);
-      await pag.evaluate(() => window.partida.dev.liberar());
-    }
-    const tempo = await pag.evaluate(() => window.jogo.tempo);
-    for (const [nome, cond, atraso] of r.captura ? [] : MOMENTOS) {
-      if (feitos.has(nome)) continue;
-      if (!vistos.has(nome)) {
-        if (await pag.evaluate(cond)) vistos.set(nome, tempo);
-        else continue;
-      }
-      if (tempo - vistos.get(nome) < atraso) continue;
-      feitos.add(nome);
-      const m = await fotoMedida(nome);
-      if (nome === 'a4-animais') {
+      const m = await fotoMedida(r.captura);
+      if (r.captura === 'a4-animais') {
         a4 = m;
         a4Animais = m.animais;
       }
+      await pag.evaluate(() => window.partida.dev.liberar());
     }
     if (a4 && (await pag.evaluate(() => window.partida.s.missoes.missaoAtual)) === 'a4') {
       const n = await animais();
@@ -280,7 +296,9 @@ await pararSeErro('início de B1');
 
 // ------------------------------------------------------------------ era 2
 await jogarEra('abraao', 60);
-v(feitos.has('b5-moria'), 'chegou ao altar do Moriá (B5)');
+// todas as fotos (capturas da era 1 e momentos) são obrigatórias
+const faltam = await pag.evaluate(() => [...window.partida.dev.capturas].filter((n) => !window.partida.dev.feitas.has(n)));
+v(faltam.length === 0, `todos os momentos fotografados${faltam.length ? `; faltam: ${faltam.join(', ')}` : ''}`);
 v(await pag.evaluate(() => window.mvp.fotoCreditos && !!window.mvp.resumo), 'resumo da jornada e créditos na tela');
 
 // depois dos créditos a Partida volta ao título (1,5 s de tempo real depois de B5)
