@@ -71,28 +71,7 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 - T-025: **animais da era 2 ao sair dela.** O mesmo defeito, ao contrário: depois de B5, voltar ao título e começar um jogo novo levava os animais de Canaã para a era 1. Agora o `desligar()` de `src/jogo/ligacao/abraao.ts` também chama `Animal.descartar(this.mundo)`, além do `ligarServicosAbraao(null)` e do `ERA_ABRAAO.limparCena()`. `tests/eras-desligar.test.ts` monta cada era com um chão plano no lugar do mundo, cria animais pelos serviços dela e confere que o `desligar()` os tira de `Animal.todos`. No jogo, saindo para o título em B2 com o rebanho (20 animais), o jogo novo começava a era 1 com os 20; agora começa com 0. No fim de B5 as missões já removem os seus animais, por isso terminar B5 e voltar ao título dava 0 mesmo antes.
 - T-028: junção da `frente/fantasmas` (T-023 e T-025). **`dev.jogar` depois de sair para o título:** as missões abortavam e o runner dos atalhos ficava esperando para sempre, então o próximo `dev.jogar()` era recusado pelo conserto da T-020. Agora o `limparSessao` da `Partida` (título, novo jogo, carregar) chama `dev.encerrar()`: o `fim` vira verdadeiro, o próximo `jogar()` é aceito e o runner antigo morre na próxima espera sem mexer no novo. O `avancar`, o `pularPara` e o `jogarSozinho` antigos voltam no fim do passo em curso sem avançar o jogo, passar falas nem mexer na tela da sessão nova (`tests/depuracao.test.ts`).
 
-**Orçamento da integração** (`npm run e2e`, preset médio, 960 × 540, as draw calls contam a passada de sombra; base `frente/integracao` com o LOD dos humanos e a T-016, antes das junções da `frente/hud`, da `frente/desempenho` e da `frente/a4`):
-
-| Era | Vista | Etapa | Draw calls | Triângulos | Animais |
-|---|---|---|---|---|---|
-| noe | titulo | - | 126 | 369 mil | 0 |
-| noe | a1-deus | a1.orar | 133 | 458 mil | 0 |
-| noe | troca | a2.planejar | 98 | 339 mil | 0 |
-| noe | a2-viga | a2.erguer | 73 | 365 mil | 0 |
-| noe | a3-prova | a3.pregar | 63 | 507 mil | 0 |
-| noe | a4-animais (pico, câmera para os animais) | a4.animais | 130 | 471 mil | 23 |
-| noe | a5-arca | a5.fontes | 71 | 456 mil | 0 |
-| noe | a6-arco | a6.bencao | 82 | 458 mil | 8 |
-| noe | transicao | a6.transicao | 53 | 197 mil | 8 |
-| abraao | b1-canaa | b1.altarMore | 67 | 322 mil | 8 |
-| abraao | b2-manre | b2.manre | 61 | 259 mil | 18 |
-| abraao | b3-batalha | b3.ataque | 134 | 419 mil | 8 |
-| abraao | b4-estrelas | b4.duvida | 52 | 337 mil | 8 |
-| abraao | b5-moria | b5.altar | 78 | 256 mil | 9 |
-
-Todas as vistas ficam dentro do orçamento. A A4 foi medida a cada 5 animais com a câmera virada para eles: 7 animais, 75 calls; 14, 113; 23, 130 (o pico); 29, 120. Antes da T-016, a B3 dava 151.
-
-A coluna "Animais" de B1 a B5 foi medida antes da T-023 e inclui os 8 animais da A6 que sobravam na era 2. Por isso a B1 mostra 8, e não 0. O Bezalel mede de novo no e2e final.
+**Orçamento da integração:** remedido no e2e final da T-031 (`npm run e2e`, preset médio, 960 × 540, base 349b63d, com todas as frentes juntadas). A tabela está em `tecnico/motor.md`, "Orçamento no jogo integrado". Todas as vistas ficam dentro do orçamento: o pico é a A1 com 126 draw calls, e o máximo de triângulos é 438 mil, na A3 e na A4 (com 23 animais). A coluna "Animais" de B1 a B5 agora conta só os animais da era 2: B1 0, B2 10, B3 0, B4 0 e B5 1.
 
 **Falta:** nada aberto nesta lista.
 
@@ -155,7 +134,7 @@ A coluna "Animais" de B1 a B5 foi medida antes da T-023 e inclui os 8 animais da
 
 Pendências:
 - `docs/ROTEIRO.md` (A4 "0/8 pares" e "par perdido", A5 "Jafé abre a cobertura") e `docs/tecnico/revisao.md` §8 (pendências 1 a 4) ainda descrevem o estado antigo.
-- ✅ Draw calls de A4 no jogo integrado: pico de 130 com 23 animais (T-020; a tabela está em "Orçamento da integração").
+- ✅ Draw calls de A4 no jogo integrado: pico de 123 com 23 animais (T-031; a tabela está em `tecnico/motor.md`, "Orçamento no jogo integrado").
 
 ## Problemas conhecidos (arte)
 

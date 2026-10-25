@@ -144,6 +144,27 @@ O que mudou:
 
 Como medir: o script de medição da T-017 (fora do git, em `e2e/saida/`) faz isto. Depois de editar um arquivo com o vite no ar, **reinicie o vite antes de medir**: os módulos alterados (e quem os importa) passam a ser servidos com `?t=`, e um `import('/src/entidades/Animal.ts')` no teste vira outra instância, com `Animal.todos` vazio.
 
+**Orçamento no jogo integrado (T-031, `npm run e2e`):** preset médio, 960 × 540, um `jogo.renderizar()` por vista (as draw calls contam a passada de sombra), base `frente/integracao` 349b63d, com todas as frentes juntadas (culling dos humanos T-026, grama por blocos T-017, animais descartados ao sair da era T-023/T-025, HUD T-021 e fidelidade T-029). A coluna "Animais" é `partida.dev.animais().n`.
+
+| Era | Vista | Etapa | Draw calls | Triângulos | Animais |
+|---|---|---|---|---|---|
+| noe | titulo | - | 124 | 357 mil | 0 |
+| noe | a1-deus | a1.orar | 126 | 396 mil | 0 |
+| noe | troca | a2.planejar | 93 | 310 mil | 0 |
+| noe | a2-viga | a2.erguer | 66 | 273 mil | 0 |
+| noe | a3-prova | a3.pregar | 60 | 438 mil | 0 |
+| noe | a4-animais (pico, câmera para os animais) | a4.animais | 123 | 438 mil | 23 |
+| noe | a5-arca | a5.fontes | 63 | 256 mil | 0 |
+| noe | a6-arco | a6.bencao | 67 | 261 mil | 8 |
+| noe | transicao | a6.transicao | 53 | 183 mil | 8 |
+| abraao | b1-canaa | b1.altarMore | 59 | 209 mil | 0 |
+| abraao | b2-manre | b2.manre | 47 | 147 mil | 10 |
+| abraao | b3-batalha | b3.ataque | 118 | 321 mil | 0 |
+| abraao | b4-estrelas | b4.duvida | 26 | 108 mil | 0 |
+| abraao | b5-moria | b5.altar | 70 | 209 mil | 1 |
+
+Todas as vistas ficam dentro do orçamento; o pico é a A1 (126 calls) e o maior número de triângulos, a A3 e a A4 (438 mil). A A4, medida a cada 5 animais com a câmera virada para eles: 7 animais, 66 calls e 297 mil triângulos; 14, 107 e 375 mil; 23, 123 e 438 mil (o pico); 29, 122 e 392 mil. Na era 2 os animais agora são só os dela: a B1 dá 0 (antes da T-023 dava 8, os da A6), a B2 dá 10 (o rebanho; antes 18) e a B5 dá 1 (o carneiro; antes 9). A volta completa levou 686 s no SwiftShader, sem erro no console.
+
 ## Problemas conhecidos
 - Silhuetas e versões de longe não projetam sombra; a troca perto → longe (37 m no médio) faz a sombra da árvore sumir de uma vez.
 - Instâncias de perto fora do frustum (a mais de 10 m) não são desenhadas, então a sombra de uma árvore atrás da câmera pode faltar.
