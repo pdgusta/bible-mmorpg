@@ -2,9 +2,15 @@
 // capítulo, fade para preto, barras de cinema, legenda da troca, genealogia da transição de era
 // e tela de carregamento.
 import { el, esperarMs, limpar, proximoQuadro, textoMarcado } from './dom';
+import { duracaoAviso, FilaAvisos, type ItemAviso, limiteAvisos } from './FilaAvisos';
 import { icone } from './icones';
 
 export type TipoAviso = 'xp' | 'atributo' | 'memoria' | 'armadura' | 'info' | 'unidade' | 'nivel';
+
+interface DadosAviso {
+  texto: string;
+  tipo: TipoAviso;
+}
 
 const ICONE_AVISO: Record<TipoAviso, string> = {
   xp: 'brilho',
@@ -38,8 +44,9 @@ export class Avisos {
   private carregamentoEl: HTMLDivElement;
   private carregamentoBarra: HTMLDivElement;
   private carregamentoTexto: HTMLDivElement;
-  /** Avisos iguais em sequência rápida são agrupados. */
-  private recentes = new Map<string, { el: HTMLElement; n: number; timer: number }>();
+  /** No máximo N avisos na tela (pela altura); os outros esperam. Avisos iguais são agrupados. */
+  private fila = new FilaAvisos<DadosAviso>(limiteAvisos(window.innerHeight));
+  private vivos = new Map<ItemAviso<DadosAviso>, { el: HTMLElement; timer: number }>();
 
   constructor(raiz: HTMLDivElement) {
     this.pilha = el('div', 'avisos');
@@ -61,41 +68,72 @@ export class Avisos {
         this.carregamentoTexto,
       ),
     );
+    window.addEventListener('resize', this.ajustarLimite);
     raiz.append(this.cinema, this.pilha, this.dicaEl, this.legenda, this.genealogiaEl, this.fadeEl, this.tituloEl, this.carregamentoEl);
   }
 
   aviso(texto: string, tipo: TipoAviso = 'info') {
-    const chave = `${tipo}|${texto}`;
-    const r = this.recentes.get(chave);
-    if (r) {
-      r.n++;
-      const cont = r.el.querySelector('.aviso-cont');
-      if (cont) cont.textContent = `×${r.n}`;
-      clearTimeout(r.timer);
-      r.timer = window.setTimeout(() => this.removerAviso(chave), 4200);
-      return;
+    this.ajustarLimite();
+    const r = this.fila.entrar(`${tipo}|${texto}`, { texto, tipo });
+    if (r.tipo === 'mostrar') this.mostrarAviso(r.item);
+    else if (r.tipo === 'agrupar') {
+      const vivo = this.vivos.get(r.item);
+      if (!vivo) return; // ainda na fila: aparece já com o ×n
+      const cont = vivo.el.querySelector('.aviso-cont');
+      if (cont) cont.textContent = `×${r.item.n}`;
+      clearTimeout(vivo.timer);
+      vivo.timer = window.setTimeout(() => this.esconderCartao(r.item), duracaoAviso(tipo, this.fila.espera.length > 0));
     }
+  }
+
+  private mostrarAviso(item: ItemAviso<DadosAviso>) {
+    const { texto, tipo } = item.dados;
     const rot = ROTULO_AVISO[tipo];
     const a = el('div', `aviso tipo-${tipo}`,
       el('div', 'aviso-ico', icone(ICONE_AVISO[tipo])),
       el('div', 'aviso-textos', rot ? el('div', 'aviso-rotulo', rot) : null, el('div', 'aviso-texto', texto)),
-      el('span', 'aviso-cont'),
+      el('span', 'aviso-cont', item.n > 1 ? `×${item.n}` : ''),
     );
     this.pilha.append(a);
-    while (this.pilha.children.length > 5) this.pilha.firstElementChild?.remove();
     requestAnimationFrame(() => a.classList.add('visivel'));
-    const dur = tipo === 'nivel' || tipo === 'memoria' || tipo === 'armadura' ? 5600 : 4200;
-    this.recentes.set(chave, { el: a, n: 1, timer: window.setTimeout(() => this.removerAviso(chave), dur) });
+    const dur = duracaoAviso(tipo, this.fila.espera.length > 0);
+    this.vivos.set(item, { el: a, timer: window.setTimeout(() => this.esconderCartao(item), dur) });
   }
 
-  private removerAviso(chave: string) {
-    const r = this.recentes.get(chave);
-    if (!r) return;
-    this.recentes.delete(chave);
-    r.el.classList.remove('visivel');
-    r.el.classList.add('saindo');
-    setTimeout(() => r.el.remove(), 500);
+  /** Esconde o cartão; com `paraFila`, o aviso já voltou para a fila e reaparece inteiro depois. */
+  private esconderCartao(item: ItemAviso<DadosAviso>, paraFila = false) {
+    const vivo = this.vivos.get(item);
+    if (!vivo) return;
+    this.vivos.delete(item);
+    clearTimeout(vivo.timer);
+    vivo.el.classList.remove('visivel');
+    vivo.el.classList.add('saindo');
+    if (paraFila) {
+      setTimeout(() => vivo.el.remove(), 300);
+      return;
+    }
+    // a vaga abre depois da saída, para o próximo não empurrar quem está saindo
+    this.fila.despedir(item);
+    setTimeout(() => {
+      vivo.el.remove();
+      for (const novo of this.fila.sair(item)) this.mostrarAviso(novo);
+    }, 500);
   }
+
+  destruir() {
+    window.removeEventListener('resize', this.ajustarLimite);
+  }
+
+  /** Quantos avisos cabem entre o retrato e a dica (ou o pé da tela). */
+  readonly ajustarLimite = () => {
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 14;
+    // offsetTop, e não o retângulo: a dica entra deslizando (transform)
+    const fim = this.dicaEl.classList.contains('visivel') ? this.dicaEl.offsetTop : window.innerHeight;
+    const espaco = fim - this.pilha.offsetTop - 0.6 * rem;
+    const { entram, voltam } = this.fila.definirLimite(limiteAvisos(window.innerHeight, espaco, rem));
+    for (const item of voltam) this.esconderCartao(item, true);
+    for (const novo of entram) this.mostrarAviso(novo);
+  };
 
   dica(texto: string) {
     limpar(this.dicaTexto);
@@ -103,13 +141,15 @@ export class Avisos {
     this.dicaEl.classList.remove('visivel');
     void this.dicaEl.offsetWidth;
     this.dicaEl.classList.add('visivel');
+    this.ajustarLimite();
     clearTimeout(this.dicaTimer);
-    this.dicaTimer = window.setTimeout(() => this.dicaEl.classList.remove('visivel'), Math.max(6000, texto.length * 70));
+    this.dicaTimer = window.setTimeout(() => this.esconderDica(), Math.max(6000, texto.length * 70));
   }
 
   esconderDica() {
     clearTimeout(this.dicaTimer);
     this.dicaEl.classList.remove('visivel');
+    this.ajustarLimite();
   }
 
   titulo(texto: string, sub?: string): Promise<void> {

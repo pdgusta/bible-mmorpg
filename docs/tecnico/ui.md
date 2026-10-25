@@ -5,6 +5,7 @@ Arquivos:
   - `UI.ts`: a classe principal, mais o roteamento de teclas e ponteiro.
   - `tipos.ts`, `servicos.ts`, `contexto.ts`, `dom.ts`, `icones.ts`.
   - Componentes: `HUD`, `Dialogo`, `Diario`, `Menus`, `Roda`, `Prova`, `Avisos`, `Versiculos`.
+  - `FilaAvisos.ts`: a fila dos avisos, lógica pura com teste (`FilaAvisos.test.ts`).
   - `estilo.css`.
 - Demo: `src/lab/ui.ts`, aberta com `?lab=ui&tela=hud|dialogo|escolha|diario|entender|roda|titulo|pausa|config|slots|creditos|prova|avisos|capitulo|carregamento|genealogia`. Sem `tela`, mostra o HUD e uma barra de botões.
 
@@ -88,6 +89,30 @@ const ui = new UI(div, servicosBiblia({ nomes, classes }), acoes);
 
 Saem do `Progresso` por `ui.aviso`: XP, nível, atributo, memória, armadura e unidade. A UI não gera avisos a partir dos eventos, para não duplicar.
 
+- **Fila:** a pilha mostra no máximo N avisos; o resto espera a vez (`FilaAvisos`) e aparece quando um sai.
+  - N tem um teto pela altura da tela (2 abaixo de 560 px, 3 abaixo de 900 px, 4 acima) e, abaixo dele, é quantos cabem entre a coluna do retrato e a dica, quando ela está na tela. Sempre pelo menos um.
+  - Quando o limite cai (a dica apareceu, a janela encolheu), os avisos mais novos voltam para a frente da fila e reaparecem depois.
+  - Com fila, cada aviso fica menos tempo (2,6 s, ou 3,6 s para nível, memória e armadura; sem fila, 4,2 s e 5,6 s).
+  - Aviso igual a um que está na tela ou na fila vira ×n no mesmo cartão. A fila guarda até 8; acima disso cai o mais antigo.
+- A pilha começa logo abaixo da coluna do retrato: o HUD publica a base dela na variável `--base-esquerda` da raiz.
+
+## Lugar de cada camada na tela
+
+Nada que é notificação cobre o meio da tela.
+
+| Camada | Lugar |
+|---|---|
+| Retrato, barras e Unidade | coluna à esquerda, no alto (`--largura-perfil`) |
+| Avisos | logo abaixo dessa coluna, com a mesma margem |
+| Dica de tutorial | embaixo à esquerda |
+| Hora e objetivo | coluna à direita, no alto (`--largura-objetivo`) |
+| Bússola e versículo | no alto, no meio, entre as duas colunas |
+| Prompt e legenda da troca | embaixo, no meio; a legenda fica acima do prompt |
+
+- **Tela estreita (até 1060 px de largura):** o versículo não cabe entre as colunas. Ele ocupa o alto à direita do retrato e, enquanto aparece (classe `com-faixa` na raiz), a bússola, a hora e o objetivo somem.
+- **Tela pequena (até 560 px de altura ou 760 px de largura):** a fonte-base cai para 12 px, as colunas ficam mais finas, a Unidade some (só pela altura) e a dica fica estreita para não encostar na legenda da troca.
+- Fotos de referência: `?lab=ui&tela=avisos` e `?lab=ui&tela=hud` em 640×360, 1280×720 e 1920×1080.
+
 ## Fotos
 
 O `e2e/foto.mjs` usa WebGL com SwiftShader e pode dar timeout com a máquina carregada. Como a demo da UI não usa WebGL, ela pode ser fotografada sem GL.
@@ -96,4 +121,4 @@ O `e2e/foto.mjs` usa WebGL com SwiftShader e pode dar timeout com a máquina car
 
 - Não há retratos de verdade: os personagens aparecem como monograma colorido com o ícone da classe em SVG.
 - As notas do jogo por versículo (`escrituras[].nota`) ainda não têm conteúdo.
-- Não há testes unitários de UI; a verificação foi feita com um roteiro Playwright à mão.
+- O único teste unitário de UI é o da fila de avisos; o resto foi verificado com um roteiro Playwright à mão.

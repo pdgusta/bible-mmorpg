@@ -34,6 +34,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1a17; }
   --serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
   --sans: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --textura: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .3 0 0 0 0 .14 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* colunas fixas do HUD: as camadas do meio (bússola, versículo) não entram nelas */
+  --margem-hud: 1.1rem;
+  --largura-perfil: 18rem;
+  --largura-objetivo: min(21rem, 34vw);
   font-size: clamp(14px, 0.55vw + 0.6vh, 20px);
 }
 
@@ -170,10 +174,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1a17; }
 .hud.oculto, .em-cinema .hud, .com-menu .hud { opacity: 0; }
 .em-cinema .marcadores-tela, .com-menu .marcadores-tela, .com-roda .marcadores-tela { opacity: 0; }
 
-.hud-esquerda { position: absolute; left: 1.1rem; top: 1rem; display: flex; flex-direction: column; align-items: flex-start; gap: 0.45rem; }
+.hud-esquerda { position: absolute; left: var(--margem-hud); top: 1rem; display: flex; flex-direction: column; align-items: flex-start; gap: 0.45rem; }
 .hud-perfil {
   display: flex; align-items: center; gap: 0.75rem;
-  padding: 0.6rem 1rem 0.65rem 0.65rem; min-width: 18rem;
+  padding: 0.6rem 1rem 0.65rem 0.65rem; width: var(--largura-perfil);
 }
 .hud-retrato-caixa { position: relative; flex: none; }
 .hud-retrato {
@@ -191,7 +195,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1a17; }
   background: linear-gradient(180deg, #f6d987, var(--ouro-2)); border: 2px solid #fff4d6; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 .hud-info { display: flex; flex-direction: column; gap: 0.28rem; min-width: 0; flex: 1; }
-.hud-nome-linha { display: flex; align-items: baseline; gap: 0.5rem; }
+.hud-nome-linha { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.5rem; }
 .hud-nome { font-family: var(--serif); font-weight: 700; font-size: 1.45rem; line-height: 1; }
 .hud-classe { font-size: 0.75rem; font-weight: 700; color: var(--tinta-3); text-transform: uppercase; letter-spacing: 0.08em; }
 
@@ -216,7 +220,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1a17; }
 .hud-unidade { padding: 0.4rem 0.85rem 0.5rem; width: 11.5rem; }
 
 .hud-tempo {
-  position: absolute; right: 1.1rem; top: 1rem;
+  position: absolute; right: var(--margem-hud); top: 1rem; transition: opacity 0.4s;
   display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.95rem 0.5rem 0.6rem;
 }
 .hud-tempo-ico {
@@ -237,7 +241,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1a17; }
 /* bússola */
 .bussola {
   position: absolute; left: 50%; top: 0.9rem; transform: translateX(-50%);
-  width: min(30rem, 46vw); height: 2.4rem; overflow: hidden;
+  width: min(30rem, 46vw, 100vw - 2 * (var(--margem-hud) + var(--largura-perfil) + 0.6rem)); height: 2.4rem; overflow: hidden;
+  transition: opacity 0.4s;
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(250, 243, 225, 0.9), rgba(236, 222, 190, 0.88));
   border: 1.5px solid rgba(190, 155, 100, 0.85);
@@ -261,7 +266,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1a17; }
 
 /* objetivo */
 .hud-objetivo {
-  position: absolute; right: 1.1rem; top: 5.2rem; width: min(21rem, 34vw);
+  position: absolute; right: var(--margem-hud); top: 5.2rem; width: var(--largura-objetivo);
   display: flex; gap: 0.65rem; align-items: flex-start; padding: 0.7rem 0.95rem 0.75rem 0.75rem;
   transition: opacity 0.3s, transform 0.3s;
 }
@@ -340,7 +345,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1a17; }
 /* ------------------------------- Avisos e camadas --------------------------------- */
 
 .avisos {
-  position: absolute; left: 1.1rem; top: 13.4rem; z-index: 30;
+  position: absolute; left: var(--margem-hud); top: calc(var(--base-esquerda, 12.8rem) + 0.6rem); z-index: 30;
   display: flex; flex-direction: column; gap: 0.45rem; width: min(21rem, 40vw);
 }
 .aviso {
@@ -368,7 +373,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1a17; }
 .aviso-cont { margin-left: auto; font-weight: 800; font-size: 0.8rem; color: var(--tinta-3); }
 
 .dica-tutorial {
-  position: absolute; left: 1.1rem; bottom: 1.2rem; z-index: 30; max-width: min(26rem, 44vw);
+  position: absolute; left: var(--margem-hud); bottom: 1.2rem; z-index: 30; max-width: min(26rem, 44vw);
   padding: 0.7rem 1rem 0.8rem; border-radius: var(--raio);
   background: var(--textura), linear-gradient(180deg, rgba(250, 243, 225, 0.96), rgba(240, 228, 200, 0.95));
   border: 1.5px solid var(--borda); border-left: 0.35rem solid var(--folha-clara); box-shadow: var(--sombra);
@@ -382,7 +387,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1a17; }
 
 .faixa-versiculo {
   position: absolute; left: 50%; top: 4.2rem; z-index: 25; transform: translate(-50%, -0.8rem);
-  display: flex; align-items: center; gap: 0.85rem; width: max-content; max-width: min(46rem, 62vw);
+  display: flex; align-items: center; gap: 0.85rem; width: max-content;
+  max-width: min(46rem, 100vw - 2 * (var(--margem-hud) + var(--largura-objetivo) + 1rem));
   padding: 0.65rem 1.6rem 0.75rem 0.9rem; border-radius: 999px;
   background: var(--textura), linear-gradient(180deg, rgba(252, 246, 228, 0.95), rgba(242, 229, 198, 0.93));
   border: 1.5px solid var(--ouro-2); box-shadow: var(--sombra), 0 0 2rem rgba(245, 217, 142, 0.35);
@@ -420,7 +426,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1a17; }
 .cinema.ativo .cinema-barra { transform: none; }
 
 .legenda-troca {
-  position: absolute; left: 50%; bottom: 16vh; z-index: 30; transform: translate(-50%, 0.6rem);
+  position: absolute; left: 50%; bottom: calc(13vh + 4rem); z-index: 30; transform: translate(-50%, 0.6rem);
   display: flex; align-items: baseline; gap: 0.6rem; padding: 0.55rem 1.5rem; border-radius: 999px;
   background: rgba(20, 30, 42, 0.62); color: #eef4fa; border: 1px solid rgba(200, 225, 245, 0.35);
   box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.3);
@@ -435,7 +441,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #1b1a17; }
 .genealogia-nome {
   position: absolute; left: var(--x); top: var(--y); transform: translate(-50%, -50%);
   font-family: var(--serif); font-weight: 600; font-size: clamp(1.8rem, 3.2vw, 3rem); color: #fff3cf; white-space: nowrap;
-  text-shadow: 0 0 0.6rem rgba(255, 220, 130, 0.95), 0 0 1.8rem rgba(240, 190, 80, 0.7);
+  /* contorno âmbar-escuro antes do brilho: no auge da glória o fundo fica quase branco */
+  text-shadow: 0 0 0.04em rgba(92, 58, 14, 0.9), 0 0 0.12em rgba(92, 58, 14, 0.85),
+    0 0 0.6rem rgba(255, 220, 130, 0.95), 0 0 1.8rem rgba(240, 190, 80, 0.7);
   animation: fio-de-luz 4.2s ease-in-out forwards;
 }
 @keyframes fio-de-luz {
@@ -670,7 +678,7 @@ details.kjv p { padding: 0 1rem 0.9rem; font-style: italic; color: var(--tinta-2
 .prova.golpe .prova-vinheta { animation: golpe 0.45s ease-out; }
 @keyframes golpe { 0% { box-shadow: inset 0 0 6rem 2rem rgba(160, 20, 10, 0.75); } 100% { box-shadow: inset 0 0 0 0 rgba(160, 20, 10, 0); } }
 
-.prova-topo { position: absolute; left: 50%; top: 0.9rem; transform: translateX(-50%); width: min(30rem, 60vw); padding: 0.6rem 1.1rem 0.75rem; text-align: center; }
+.prova-topo { position: absolute; left: 50%; top: 0.9rem; transform: translateX(-50%); width: min(30rem, 60vw, 100vw - 2 * (var(--margem-hud) + var(--largura-perfil) + 0.6rem)); padding: 0.6rem 1.1rem 0.75rem; text-align: center; }
 .prova-cab { display: flex; align-items: baseline; justify-content: center; gap: 0.6rem; }
 .prova-tipo { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--sangue); }
 .prova[data-tipo='duvida'] .prova-tipo { color: #4f5f80; }
@@ -1035,8 +1043,6 @@ details.kjv p { padding: 0 1rem 0.9rem; font-style: italic; color: var(--tinta-2
   .config-linha { flex-wrap: wrap; }
   .modal-fundo, .menu-tela { padding: 0.6rem; }
   .diario, .entender { height: calc(100vh - 1.2rem); max-height: none; }
-  .hud-objetivo { top: auto; bottom: 6rem; right: 0.6rem; width: 60vw; }
-  .bussola { width: 40vw; }
   .dialogo { padding-left: 1.2rem; padding-top: 2.6rem; }
   .dlg-retrato { width: 3.4rem; height: 3.4rem; top: -1.7rem; }
   .roda-disco { transform: scale(0.75); }
@@ -1044,7 +1050,33 @@ details.kjv p { padding: 0 1rem 0.9rem; font-style: italic; color: var(--tinta-2
 }
 @media (max-height: 560px) {
   .hud-unidade { display: none; }
-  .avisos { top: 10rem; }
+}
+
+/* Tela pequena (640×360): fonte-base menor, colunas mais finas, dica estreita para não
+   encostar na legenda da troca, que fica no meio embaixo. */
+@media (max-height: 560px), (max-width: 760px) {
+  :root { font-size: 12px; --margem-hud: 0.8rem; --largura-perfil: 15rem; }
+  .hud-retrato { width: 3.4rem; height: 3.4rem; }
+  .hud-retrato .ico { width: 1.9rem; height: 1.9rem; }
+  .hud-nome { font-size: 1.3rem; }
+  .barra-rotulo, .aviso-rotulo, .obj-titulo, .dica-rotulo, .faixa-ref { font-size: 0.75rem; }
+  .avisos { width: var(--largura-perfil); }
+  .aviso-ico { width: 1.8rem; height: 1.8rem; }
+  .dica-tutorial { max-width: 14.5rem; }
+  .legenda-troca { padding: 0.4rem 1.1rem; }
+  .legenda-nome { font-size: 1.25rem; }
+  .legenda-ativ { font-size: 0.92rem; }
+}
+
+/* Tela estreita: o versículo não cabe entre as colunas. Ele ocupa o alto à direita do retrato
+   e, enquanto aparece, a bússola, a hora e o objetivo dão lugar a ele. */
+@media (max-width: 1060px) {
+  .faixa-versiculo {
+    top: 0.9rem; left: calc(var(--margem-hud) + var(--largura-perfil) + 0.6rem); right: var(--margem-hud);
+    width: fit-content; margin-inline: auto; max-width: 46rem; border-radius: var(--raio); transform: translateY(-0.8rem);
+  }
+  .faixa-versiculo.visivel { transform: none; }
+  .com-faixa .bussola, .com-faixa .hud-tempo, .com-faixa .hud-objetivo { opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ui-raiz *, .ui-raiz *::before, .ui-raiz *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
