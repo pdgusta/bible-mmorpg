@@ -108,7 +108,7 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 - **Humanos:** LOD da malha com 25% dos triângulos a partir de 18 m da câmera; a sombra usa sempre esse nível. De perto o corpo não muda (`tecnico/personagens.md`).
 - **Física:** inclinação máxima a pé, que vale também no ar; quem fica numa encosta íngreme escorrega e não pula (`CorpoFisico.naEncosta`). Testes em `src/mundo/Fisica.test.ts`.
 - **Orçamento (preset médio):** nas 7 vistas do cenário de teste, no máximo 128 draw calls e 513 mil triângulos. Nas 6 vistas do jogo da T-017, no máximo 133 draw calls e 507 mil triângulos (a3-prova). Tabelas em `tecnico/motor.md`.
-- **Culling (T-017):** a grama desenha só os blocos de 6 m que entram na tela, sem draw call a mais; só olhando o céu, em b4, ela cai de 75 mil para 1 mil. As estruturas inteiras além da neblina saem do desenho: do interior da arca, a cidade (50 mil) não é mais desenhada.
+- **Culling (T-017):** a grama desenha só os blocos de 6 m que entram na tela, sem draw call a mais; só olhando o céu, em b4, ela cai de 75 mil para 2 mil. As estruturas inteiras além da neblina saem do desenho, menos as que podem projetar sombra num chão ainda na tela: do interior da arca, a cidade (50 mil) não é mais desenhada.
 - **Próxima folga (fora do motor):**
   - os humanos de perto (20 a 25 mil triângulos cada; na a3-prova são 12, cerca de 270 mil);
   - o Abraão desenhado fora da tela em b4 (malha com esqueleto, sem culling; 25 mil na cor e 6 mil na sombra).

@@ -62,11 +62,21 @@ export interface PerfilGrama {
 /** Lado (m) dos blocos quadrados em que a grama é agrupada para o culling. */
 const LADO_BLOCO = 6;
 /**
- * Folgas (m) da caixa de cada bloco, que é calculada pelas bases das lâminas: para cima, a lâmina
- * mais alta (~1,4 m); para os lados, a curva, o vento e a dobra de quem pisa.
+ * Deformações do shader (no espaço do tufo, antes da escala da instância), em função da altura `h`
+ * do vértice: o vento empurra até ONDA_X·uVento·h em x (vezes a onda, de -ONDA_MAX a ONDA_MAX) e
+ * até ONDA_Z·uVento·h em z; a dobra de quem pisa, até DOBRA·h. A caixa de cada bloco
+ * (`caixaNaTela`) usa os mesmos números.
  */
-const FOLGA_ALTO = 1.6;
-const FOLGA_LADO = 0.8;
+const ONDA_X = 0.12 * 2.5;
+const ONDA_MAX = 0.5 + 0.2;
+const ONDA_Z = 0.06 * 2.5;
+const DOBRA = 0.8;
+/** Escala das instâncias: ESC_MIN + h1·ESC_VAR na horizontal (vezes ESC_LONGE no anel de longe), vezes ALT_MIN + h2·ALT_VAR na altura. */
+const ESC_MIN = 0.75;
+const ESC_VAR = 0.7;
+const ESC_LONGE = 1.12;
+const ALT_MIN = 0.8;
+const ALT_VAR = 0.6;
 
 /**
  * Um anel de grama: todas as instâncias guardadas por bloco e o InstancedMesh, que recebe só os
@@ -78,7 +88,12 @@ interface Anel {
   cor: Float32Array;
   /** O bloco b vai de ini[b] a ini[b + 1] (em instâncias) em `mat`/`cor`. */
   ini: Int32Array;
+  /** Caixa das bases das lâminas de cada bloco (a folga da lâmina deformada entra em `caixaNaTela`). */
   caixas: THREE.Box3[];
+  /** Maior raio horizontal e maior altura dos vértices do tufo, e a maior escala horizontal das instâncias. */
+  raioTufo: number;
+  alturaTufo: number;
+  escMax: number;
   /** Blocos que estão no InstancedMesh agora (1) e se ele precisa ser reescrito mesmo assim. */
   naTela: Uint8Array;
   sujo: boolean;
@@ -144,11 +159,11 @@ export class Grama {
            transformed.y *= uAltura;
            float _h = transformed.y;
            float _w = sin(uTempo * 2.2 + _b.x * 0.4 + _b.z * 0.3) * 0.5 + sin(uTempo * 3.7 + _b.x * 0.9) * 0.2;
-           transformed.x += _w * 0.12 * uVento * _h * 2.5;
-           transformed.z += cos(uTempo * 1.6 + _b.z * 0.5) * 0.06 * uVento * _h * 2.5;
+           transformed.x += _w * ${ONDA_X.toFixed(3)} * uVento * _h;
+           transformed.z += cos(uTempo * 1.6 + _b.z * 0.5) * ${ONDA_Z.toFixed(3)} * uVento * _h;
            // dobra para longe do jogador (pisar na grama)
            vec2 _af = _b.xz - uFoco.xz; float _dl = length(_af);
-           if (_dl < 1.0) { transformed.xz += normalize(_af + 0.001) * (1.0 - _dl) * _h * 0.8; transformed.y *= 0.6 + 0.4 * _dl; }
+           if (_dl < 1.0) { transformed.xz += normalize(_af + 0.001) * (1.0 - _dl) * _h * ${DOBRA.toFixed(2)}; transformed.y *= 0.6 + 0.4 * _dl; }
            transformed *= _f;
            // mesma variação de cor do terreno (ver Terreno.ts)
            float _d1 = vnoise(_b.xz * 0.35);
@@ -164,15 +179,25 @@ export class Grama {
     // blocos numa grade de lado×lado em volta do centro da grade de 4 m
     this.ladoBlocos = Math.ceil((raio * 2) / LADO_BLOCO);
     const nBlocos = this.ladoBlocos * this.ladoBlocos;
-    const criar = (geo: THREE.BufferGeometry, n: number, nome: string): Anel => {
+    const criar = (geo: THREE.BufferGeometry, n: number, nome: string, escAnel: number): Anel => {
       const im = new THREE.InstancedMesh(geo, mat, n);
       im.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(n * 3), 3);
       im.frustumCulled = false;
       im.receiveShadow = true;
       im.count = 0;
       im.name = nome;
+      const pos = geo.attributes.position;
+      let raioTufo = 0;
+      let alturaTufo = 0;
+      for (let i = 0; i < pos.count; i++) {
+        raioTufo = Math.max(raioTufo, Math.hypot(pos.getX(i), pos.getZ(i)));
+        alturaTufo = Math.max(alturaTufo, pos.getY(i));
+      }
       return {
         im,
+        raioTufo,
+        alturaTufo,
+        escMax: (ESC_MIN + ESC_VAR) * escAnel,
         mat: new Float32Array(n * 16),
         cor: new Float32Array(n * 3),
         ini: new Int32Array(nBlocos + 1),
@@ -182,8 +207,8 @@ export class Grama {
         rasc: { mat: new Float32Array(n * 16), cor: new Float32Array(n * 3), bloco: new Uint16Array(n) },
       };
     };
-    this.perto = criar(geometriaTufo(6, 3, 0.045, 0.38), maxPerto, 'grama');
-    this.longe = criar(geometriaTufo(4, 1, 0.06, 0.4), max, 'gramaLonge');
+    this.perto = criar(geometriaTufo(6, 3, 0.045, 0.38), maxPerto, 'grama', 1);
+    this.longe = criar(geometriaTufo(4, 1, 0.06, 0.4), max, 'gramaLonge', ESC_LONGE);
     this.malha = new THREE.Group();
     this.malha.name = 'grama';
     this.malha.add(this.perto.im, this.longe.im);
@@ -222,11 +247,30 @@ export class Grama {
     this.centro.set(1e9, 1e9);
   }
 
+  /**
+   * Se o bloco pode aparecer na tela: a caixa das bases mais o maior alcance de uma lâmina
+   * (tufo, escala, vento de agora e dobra), como o shader a deforma.
+   */
+  private caixaNaTela(a: Anel, b: number) {
+    const h = a.alturaTufo * this.uAltura.value;
+    const vento = Math.abs(GLOBAIS.uVento.value);
+    const lado = (a.raioTufo + Math.hypot(ONDA_X * ONDA_MAX, ONDA_Z) * vento * h + DOBRA * h) * a.escMax;
+    const alto = h * a.escMax * (ALT_MIN + ALT_VAR);
+    const c = _caixa.copy(a.caixas[b]);
+    c.min.x -= lado;
+    c.min.z -= lado;
+    c.min.y -= 0.1;
+    c.max.x += lado;
+    c.max.z += lado;
+    c.max.y += alto;
+    return this.frustum.intersectsBox(c);
+  }
+
   /** Passa ao InstancedMesh os blocos que entram na tela (todos, sem câmera), se o conjunto mudou. */
   private desenhar(a: Anel, cortar: boolean) {
     let mudou = a.sujo;
     for (let b = 0; b < a.naTela.length; b++) {
-      const v = a.ini[b + 1] > a.ini[b] && (!cortar || this.frustum.intersectsBox(a.caixas[b])) ? 1 : 0;
+      const v = a.ini[b + 1] > a.ini[b] && (!cortar || this.caixaNaTela(a, b)) ? 1 : 0;
       if (v !== a.naTela[b]) {
         a.naTela[b] = v;
         mudou = true;
@@ -314,8 +358,8 @@ export class Grama {
         if (t.n >= t.bloco.length) continue;
         const bloco = Math.min(lb - 1, Math.floor((gz - ini) / LADO_BLOCO)) * lb + Math.min(lb - 1, Math.floor((gx - ini) / LADO_BLOCO));
         q.setFromAxisAngle(up, h2 * 6.283);
-        const esc = (0.75 + h1 * 0.7) * (ehPerto ? 1 : 1.12);
-        s.set(esc, esc * (0.8 + h2 * 0.6), esc);
+        const esc = (ESC_MIN + h1 * ESC_VAR) * (ehPerto ? 1 : ESC_LONGE);
+        s.set(esc, esc * (ALT_MIN + h2 * ALT_VAR), esc);
         p.set(wx, y - 0.02, wz);
         m.compose(p, q, s);
         this.perfil.cor(wx, wz, c);
@@ -326,7 +370,6 @@ export class Grama {
         t.a.caixas[bloco].expandByPoint(p);
       }
     }
-    const alto = FOLGA_ALTO * Math.max(1, this.uAltura.value);
     for (const { a, mat, cor, bloco, n } of tmp) {
       // agrupa por bloco (contagem): ini[b] é o começo do bloco b
       a.ini.fill(0);
@@ -337,15 +380,6 @@ export class Grama {
         const k = pos[bloco[i]]++;
         a.mat.set(mat.subarray(i * 16, i * 16 + 16), k * 16);
         a.cor.set(cor.subarray(i * 3, i * 3 + 3), k * 3);
-      }
-      for (const caixa of a.caixas) {
-        if (caixa.isEmpty()) continue;
-        caixa.min.x -= FOLGA_LADO;
-        caixa.min.z -= FOLGA_LADO;
-        caixa.min.y -= 0.1;
-        caixa.max.x += FOLGA_LADO;
-        caixa.max.z += FOLGA_LADO;
-        caixa.max.y += alto;
       }
       a.sujo = true;
     }
@@ -359,6 +393,8 @@ export class Grama {
     }
   }
 }
+
+const _caixa = new THREE.Box3();
 
 function hash(a: number, b: number): number {
   let h = Math.imul(a, 374761393) + Math.imul(b, 668265263);
