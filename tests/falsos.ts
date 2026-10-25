@@ -10,8 +10,15 @@ import type { AcessoJogo, ServicoCinematica } from '../src/jogo/Missoes';
 import type { Personagem } from '../src/jogo/Personagem';
 import type { Mundo } from '../src/mundo/Mundo';
 
-/** Deixa as promessas pendentes andarem. */
-export const ciclo = () => new Promise<void>((r) => setTimeout(r, 0));
+// o ambiente de teste é o Node (sem @types/node)
+declare const setImmediate: (f: () => void) => unknown;
+
+/**
+ * Deixa as promessas pendentes andarem. Usa setImmediate, e não setTimeout(0): o tempo dos testes
+ * é o de quadros simulados, e setTimeout(0) espera o timer do sistema (1 ms no mínimo; 15,6 ms no
+ * Windows sem timer de alta resolução), o que punha o relógio de verdade em cada quadro.
+ */
+export const ciclo = () => new Promise<void>((r) => setImmediate(r));
 
 /** Gerador determinístico (LCG) para as provas. */
 export function aleatorioFixo(semente = 1): () => number {
