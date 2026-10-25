@@ -28,6 +28,12 @@ export interface OpcoesTransicaoEra {
 const RAIO_TOTAL = 420;
 const RAIO_INFINITO = 1e6;
 
+/**
+ * Raio (m) da órbita em volta do rosto no close. Mais perto que isso a cabeça enche a tela e o
+ * plano próximo corta o turbante e o manto.
+ */
+const RAIO_CLOSE = 1.5;
+
 const suave = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 
 /** Roda `fn(k, dt)` a cada quadro do jogo por `dur` segundos de jogo (k vai de 0 a 1). */
@@ -128,7 +134,7 @@ export async function transicaoEra(jogo: Jogo, op: OpcoesTransicaoEra): Promise<
     const olhar0 = c.position.clone().addScaledVector(tmp, Math.max(3, cam.distancia));
     const o0 = orbitaDe(centroRosto, c.position);
     const angFrente = Math.atan2(de.frente().x, de.frente().z) + 0.32;
-    const o1: Orbita = { ang: o0.ang + wrapAngle(angFrente - o0.ang), raio: 0.95, altura: 0.04 };
+    const o1: Orbita = { ang: o0.ang + wrapAngle(angFrente - o0.ang), raio: RAIO_CLOSE + 0.15, altura: 0.06 };
     de.humano.olharPara = centroRosto.clone().add(de.frente().multiplyScalar(3)).add(new THREE.Vector3(0, 2.2, 0));
     await durante(jogo, 2.6, (k) => {
       const s = suave(k);
@@ -148,7 +154,7 @@ export async function transicaoEra(jogo: Jogo, op: OpcoesTransicaoEra): Promise<
     await durante(jogo, 3.2, (k, dt) => {
       nomes.atualizar(dt);
       rosto(de, centroRosto);
-      posOrbita(centroRosto, { ang: o1.ang + k * 0.12, raio: lerp(o1.raio, 0.8, k), altura: o1.altura }, c.position);
+      posOrbita(centroRosto, { ang: o1.ang + k * 0.12, raio: lerp(o1.raio, RAIO_CLOSE, k), altura: o1.altura }, c.position);
       c.lookAt(centroRosto);
       const r = lerp(RAIO_TOTAL, 1.5, easeInOut(k));
       definirRaio(r, centro);
@@ -165,7 +171,7 @@ export async function transicaoEra(jogo: Jogo, op: OpcoesTransicaoEra): Promise<
       nomes.atualizar(dt);
       respiro += dt;
       rosto(de, centroRosto);
-      posOrbita(centroRosto, { ang: o1.ang + 0.12 + respiro * 0.03, raio: 0.8, altura: o1.altura }, c.position);
+      posOrbita(centroRosto, { ang: o1.ang + 0.12 + respiro * 0.03, raio: RAIO_CLOSE, altura: o1.altura }, c.position);
       c.lookAt(centroRosto);
     });
     await construcao;
@@ -205,7 +211,7 @@ export async function transicaoEra(jogo: Jogo, op: OpcoesTransicaoEra): Promise<
     }
     rosto(prot, centroRosto);
     const angFrente2 = Math.atan2(prot.frente().x, prot.frente().z) + 0.32;
-    const oRosto: Orbita = { ang: angFrente2, raio: 0.8, altura: 0.04 };
+    const oRosto: Orbita = { ang: angFrente2, raio: RAIO_CLOSE, altura: 0.06 };
     posOrbita(centroRosto, oRosto, c.position);
     c.lookAt(centroRosto);
     prot.humano.olharPara = centroRosto.clone().add(prot.frente().multiplyScalar(3)).add(new THREE.Vector3(0, 1.6, 0));

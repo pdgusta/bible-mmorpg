@@ -41,7 +41,7 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
   - A1 com HUD, objetivo, andar, Diário (J), pausa (Esc);
   - salvar no espaço 1; depois muda posição e flag, sai para o título e carrega pelo menu, conferindo que voltam.
 - Com `--transicao`, ele joga a era 1 inteira pelos atalhos: A6 (arco-íris), transição com a genealogia de Sem a Abrão, que é limpa no fim, e B1 jogável com Abrão em Canaã. Fotos em `e2e/saida/integracao/`.
-- Junção de `frente/era-noe` (5 ajustes e o cervo) e de `frente/era-abraao` (c4cff7f) na `frente/integracao`.
+- Junções na `frente/integracao`: `frente/era-noe` (5 ajustes e o cervo), `frente/era-abraao` (até 741f716), `frente/motor` (até 2ff129e, T-008) e `frente/audio` (até 650c01b).
 - Era 2 ligada (`src/jogo/ligacao/abraao.ts`):
   - `ERA_ABRAAO` com jogáveis, NPCs e início;
   - `ServicosAbraao` completo (rebanhos em `mundo.atualizaveis`, NPCs de cena, entrada, `aCadaQuadro`, créditos);
@@ -52,21 +52,22 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
   - depois de B5, a Partida volta ao título;
   - `?dev&auto=1` fecha os créditos sozinho.
 - Áudio:
-  - `PonteAudio.musica` toca `aventura` quando o estado não existe no módulo de áudio (`batalha`, até a T-007), em vez de quebrar a trilha (`Musica.definir` lia `cfg.drone` de `undefined`);
-  - efeitos desconhecidos (`alarme`, `aparar`, `golpe`, `discernir`, `pedra`) só geram um aviso no console;
+  - a música `batalha` e os efeitos `alarme`, `aparar`, `golpe`, `discernir` e `pedra` vieram da `frente/audio`; a B3 pede `batalha` e a `PonteAudio.musica` não tem mais fallback;
   - `Ceu.estrelas` fica opcional: o céu de B4 usa só a noite até o motor ler a propriedade.
 - Dois defeitos corrigidos:
   - **Tela de carregamento por cima do jogo:** `Jogo.carregarBase` deixava `ativos.aoProgresso` ligado, e qualquer modelo carregado depois (os animais da A4) reabria a tela. Agora o callback é desligado no fim da carga base.
-  - **A4 travava:** `Arca.definirEstagio` troca os colisores do casco mas não refaz `mundo.nav`, montada com a arca no estágio 0, e os animais ficavam presos na ponta oeste do casco. O adaptador em `ligacao/noe.ts` (`refazerNavegacaoComArca`) refaz a navegação a cada estágio. O conserto definitivo é uma linha em `Arca.definirEstagio` (`this.mundo.nav?.reconstruir()`); quando ele entrar, remova o adaptador.
+  - **A4 travava:** `Arca.definirEstagio` trocava os colisores do casco sem refazer `mundo.nav`, montada com a arca no estágio 0, e os animais ficavam presos na ponta oeste do casco. Agora o próprio Arca refaz a navegação na área dele a cada estágio (`tests/arca-navegacao.test.ts`).
+- T-011:
+  - **`Animal` preso na tela:** o `travado` disparava a cada 5 s, mas a única saída na tela era refazer a rota, e sem rota nova o bicho tremia entre dois desvios para sempre. Se travar de novo a menos de 3 m de onde travou, ele vai para o ponto com um fade de 0,6 s (`tests/animal-travado.test.ts`).
+  - **Câmera:** a 3ª pessoa não entra mais na copa das árvores (`Natureza.copas()` e `src/camera/Copas.ts`; `tests/camera-copas.test.ts`). A transição de era não usa mais a `FOLGA_TERRENO`, e o close da genealogia ficou a 1,5 m do rosto (antes, 0,8 m: a câmera cortava o turbante).
 - `npm run validar` funciona no Windows (`fileURLToPath` em `scripts/biblia-comum.mjs`); `playwright` é dependência de desenvolvimento.
 
 **Falta:**
 1. `e2e/jogar-mvp.mjs` (`npm run e2e`) até o fim de B5 e os créditos. O miolo já está no `--transicao` de `integracao.mjs`; a era 2 tem `jogarEraAbraao` ligado aos atalhos.
 2. Medir `jogo.render.gl.info.render` em 3 vistas, no preset médio (inclusive A4, com cerca de 29 animais).
-3. Robustez do `Animal`: quando o caminho está bloqueado, o animal treme no lugar, `semProgresso` oscila abaixo de 5 s e `travado()` nunca dispara (`src/entidades/Animal.ts`). Com a navegação certa isso não aparece, mas um bloqueio novo trava a missão de novo.
-4. Sons da era 2 (T-007, Gofer): música `batalha` e os efeitos acima.
+3. O desvio do `Animal` (sondas de `moverChao`) alterna entre dois lados num bolsão e o bicho treme no lugar até o reposicionamento; um desvio com memória do lado escolhido evitaria o tremor.
 
-**Teste instável:** o teste da prova de ira (`tests/Provas.test.ts:171`, anterior a esta frente) pode estourar o tempo com a máquina carregada (vários agentes e o Chromium rodando); sozinho, passa.
+**Testes instáveis:** com a máquina carregada (vários agentes e o Chromium rodando), o teste da prova de ira (`tests/Provas.test.ts:171`) e o "mover usa a IA de cena" (`tests/Missoes.test.ts`) podem estourar os 5 s; sozinhos, passam.
 
 **Dicas para o e2e no Windows:**
 - No Git Bash, use `MSYS_NO_PATHCONV=1` antes de `node e2e/foto.mjs "/..."`.
@@ -87,7 +88,7 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
    - `creditos()`: tela de créditos do MVP (memórias, segredos, tempo) e volta ao menu, resolvendo ao fechar.
 4. `ligar()`: `ERA_ABRAAO.ligarServicos(servicos)` e `ERA_ABRAAO.registrarSegredos(mundo, servicos, jogo.flags)` (guardar o desligar). `reconstruir()`: `ERA_ABRAAO.reconstruir(servicos, mundo, jogo.flags)`. `desligar()` e mundo descartado (novo jogo, título): `ligarServicosAbraao(null)` e `ERA_ABRAAO.limparCena()` (os rebanhos e animais de cena ficam guardados em `missoes.ts`).
 5. `atalhos(op)`: como em `noe.ts`, com `AmbienteAtalhosAbraao` e `jogarEraAbraao` (para `e2e/jogar-mvp.mjs` e `?dev&missao=b3`).
-6. Áudio que as missões pedem e o módulo de áudio ainda não tem: música `batalha` e efeitos `alarme`, `aparar`, `golpe`, `discernir`, `pedra` (mapear para existentes ou criar). Ambientes `canaa`, `noite` e `vento` já existem.
+6. ✅ Áudio da era 2: música `batalha` e efeitos `alarme`, `aparar`, `golpe`, `discernir` e `pedra` (`frente/audio`, na integração).
 7. Opcional: `Ceu.estrelas` (0..1) para o céu de Gn 15:5 encher de estrelas em B4.
 
 ### 3. Motor visual (`agentes/motor.md`)
@@ -110,8 +111,6 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 **Para outras frentes (fora do escopo desta):**
 - **Canaã (`src/eras/abraao/construir.ts`):** trocar o `recolorirFolhas()` pela cor por variante em `definirVariantes`: `oliveira` com `corFolha: '#b4c0a2'` (sem `tintFolha`), `arbusto` com `corFolha: '#a9b583'`, `arbustoVerde` com `corFolha: '#86b860'` e `pedra` com `corSolido: '#c9bea6'`; depois apagar as duas chamadas e a função. Hoje as silhuetas de longe das oliveiras de Canaã saem avermelhadas, porque a cor média vem da textura original. A fórmula é outra (`0,45 + 0,55·lum/média` em vez de `0,55 + 1,6·lum`): confira as cores em `?lab=canaa`.
 - **Canaã (`estruturas.ts`):** a faixa de encolher está escrita à mão (`uRaio - 20.0`); trocar por `glslEncolher()` de `Shaders.ts`.
-- **Transição (`src/camera/TransicaoEra.ts`):** a `FOLGA_TERRENO` não tem efeito (o `uRaio` do terreno é o mesmo objeto do `GLOBAIS`); a folga agora mora nas faixas de `Shaders.ts` e a constante pode sair.
-- **Câmera:** a câmera de 3ª pessoa entra na copa das árvores (a tela fica verde-escura); ela não colide com folhagem.
 
 ### 4. Ajustes de lógica da era 1 (pedidos pela revisão; aplicados na branch `frente/era-noe`)
 
