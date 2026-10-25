@@ -743,6 +743,8 @@ details.kjv p { padding: 0 1rem 0.9rem; font-style: italic; color: var(--tinta-2
 .prova-memorias {
   position: absolute; right: 1.1rem; top: 50%; transform: translateY(-50%); width: min(17rem, 30vw);
   display: flex; flex-direction: column; gap: 0.4rem;
+  /* só as cinco da vez aparecem (ListaMemorias); o teto garante que a coluna não saia da tela */
+  max-height: calc(100% - 9rem); overflow: hidden;
 }
 .prova-memorias-cab { display: flex; align-items: center; gap: 0.4rem; font-family: var(--serif); font-weight: 700; font-size: 1.35rem; color: #fff6e0; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
 .prova-memorias-cab .ico { color: var(--ouro-claro); }
@@ -753,9 +755,10 @@ details.kjv p { padding: 0 1rem 0.9rem; font-style: italic; color: var(--tinta-2
   transition: transform 0.12s;
 }
 .prova-memoria:hover:not(:disabled) { transform: translateX(-0.25rem); }
-.prova-memoria.usada { cursor: default; background: linear-gradient(180deg, rgba(255, 244, 200, 0.95), rgba(245, 217, 142, 0.9)); border-color: var(--ouro-2); }
-.prova-memoria-acesa { display: flex; width: 1.75em; justify-content: center; color: var(--ouro); filter: drop-shadow(0 0 4px rgba(245, 200, 90, 0.9)); }
-.prova-memoria-acesa .ico { fill: var(--ouro-claro); }
+.prova-memorias-acesas { display: flex; flex-wrap: wrap; gap: 0.2rem; padding: 0 0.3rem; }
+.prova-memoria-acesa { display: flex; color: var(--ouro); filter: drop-shadow(0 0 4px rgba(245, 200, 90, 0.9)); }
+.prova-memoria-acesa .ico { width: 1.15rem; height: 1.15rem; fill: var(--ouro-claro); }
+.prova-memorias-depois { flex: none; padding: 0 0.3rem; font-size: 0.82rem; font-weight: 700; color: #fff6e0; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
 
 .prova-mensagem {
   position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%) scale(0.95); padding: 1.2rem 3rem; border-radius: 50%;
@@ -1063,6 +1066,10 @@ details.kjv p { padding: 0 1rem 0.9rem; font-style: italic; color: var(--tinta-2
   .avisos { width: var(--largura-perfil); }
   .aviso-ico { width: 1.8rem; height: 1.8rem; }
   .dica-tutorial { max-width: 14.5rem; }
+  /* centrada, a coluna de memórias da dúvida encostaria no painel do topo: desce para o canto */
+  .prova-memorias { top: auto; bottom: 1.2rem; transform: none; gap: 0.3rem; }
+  .prova-memorias-cab { font-size: 1.15rem; }
+  .prova-memoria { padding-top: 0.35rem; padding-bottom: 0.35rem; }
   .legenda-troca { padding: 0.4rem 1.1rem; }
   .legenda-nome { font-size: 1.25rem; }
   .legenda-ativ { font-size: 0.92rem; }

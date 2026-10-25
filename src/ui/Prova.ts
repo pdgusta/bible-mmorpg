@@ -1,10 +1,11 @@
 // Overlay das provas espirituais: "dardos" de mentira como cartões escuros que avançam para o
 // centro (os bloqueados ficam dourados e caem), barra de firmeza, progresso, "Está escrito" (Q),
-// Escudo da fé (botão direito), memórias para a dúvida (1–n) e mensagens ("A luta continua").
+// Escudo da fé (botão direito), memórias para a dúvida (as cinco da vez, teclas 1–5) e mensagens ("A luta continua").
 import type { EstadoProvaUI, TipoProva } from '../jogo/contratos';
 import type { CtxUI } from './contexto';
 import { clamp01, el, limpar, tecla } from './dom';
 import { icone } from './icones';
+import { dividirMemorias } from './ListaMemorias';
 
 const FIRMEZA: Record<TipoProva, string> = {
   tentacao: 'Domínio próprio',
@@ -192,18 +193,25 @@ export class OverlayProva {
       limpar(this.memorias);
       this.memorias.hidden = mems.length === 0;
       if (mems.length) {
+        const { daVez, acesas, depois } = dividirMemorias(mems);
         this.memorias.append(el('div', 'prova-memorias-cab', icone('estrela'), 'Lembre-se'));
-        mems.forEach((m, i) => {
-          const t = m.tecla ?? (m.usada ? null : i + 1);
-          const b = el('button', `prova-memoria${m.usada ? ' usada' : ''}`,
-            t ? tecla(String(t)) : el('span', 'prova-memoria-acesa', icone('estrela')),
-            el('span', null, m.titulo),
-          );
+        if (acesas.length) {
+          const fileira = el('div', 'prova-memorias-acesas');
+          fileira.setAttribute('aria-label', `${acesas.length} ${acesas.length === 1 ? 'lembrada' : 'lembradas'}`);
+          for (const m of acesas) {
+            const estrela = el('span', 'prova-memoria-acesa', icone('estrela'));
+            estrela.title = m.titulo;
+            fileira.append(estrela);
+          }
+          this.memorias.append(fileira);
+        }
+        for (const m of daVez) {
+          const b = el('button', 'prova-memoria', tecla(String(m.tecla)), el('span', null, m.titulo));
           b.type = 'button';
-          b.disabled = m.usada;
           b.addEventListener('click', () => this.ctx.acoes().lembrarMemoria?.(m.id));
           this.memorias.append(b);
-        });
+        }
+        if (depois) this.memorias.append(el('div', 'prova-memorias-depois', `+${depois} para depois`));
       }
     }
 

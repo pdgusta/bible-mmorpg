@@ -7,7 +7,7 @@ Arquivos:
   - Componentes: `HUD`, `Dialogo`, `Diario`, `Menus`, `Roda`, `Prova`, `Avisos`, `Versiculos`.
   - `FilaAvisos.ts`: a fila dos avisos, lógica pura com teste (`FilaAvisos.test.ts`).
   - `estilo.css`.
-- Demo: `src/lab/ui.ts`, aberta com `?lab=ui&tela=hud|dialogo|escolha|diario|entender|roda|titulo|pausa|config|slots|creditos|prova|avisos|capitulo|carregamento|genealogia`. Sem `tela`, mostra o HUD e uma barra de botões.
+- Demo: `src/lab/ui.ts`, aberta com `?lab=ui&tela=hud|dialogo|escolha|diario|entender|roda|titulo|pausa|config|slots|creditos|prova|avisos|capitulo|carregamento|genealogia` (na prova, `&tipo=duvida&mems=n&usadas=k` simula a lista de memórias da B4). Sem `tela`, mostra o HUD e uma barra de botões.
 
 HTML e CSS puros sobre o canvas, sem framework. O estilo lembra Palia: pergaminho e linho quentes, cantos arredondados e sombras suaves. Fontes: Nunito na UI, Cormorant Garamond nos títulos e no texto bíblico (via `@fontsource`).
 
@@ -70,7 +70,9 @@ const ui = new UI(div, servicosBiblia({ nomes, classes }), acoes);
    - Se o ponteiro se perder com nada aberto, a UI abre a Pausa. Isso se desliga com `pausarAoSoltarPonteiro`.
    - A roda mantém o ponteiro travado.
 4. **Bloqueio:** o jogo faz `entrada.podeTravar = () => !ui.bloqueado()` e não move personagem nem câmera quando `ui.bloqueado()`.
-5. **Provas:** Q, o botão direito e 1–n continuam com a Entrada; a UI só desenha o overlay.
+5. **Provas:** Q, o botão direito e 1–5 continuam com a Entrada; a UI só desenha o overlay.
+   - Memórias da dúvida (`ListaMemorias`): o jogo dá as teclas 1–5 às cinco primeiras ainda não lembradas, e só essas viram botão. As lembradas aparecem como uma fileira de estrelas acesas; as outras, como "+N para depois". Quando uma é lembrada, a próxima ganha a tecla. Memória sem tecla não mostra número.
+   - A coluna fica na lateral direita, com teto de altura; em tela pequena desce para o canto de baixo, para não encostar no painel do topo. Teste no Chromium: `node e2e/teste-prova-memorias.mjs` (lab: `?lab=ui&tela=prova&tipo=duvida&mems=13&usadas=3`).
 
 ## Dados do Diário (montados pela integração)
 
