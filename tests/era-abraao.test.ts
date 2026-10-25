@@ -26,7 +26,7 @@ import {
   ERA_ABRAAO, MISSOES_ABRAAO, MEMORIAS_ABRAAO, CRISTO_ABRAAO, SEGREDOS_ABRAAO, JOGAVEIS_ABRAAO, NPCS_ABRAAO, NPCS_CENA_ABRAAO,
   INICIO_ABRAAO, ELENCO_ABRAAO, INTERATIVOS_ABRAAO, PONTOS_RESERVA, PONTOS_USADOS_ABRAAO, PROVA_TENTACAO_B3, PROVA_DUVIDA_B4,
   PROVA_MEDO_B5, MENTIRAS_B3, MENTIRAS_B4, MENTIRAS_B5, idsInterativosAbraao, ligarServicosAbraao, registrarSegredosAbraao,
-  reconstruirMundoAbraao, limparCenaAbraao, mecanicaAbraao, jogarEraAbraao,
+  reconstruirMundoAbraao, limparCenaAbraao, mecanicaAbraao, jogarEraAbraao, FIGURANTES_B3, LOD_FIGURANTES_B3, INIMIGOS_B3,
   type AnimalAbraao, type CanaaAbraao, type OpcoesAnimalAbraao, type RebanhoAbraao, type ServicosAbraao, type AmbienteAtalhosAbraao,
 } from '../src/eras/abraao';
 
@@ -78,6 +78,8 @@ class PessoaFalsa {
   segurando: Record<string, string | null> = {};
   readonly humano = {
     visivel: true,
+    distanciaLongePropria: null as number | null,
+    malha: { castShadow: true },
     animador: { atividade: null as string | null, superior: null as string | null, agachado: false, tocar: async () => {} },
     segurar: (item: string | null, mao: string) => {
       this.segurando[mao] = item;
@@ -938,6 +940,61 @@ describe('era de Abraão — ensinamentos 11 (sair pela fé) e 15 (não amar as 
     // o rei de Sodoma levou os seus bens (Gn 14:24): em Manre, nada de despojos
     await jogarMissao(v, b4);
     expect([v.canaa.despojosVisiveis, v.canaa.despojosAcesos]).toEqual([false, false]);
+  });
+});
+
+describe('era de Abraão — orçamento de B3', () => {
+  it('de Dã ao fim de Savé os figurantes trocam de corpo mais cedo e sem sombra; depois voltam ao padrão, e o carregar segue a flag', async () => {
+    const v = mundoAtual;
+    const [b1, b2, b3] = MISSOES_ABRAAO;
+    await jogarMissao(v, b1);
+    await jogarMissao(v, b2);
+    const ajuste = (id: string) => {
+      const h = v.personagens.get(id)!.humano;
+      return [id, h.distanciaLongePropria, h.malha.castShadow];
+    };
+    const ajustado = (id: string) => [id, LOD_FIGURANTES_B3, false];
+    const padrao = (id: string) => [id, null, true];
+    const SAVE = FIGURANTES_B3.filter((id) => !INIMIGOS_B3.includes(id));
+    const SERVOS = ['servo1', 'servo2', 'servo3', 'servo4'];
+    let naManre: unknown[] = [];
+    let naBatalha: unknown[] = [];
+    let naProva: unknown[] = [];
+    await jogarMissao(v, b3, 'auto', novoEstado(b3.id), (c) => {
+      const dialogo = c.dialogo.bind(c);
+      c.dialogo = (linhas) => {
+        if (!naManre.length) naManre = [...SERVOS, 'aner'].map(ajuste);
+        return dialogo(linhas);
+      };
+      const contador = c.contador.bind(c);
+      c.contador = (nome, valor) => {
+        if (nome === 'desarmados' && !naBatalha.length) naBatalha = [...FIGURANTES_B3, 'abraao', 'eliezer', 'lo'].map(ajuste);
+        return contador(nome, valor);
+      };
+      const prova = c.prova.bind(c);
+      c.prova = (def) => {
+        naProva = [...SAVE, 'abraao', 'eliezer', 'lo', 'melquisedeque', 'reiSodoma'].map(ajuste);
+        return prova(def);
+      };
+    });
+    expect(FIGURANTES_B3).toHaveLength(17);
+    // a notícia chega a Manre de dia: nada muda ainda
+    expect(naManre).toEqual([...SERVOS, 'aner'].map(padrao));
+    // na batalha, também os guerreiros criados depois da noite de Dã
+    expect(naBatalha).toEqual([...FIGURANTES_B3.map(ajustado), ...['abraao', 'eliezer', 'lo'].map(padrao)]);
+    expect(naProva).toEqual([...SAVE.map(ajustado), ...['abraao', 'eliezer', 'lo', 'melquisedeque', 'reiSodoma'].map(padrao)]);
+    // os cativos e os guerreiros saíram de cena; servos e aliados voltam ao padrão
+    const ficaram = FIGURANTES_B3.filter((id) => v.personagens.has(id));
+    expect(ficaram).toEqual([...SERVOS, 'aner', 'escol', 'manreAmorreu']);
+    expect(ficaram.map(ajuste)).toEqual(ficaram.map(padrao));
+    expect(v.flags.figurantesB3).toBe(false);
+    // o carregar segue a flag
+    v.flags.figurantesB3 = true;
+    reconstruirMundoAbraao(v.servicos, v.mundo as never, v.flags);
+    expect(ficaram.map(ajuste)).toEqual(ficaram.map(ajustado));
+    v.flags.figurantesB3 = false;
+    reconstruirMundoAbraao(v.servicos, v.mundo as never, v.flags);
+    expect(ficaram.map(ajuste)).toEqual(ficaram.map(padrao));
   });
 });
 

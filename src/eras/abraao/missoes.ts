@@ -403,7 +403,9 @@ function garantirNPC(c: CtxMissao, id: string, l: LugarAbraao, yaw = 0, raio = 3
   }
   const def = NPCS_CENA_ABRAAO[id];
   if (!def) throw new Error(`NPC de cena desconhecido: ${id}`);
-  return sv().criarPersonagem(def, v.x, v.z, yaw);
+  const novo = sv().criarPersonagem(def, v.x, v.z, yaw);
+  if (FIGURANTES_B3.includes(id)) ajustarFigurante(novo, !!c.flags.figurantesB3);
+  return novo;
 }
 
 function tirarNPC(c: CtxMissao, id: string) {
@@ -466,6 +468,8 @@ export function reconstruirMundoAbraao(s: ServicosAbraao, m: MundoBase, flags: R
     p.disponivel = esta && elenco.includes(id);
   }
   if (flags[FLAG_LO_PARTIU]) for (const id of IDS_PASTORES_LO) presenca(m, s, id, false);
+  // os figurantes de B3 (de Dã ao fim de Savé), pela flag
+  for (const id of FIGURANTES_B3) ajustarFigurante(m.personagens.get(id), !!flags.figurantesB3);
   herdarAltar(m);
   const a = m.personagens.get('abraao');
   if (a) {
@@ -1067,6 +1071,7 @@ function noiteDeDa(c: CtxMissao) {
   marcar(c, 'b3Noite');
   s.canaa.definirAcampamentoInimigo(true);
   marcar(c, 'inimigoVisivel');
+  figurantesDeB3(c, true);
 }
 
 /** Os cativos sentados no cercado; Ló é o quinto. */
@@ -1084,6 +1089,31 @@ function garantirCativos(c: CtxMissao) {
     esperarAli(c, ['lo']);
     pose(c, 'lo', 'sentado');
   }
+}
+
+/**
+ * Os figurantes de B3 longe de Manre: os servos, os aliados amorreus, os cativos de Sodoma e os
+ * guerreiros do oriente.
+ */
+export const FIGURANTES_B3 = [...IDS_SERVOS, ...IDS_ALIADOS, ...CATIVOS_B3, ...INIMIGOS_B3];
+/** Distância (m) em que os figurantes de B3 passam ao corpo de longe (o padrão é `Humano.distanciaLonge`). */
+export const LOD_FIGURANTES_B3 = 6;
+
+function ajustarFigurante(p: Personagem | undefined, ligado: boolean) {
+  if (!p) return;
+  p.humano.distanciaLongePropria = ligado ? LOD_FIGURANTES_B3 : null;
+  p.humano.malha.castShadow = !ligado;
+}
+
+/**
+ * Orçamento de B3: na batalha de Dã e com Abrão no meio do povo em Savé, os corpos passavam de
+ * 150 draw calls ou de 600 mil triângulos no preset médio. Da noite de Dã ao fim de Savé, os
+ * figurantes trocam de corpo mais cedo e não projetam sombra; os jogáveis, Melquisedeque e o rei
+ * de Sodoma ficam como estão. Fica na flag para o carregar e para quem `garantirNPC` cria depois.
+ */
+function figurantesDeB3(c: CtxMissao, ligado: boolean) {
+  marcar(c, 'figurantesB3', ligado);
+  for (const id of FIGURANTES_B3) ajustarFigurante(pessoa(c, id), ligado);
 }
 
 const ROTA_FLANCO_DE: Record<'abraao' | 'eliezer', string> = { abraao: 'flancoOeste', eliezer: 'flancoLeste' };
@@ -1383,6 +1413,7 @@ const B3: DefMissao = {
         // todos no vale do rei: Abrão e os seus, Ló e o povo resgatado, o rei de Sodoma e Melquisedeque
         ['abraao', 'eliezer', ...IDS_SERVOS, ...IDS_ALIADOS].forEach((id, i) => aproximarSeLonge(c, id, save, 14, i));
         for (const id of CATIVOS_B3) garantirNPC(c, id, anel(save.clone().add(new THREE.Vector3(5, 0, 3)), CATIVOS_B3.indexOf(id), 1.6), 0, 14);
+        figurantesDeB3(c, true);
         presenca(c.mundo as MundoBase, s, 'lo', true, save.clone().add(new THREE.Vector3(3, 0, -2)));
         c.disponivel('lo', false);
         aproximarSeLonge(c, 'reiSodoma', lugar(c, 'chegadaSodoma'), 30);
@@ -1424,6 +1455,7 @@ const B3: DefMissao = {
       objetivo: '',
       async executar(c) {
         const s = sv();
+        figurantesDeB3(c, true);
         if (!feito(c, 'b3NemUmFio')) {
           const ab = c.personagem('abraao').posicao;
           aproximarSeLonge(c, 'reiSodoma', ab, 4, 2);
@@ -1465,6 +1497,7 @@ const B3: DefMissao = {
         } finally {
           presenca(c.mundo as MundoBase, s, 'lo', false);
           for (const id of CATIVOS_B3) tirarNPC(c, id);
+          figurantesDeB3(c, false);
           aproximarSeLonge(c, 'reiSodoma', lugar(c, 'sodomaLonge'), 10);
           aproximarSeLonge(c, 'melquisedeque', lugar(c, 'salem'), 10);
           IDS_ALIADOS.forEach((id, i) => aproximarSeLonge(c, id, lugar(c, 'aliadosManre'), 10, i));

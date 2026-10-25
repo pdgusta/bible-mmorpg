@@ -43,8 +43,54 @@ Regras (as mesmas da era 1):
 - **11, Sair pela fé (B1 `acampar`, Hb 11:8).** O caminho de Moré ao monte entre Betel e Ai (`TRILHA_BETEL` em `mapa.ts` + `acampamentoBetel`) é dividido em trechos de 24 m (`CAMINHO_FE.passo`). O objetivo (bússola e marcador na tela) aponta só para o fim do trecho revelado; o trecho seguinte se abre quando o jogador chega a 7 m dele (`CAMINHO_FE.revelar`) ou já o passou ao longo do caminho, e nunca volta. O destino só aparece no último trecho. Não há mapa de tela inteira, então nada em `src/ui` mudou. A chegada continua sendo `c.chegar('ativo', 'acampamentoBetel', 18)`: quem corta caminho também chega.
 - **15, Não amar as riquezas (B3, Gn 14:21-24).** Os bens trazidos de volta (Gn 14:16) aparecem em duas pilhas no vale de Savé (ponto `despojosSave`, a ~8 m do dízimo) no fade de `melquisedeque`. Em `nemUmFio`, antes da oferta do rei de Sodoma, o brilho acende (`acenderDespojos(true)`). O `MundoCanaa` calcula a força a cada quadro pela distância do foco (o jogador): plena até 4 m, apagada a 18 m (`brilhoDespojos`). É um efeito passivo, e nenhum passo espera o jogador se afastar. A recusa vale `XP.prova` (60, "Resistir a uma tentação" no DESIGN §6): nenhum item dá XP no jogo, e o maior prêmio por achar algo é o segredo (25). As pilhas somem no fade de B4 (`visao`): o rei de Sodoma levou os seus bens (Gn 14:24).
 - **Custo:** a zona dos despojos é 1 draw call; o brilho (`BrilhoDespojos` em `estruturas.ts`, halos instanciados + disco no chão, o mesmo shader aditivo das fogueiras) são 2, e 0 quando a força é ~0. Nenhuma luz nova.
-- **No jogo integrado (T-014):** em B1, o marcador e a bússola apontam para o fim do trecho (24 m, depois o trecho seguinte), nunca para o monte. Em B3, na prova "Nem um fio", os despojos brilham a ~8 m de Abrão. Fotos `e2e/saida/t014-b1-trecho{1,2}.png` e `t014-b3-prova-despojos.png`. O `?dev&missao=bN` ainda não chega à era 2 (só procura a missão na era 1); as fotos usaram um script que reordena `ORDEM_ERAS` só no navegador do teste.
+- **No jogo integrado (T-014):** em B1, o marcador e a bússola apontam para o fim do trecho (24 m, depois o trecho seguinte), nunca para o monte. Em B3, na prova "Nem um fio", os despojos brilham a ~8 m de Abrão. Fotos `e2e/saida/t014-b1-trecho{1,2}.png` e `t014-b3-prova-despojos.png`. Na época o `?dev&missao=bN` só procurava a missão na era 1, e as fotos usaram um script que reordenava `ORDEM_ERAS`; desde a T-011 o novo jogo começa pela era da missão (`eraDaMissao`), e `?dev&missao=b3` chega direto a Canaã.
 - **Revelação na transição:** o vértice do brilho (fogueiras e despojos) encolhe pela faixa do motor, `glslEncolher` de `src/render/Shaders.ts`, e não por uma cópia da conta.
+
+## Orçamento de B3 (T-016)
+
+**Como foi medido:**
+- `?dev&missao=b3&q=medio`, jogada pelos atalhos com a etapa segurada: a batalha em andamento em Dã e a prova "Nem um fio" em Savé;
+- 640×360, com `jogo.render.gl.info.render` lido logo depois de `jogo.renderizar()`. Os números incluem a passada de sombra;
+- além das vistas fixas, uma varredura gira a câmera em 8 direções no mesmo ponto, e a tabela traz a pior;
+- o teto é o do preset médio: 150 draw calls e 600 mil triângulos.
+
+**O que pesa:**
+- O cenário sozinho varia de 170 a 370 mil triângulos e de 70 a 120 draw calls, conforme a direção.
+- Cada corpo tem de 20 a 25 mil triângulos de perto e de 5 a 6 mil de longe (a partir de 18 m). A sombra usa sempre o de longe.
+- O corpo custa 1 draw call, mais 1 quando projeta sombra, e é desenhado mesmo fora da tela (`frustumCulled = false`). Por isso pesa em qualquer direção.
+
+**Redução (`figurantesDeB3` em `missoes.ts`):**
+- Da noite de Dã ao fim de `nemUmFio`, os 17 figurantes (`FIGURANTES_B3`: 4 servos, 3 aliados amorreus, 4 cativos e 6 guerreiros do oriente) passam ao corpo de longe a 6 m (`LOD_FIGURANTES_B3`, por `humano.distanciaLongePropria`) e não projetam sombra (`malha.castShadow`).
+- Os jogáveis, Melquisedeque e o rei de Sodoma não mudam. A multidão manteve o tamanho.
+- O estado fica na flag `figurantesB3`: `garantirNPC` ajusta quem é criado depois (os guerreiros, os cativos), e `reconstruirMundoAbraao` segue a flag no carregar (`tests/era-abraao.test.ts`, "orçamento de B3").
+
+| Vista | Antes (draw calls / triângulos) | Depois |
+|---|---|---|
+| Dã (a): câmera de jogo atrás de Abrão, para o acampamento | 125 / 465 mil | 108 / 370 mil |
+| Dã (a), pior direção | **155 a 159** / 573 mil | 138 / 461 mil |
+| Dã (b): larga, a 30 m, na pior direção | **161** / 587 mil | 128 / 447 mil |
+| Dã (c): Abrão no meio do acampamento | 111 / 437 mil | 93 / 324 mil |
+| Dã (c), pior direção | 151 / **608 mil** | 134 / 446 mil |
+| Savé (a): câmera de jogo no dízimo, para os despojos e o povo | 111 / 470 mil | 100 / 411 mil |
+| Savé (b): larga, a 30 m | 117 / 467 mil | 106 / 409 mil |
+| Savé (c): para Salém | 109 / 490 mil | 98 / 414 mil |
+| Savé (d): Abrão a ~4 m do centro do povo | 115 / **703 mil** | 104 / 467 mil |
+| Savé (d), pior direção | não medida | 101 / 543 mil |
+
+**Notas:**
+- A medição do Gofer (151 draw calls, 1,17 M) foi feita antes do LOD dos humanos (T-008). As colunas "antes" já têm o LOD e não têm o ajuste dos figurantes.
+- Em Savé, a vista (d) é a que o jogador alcança: na prova, nada o prende ao dízimo.
+- **Histerese:** o corpo de perto vai até 6 m, e o de longe só volta a 4 m. Com 8 m, a vista (d) dava 516 mil quando os figurantes já estavam no corpo de perto e passaria de 600 mil na pior direção. Por isso ficou 6 m.
+- **Variantes medidas na vista (d) de Savé, direção fixa:**
+  - 8 m com sombra: 574 mil;
+  - 10 m sem sombra: 547 mil;
+  - 10 m com sombra: 606 mil.
+- **Legibilidade:** o povo e os cativos continuam legíveis. No close a ~6 m em 1280×720, o corpo de longe não se distingue do de perto (`depois-e-close-{perto,longe}.png`).
+- **O que se nota:** sob o sol de Savé, os figurantes ficam sem sombra no chão. Na noite de Dã, isso não se percebe.
+- **Fotos** (em `e2e/saida/t016/`, fora do git):
+  - `antes-*.png` e `depois-*.png`: Savé, vistas a a e;
+  - `da-antes-*.png` e `da-depois-*.png`: Dã, com `-pior` para a pior direção;
+  - `var-d-*.png`: as variantes.
 
 ## O que `ServicosAbraao` exige e de quem
 
@@ -122,6 +168,7 @@ Um mundo de Canaã falso (`CanaaFalsa` com a mesma geometria dos currais e acamp
 - idempotência por etapa (abortar depois de 2 ações, reconstruir e recomeçar);
 - ensinamento 11: os trechos do caminho (passo, só para a frente, destino só no fim) e, em B1, a sequência de alvos do objetivo enquanto o jogador anda pela trilha;
 - ensinamento 15: a curva do brilho e, em B3, os despojos acesos na prova, o XP da recusa (`XP.prova` > `XP.segredo`), nada que prenda o jogador, o carregar pelas flags e os despojos fora de cena em B4;
+- o orçamento de B3: em Manre nada muda; na batalha de Dã (também os guerreiros criados depois) e na prova de Savé, os figurantes ficam com o LOD de 6 m e sem sombra, e os outros não mudam; depois de B3 todos voltam ao padrão, e o carregar segue a flag;
 - a era jogada só pelos atalhos.
 
 ## Revisão (checklist de `docs/tecnico/revisao.md`)
