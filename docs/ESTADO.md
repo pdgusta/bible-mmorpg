@@ -59,6 +59,7 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
   - **A4 travava:** `Arca.definirEstagio` trocava os colisores do casco sem refazer `mundo.nav`, montada com a arca no estágio 0, e os animais ficavam presos na ponta oeste do casco. Agora o próprio Arca refaz a navegação na área dele a cada estágio (`tests/arca-navegacao.test.ts`).
 - T-011:
   - **`Animal` preso na tela:** o `travado` disparava a cada 5 s, mas a única saída na tela era refazer a rota, e sem rota nova o bicho tremia entre dois desvios para sempre. Se travar de novo a menos de 3 m de onde travou, ele vai para o ponto com um fade de 0,6 s (`tests/animal-travado.test.ts`).
+  - **`?dev&missao=b1..b5`:** o novo jogo sempre montava a era de Noé, e a missão da era 2 dava "Missão desconhecida nesta era". Agora ele começa pela era que tem a missão (`eraDaMissao`; `tests/eras.test.ts`).
   - **Câmera:** a 3ª pessoa não entra mais na copa das árvores (`Natureza.copas()` e `src/camera/Copas.ts`; `tests/camera-copas.test.ts`). A transição de era não usa mais a `FOLGA_TERRENO`, e o close da genealogia ficou a 1,5 m do rosto (antes, 0,8 m: a câmera cortava o turbante).
 - `npm run validar` funciona no Windows (`fileURLToPath` em `scripts/biblia-comum.mjs`); `playwright` é dependência de desenvolvimento.
 

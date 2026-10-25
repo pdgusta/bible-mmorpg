@@ -37,7 +37,7 @@ Arquivos:
 - **`abraao.ts`:** `ERA_ABRAAO_JOGO` monta `MundoCanaa` (com `canaa.ceu = jogo.ceu`), cria jogáveis e NPCs em `INICIO_ABRAAO` e implementa `ServicosAbraao`: Canaã, céu, áudio, animais e rebanhos (`Rebanho` em `mundo.atualizaveis`), progresso, câmera, entrada, `aCadaQuadro`, Cristo, `controlar`, `liberarPosto`, `emitir`, `criarPersonagem`, `removerPersonagem` e `creditos` (pelo `ContextoEra`). `ligar()` registra os segredos; `desligar()` chama `ligarServicosAbraao(null)` e `ERA_ABRAAO.limparCena()`. Última era: sem `seguinte`; depois de B5 a Partida volta ao título.
 - **`audio.ts`:** `PonteAudio` liga `Audio.iniciarNoPrimeiroGesto()`, efeitos de eventos (troca, interação, memória, nível), passos, música por estado e ambientes (pedidos das missões somados à área da era).
 - **`comum.ts`:** `estadoMissaoAtual`, `esperarJogo`, `removerPersonagem` (nunca remove quem está sob controle), `desvio` e `reiniciarPessoa`.
-- **`depuracao.ts`:** `?dev&missao=a3` pula pelos atalhos da era; `?dev&auto=1` joga sozinho; `?dev&hora=`, `?dev&pos=x,z`. Para o e2e: `partida.dev.avancar(seg, passo)` avança a lógica em modo manual passando as falas; `ligarCapturas()` e `liberar()` param em momentos de foto.
+- **`depuracao.ts`:** `?dev&missao=a3` (ou `b3`) começa o novo jogo pela era que tem a missão (`eraDaMissao`, em `eras.ts`) e pula pelos atalhos dela; `?dev&auto=1` joga sozinho; `?dev&hora=`, `?dev&pos=x,z`. Para o e2e: `partida.dev.avancar(seg, passo)` avança a lógica em modo manual passando as falas; `ligarCapturas()` e `liberar()` param em momentos de foto.
 
 ## Câmera (pendências recebidas, já atendidas)
 

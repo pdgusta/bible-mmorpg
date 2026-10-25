@@ -123,4 +123,9 @@ export function defEra(id: string): DefEra {
   return d;
 }
 
+/** Era (id) que tem a missão, na ordem da história; null se nenhuma tem (`?dev&missao=b3`). */
+export function eraDaMissao(missao: string): string | null {
+  return ORDEM_ERAS.find((id) => ERAS[id]?.missoes.some((m) => m.id === missao)) ?? null;
+}
+
 export const NOMES_ERAS: Record<string, string> = Object.fromEntries(Object.values(ERAS).map((e) => [e.id, e.nome]));
