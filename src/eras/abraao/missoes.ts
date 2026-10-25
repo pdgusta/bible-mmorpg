@@ -87,7 +87,7 @@ export const PROVA_TENTACAO_B3: DefProva = {
   titulo: 'Nem um fio',
   instrucao: 'Os despojos brilham e o sussurro insiste. Responda com Q — "Está escrito" — com a Palavra que já recebeu.',
   mentiras: MENTIRAS_B3,
-  respostas: ['Gn 14:22-23', 'Gn 13:8', 'Gn 12:2'],
+  respostas: ['Gn 14:22-24', 'Gn 13:8', 'Gn 12:2'],
   alvo: 6,
   personagem: 'abraao',
   intensidade: 0.5,
@@ -1465,7 +1465,7 @@ const B3: DefMissao = {
           mostrarDespojos(c, true, true);
           await c.dialogo([reiSodomaDiz('Gn 14:21', 'Dá-me as pessoas, e toma os bens para ti.')]);
           // a resposta de Abrão (Gn 14:22) é a Palavra que vence a cobiça
-          c.receberVersiculo('Gn 14:22-23');
+          c.receberVersiculo('Gn 14:22-24');
           c.receberVersiculo('Gn 13:8');
           c.receberVersiculo('Gn 12:2');
           c.dica('Pressione Q: "Está escrito".');

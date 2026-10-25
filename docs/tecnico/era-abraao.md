@@ -116,7 +116,7 @@ Os itens de fala abaixo já foram aceitos e levados ao ROTEIRO (ver "Falas e tex
 
 - **Verbos:** os postos "qualquer jogável" (mastros, porteiras) usam `usar`, porque `segurar` é só do guerreiro. A corda do Moriá é o interativo `amarrarCorda` no ponto `cordaMoria`, porque `cordaMoria` já é a escalada do mundo.
 - **B1:** Gn 12:2-3 entra na chegada junto de Gn 12:1 (`narrador('Gn 12:1-3')`), e não como voz de Deus em Moré depois de Gn 12:7: as palavras foram ditas em Harã, antes da partida (checklist, ordem do texto). Depois do altar de Moré vem o trecho de Gn 12:7 "e ali ele edificou um altar…".
-- **B3, prova da tentação:** as respostas são `Gn 14:22-23` (Gn 14:22 sozinho termina em vírgula), `Gn 13:8` e `Gn 12:2`. Duas mentiras do ROTEIRO ("Você mereceu.", "Ninguém vai saber.") viraram "Isso é seu. Não divida com ninguém." e "Pegue tudo antes que outro pegue.", porque Gn 13:8 e Gn 12:2 não as respondiam (cada resposta tem de servir a todas as mentiras).
+- **B3, prova da tentação:** as respostas são `Gn 14:22-24` (Gn 14:22 e Gn 14:23 terminam em vírgula; a frase acaba em 14:24), `Gn 13:8` e `Gn 12:2`. Duas mentiras do ROTEIRO ("Você mereceu.", "Ninguém vai saber.") viraram "Isso é seu. Não divida com ninguém." e "Pegue tudo antes que outro pegue.", porque Gn 13:8 e Gn 12:2 não as respondiam (cada resposta tem de servir a todas as mentiras).
 - **B3:** 6 inimigos (4 sentinelas acordam 2 guerreiros, o mínimo do ROTEIRO). Os cativos são 4 + Ló (`cativo5`), solto por último e só por Abrão.
 - **B5:** Gn 22:13 é dividido: o carneiro preso antes de o jogador agir; "e Abraão foi e tomou o carneiro…" depois, já com o fogo no altar.
 - **B5, `pe`:** `servosMoria` fica a 6,7 m de `peMoria`, na beira do pé plano (que só tem ~7 m de raio; além dele a encosta é íngreme). Por isso a chegada usa o raio padrão (3): o jogador anda até o pé, e um teste de dados garante que os servos ficam fora do raio.
@@ -132,7 +132,7 @@ Aceitas pelo dono do projeto em 24/10/2026; o `docs/ROTEIRO.md` foi atualizado p
 | B1 `altarMore` | voz de Deus Gn 12:2 e Gn 12:3 depois do altar | narrador Gn 12:7 «e ali ele edificou um altar ao Senhor, que lhe apareceu.» | Deus não repete 12:2-3 em Moré; o trecho de 12:7 descreve o que o jogador acabou de fazer. |
 | B3 `MENTIRAS_B3` | "Você mereceu." | "Isso é seu. Não divida com ninguém." | As respostas se alternam; Gn 13:8 não respondia a esta mentira. Agora as três respondem (nem um fio; somos irmãos; tu serás uma bênção). |
 | B3 `MENTIRAS_B3` | "Ninguém vai saber." | "Pegue tudo antes que outro pegue." | Gn 13:8 e Gn 12:2 não a respondiam. |
-| B3 `PROVA_TENTACAO_B3.respostas` e `receberVersiculo` | `Gn 14:22` | `Gn 14:22-23` | Gn 14:22 termina em vírgula; com 14:23 a resposta inclui "nem um fio" (checklist: versículo no meio da frase). |
+| B3 `PROVA_TENTACAO_B3.respostas` e `receberVersiculo` | `Gn 14:22` | `Gn 14:22-24` | Gn 14:22 e 14:23 terminam em vírgula; a frase acaba em 14:24 e inclui "nem um fio" (checklist: versículo no meio da frase; T-029). |
 | B3 `nemUmFio`, dica | `Pressione Q — Está escrito. Segure o botão direito, se tiver o escudo.` | `Pressione Q: "Está escrito".` | Formato das teclas do checklist; o escudo só vem em B4. |
 | B3 `melquisedeque`, objetivo | "No vale de Savé." | "Volte com os resgatados ao vale de Savé." | Objetivo não pode ser só um lugar (Gn 14:16-17). |
 | B2 `percorrer`, dica | "Foi a Abrão que Deus disse: caminha pela terra." | "Foi a Abrão que Deus mandou caminhar pela terra." | "caminha pela terra" é texto da BKJ digitado fora de `ref`/`trecho`. |
@@ -177,7 +177,7 @@ Planilha: `node scripts/planilha-falas.mjs abraao e2e/saida/planilha-abraao` (34
 
 **Corrigido:**
 - Ordem do texto em B1 (Gn 12:1-3) e Gn 22:13 dividido (acima).
-- Prova de B3: resposta `Gn 14:22-23` e duas mentiras (acima).
+- Prova de B3: resposta `Gn 14:22-24` e duas mentiras (acima).
 - "Aponta para Cristo": `bencaoNacoes` ganhou `Gl 3:16` ("Cristo, a Semente de Abraão"); `melquisedeque` não afirma mais "intercede por nós" (está em Hebreus 7, mas fora das refs) e se apoia em Hb 7:3; `justica` não depende mais dos versos de Romanos 4 sobre as obras e a ressurreição (fora das refs e ausentes do `versiculos.json`) e ganhou `Gl 3:8`.
 - Texto bíblico digitado fora de `ref`/`trecho`: "No monte do Senhor ele será visto" (memória `jeovaJire`), "caminha pela terra" (dica de B2) e "foram os dois juntos" (dica de B5 e de `Juntos`).
 - Memória `resgate`: "não pensou na ofensa" (Ló não ofendeu Abrão) virou "não o abandonou".
