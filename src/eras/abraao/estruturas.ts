@@ -3,7 +3,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { Construtor, CORES } from '../../entidades/Construtor';
 import type { Mundo } from '../../mundo/Mundo';
 import type { Colisor } from '../../mundo/Colisao';
-import { GLOBAIS, aplicarPatch } from '../../render/Shaders';
+import { GLOBAIS, aplicarPatch, glslEncolher } from '../../render/Shaders';
 import { damp } from '../../core/util';
 import { Aleatorio } from '../../core/aleatorio';
 
@@ -295,7 +295,7 @@ void main() {
   vUv = uv;
   vec4 base = modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
   float s = length(instanceMatrix[0].xyz);
-  float enc = 1.0 - smoothstep(uRaio - 20.0, uRaio, distance(base.xz, uCentro));
+  float enc = 1.0 - ${glslEncolher('base.xz')};
 #ifdef BILLBOARD
   vec4 mvPosition = viewMatrix * base;
   mvPosition.xy += position.xy * s * enc;
