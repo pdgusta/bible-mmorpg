@@ -25,8 +25,8 @@ const { nav, pag, erros } = await abrir({ largura: W, altura: H });
 const medidas = [];
 let numFoto = 0;
 
-/** Animais vivos no mundo (Animal.todos; o Vite serve o mesmo módulo que o jogo usa). */
-const animais = () => pag.evaluate(async () => (await import('/src/entidades/Animal.ts')).Animal.todos.size).catch(() => -1);
+/** Animais vivos no mundo, contados pelo jogo (partida.dev.animais()). */
+const animais = () => pag.evaluate(() => window.partida.dev.animais().n).catch(() => -1);
 
 /**
  * Renderiza um quadro, lê as draw calls e os triângulos dele e salva a foto. `medir: false`
@@ -97,6 +97,9 @@ function imprimirTabela() {
 }
 
 // ------------------------------------------------------------------ carregamento e título
+// a lista de recursos guarda as URLs dos módulos que o jogo carregou (ver doJogo); o padrão
+// de 250 entradas não cabe todos
+await pag.addInitScript(() => performance.setResourceTimingBufferSize(20000));
 await pag.goto(`${BASE}/?q=${Q}`);
 let ultimo = '';
 const relogio = setInterval(async () => {
@@ -171,11 +174,17 @@ const MOMENTOS = [
 ];
 await pag.evaluate(async (momentos) => {
   const dev = window.partida.dev;
-  const tabelas = {
-    noe: (await import('/src/eras/noe/atalhos.ts')).ATALHOS_NOE,
-    abraao: (await import('/src/eras/abraao/atalhos.ts')).ATALHOS_ABRAAO,
+  // importa a instância que o jogo carregou: um módulo editado depois que o servidor subiu
+  // vem com `?t=`, e o import pelo caminho puro traria outra cópia, com outro estado
+  const doJogo = (caminho) => {
+    const urls = performance.getEntriesByType('resource').map((r) => new URL(r.name)).filter((u) => u.pathname === caminho);
+    return import(urls.length ? urls[urls.length - 1].pathname + urls[urls.length - 1].search : caminho);
   };
-  const { mecanicaAbraao } = await import('/src/eras/abraao/missoes.ts');
+  const tabelas = {
+    noe: (await doJogo('/src/eras/noe/atalhos.ts')).ATALHOS_NOE,
+    abraao: (await doJogo('/src/eras/abraao/atalhos.ts')).ATALHOS_ABRAAO,
+  };
+  const { mecanicaAbraao } = await doJogo('/src/eras/abraao/missoes.ts');
   const prontos = {
     batalha: () => mecanicaAbraao()?.nome === 'batalha',
     prova: () => window.partida.s.provas.emProva,
@@ -233,18 +242,12 @@ async function jogarEra(eraId, limiteMin) {
         a4Animais = n;
         // o pior caso: a câmera virada para o centro dos animais (e devolvida depois)
         const yaw = await pag.evaluate(async () => {
-          const { Animal } = await import('/src/entidades/Animal.ts');
           const cam = window.jogo.cam;
           const antes = cam.yaw;
-          let x = 0;
-          let z = 0;
-          for (const a of Animal.todos) {
-            x += a.raiz.position.x;
-            z += a.raiz.position.z;
-          }
+          const { x, z } = window.partida.dev.animais();
           const p = window.jogo.ativo.posicao;
           // a frente da câmera é (-sen yaw, -cos yaw)
-          cam.yaw = Math.atan2(-(x / Animal.todos.size - p.x), -(z / Animal.todos.size - p.z));
+          cam.yaw = Math.atan2(-(x - p.x), -(z - p.z));
           await window.jogo.avancar(0.1);
           return antes;
         });

@@ -1,6 +1,7 @@
 // Depuração e e2e (só com ?dev ou pelo window.partida.dev): joga a era pelos atalhos dela,
 // avança o tempo de jogo em modo manual (sem esperar a renderização), passa as falas
 // sozinho e para em "capturas" (momentos de foto) até o e2e liberar.
+import { Animal } from '../../entidades/Animal';
 import type { Partida } from '../Partida';
 import type { AtalhosEra } from '../eras';
 import { esperarJogo, estadoMissaoAtual } from './comum';
@@ -75,6 +76,22 @@ export class Depuracao {
       { nome: 'a6-arco', missao: 'a6', manterFala: true, quando: () => !!jogo.flags.arcoIrisNoCeu && ui.dialogoAberto() && falante('deus') },
       { nome: 'transicao', atraso: 0, quando: () => this.inicioTransicao >= 0 && jogo.tempo - this.inicioTransicao > 6.5 && jogo.transicao },
     ];
+  }
+
+  /**
+   * Animais vivos e o centro deles no chão (o e2e mede a A4 no pior caso). O e2e não pode
+   * importar o Animal pelo Vite: um módulo editado depois que o servidor subiu vem com `?t=`,
+   * e o import da página carrega outra instância, com `Animal.todos` vazio.
+   */
+  animais(): { n: number; x: number; z: number } {
+    let x = 0;
+    let z = 0;
+    for (const a of Animal.todos) {
+      x += a.raiz.position.x;
+      z += a.raiz.position.z;
+    }
+    const n = Animal.todos.size;
+    return { n, x: n ? x / n : 0, z: n ? z / n : 0 };
   }
 
   /** Liga capturas pelo nome (ou todas, sem argumento). */
