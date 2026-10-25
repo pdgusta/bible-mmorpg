@@ -19,7 +19,7 @@ export const CRISTO_NOE: EntradaCristo[] = [
   {
     id: 'semente',
     titulo: 'A Semente prometida',
-    refs: ['Gn 3:15', 'Gl 3:16'],
+    refs: ['Gn 3:15', 'Gn 11:10', 'Gl 3:16'],
     desbloqueia: 'prologo',
     completaEm: 'b5',
     texto:
@@ -30,7 +30,7 @@ export const CRISTO_NOE: EntradaCristo[] = [
   {
     id: 'arca',
     titulo: 'Uma só porta',
-    refs: ['1Pe 3:20-21', 'Jo 10:9', 'Mt 24:37-39'],
+    refs: ['Gn 6:16', 'Gn 7:16', '1Pe 3:20-21', 'Jo 10:9', 'Mt 24:37-39'],
     desbloqueia: 'a5.porta',
     texto:
       'A arca tinha uma só porta, e foi o próprio Senhor quem a fechou. ' +
@@ -50,7 +50,7 @@ export const CRISTO_NOE: EntradaCristo[] = [
   {
     id: 'linhagem',
     titulo: 'De Noé a Jesus',
-    refs: ['Lc 3:34', 'Lc 3:36'],
+    refs: ['Gn 3:15', 'Lc 3:34', 'Lc 3:36'],
     desbloqueia: 'a6.transicao',
     texto:
       'Lucas traça a genealogia de Jesus até o princípio, e nela estão Sem e Noé. ' +

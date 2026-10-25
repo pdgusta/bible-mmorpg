@@ -31,7 +31,7 @@ export const MEMORIAS_ABRAAO: DefMemoria[] = [
     descricao: 'O rei de Salém, sacerdote do Deus Altíssimo, trouxe pão e vinho e abençoou Abrão. A vitória veio de Deus.',
   },
   {
-    id: 'nemUmFio', titulo: 'Nem um fio', ref: 'Gn 14:23', era: ERA, forca: 1,
+    id: 'nemUmFio', titulo: 'Nem um fio', ref: 'Gn 14:22-23', era: ERA, forca: 1,
     descricao: 'Abrão recusou as riquezas de Sodoma para que ninguém dissesse que outro o enriqueceu além do Senhor.',
   },
   {

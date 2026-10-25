@@ -91,7 +91,7 @@ Mulheres: casa, trigal, poço, fogueira.
 | percorreATerra | Levanta-te, caminha pela terra | Gn 13:17 | 2 | B2 |
 | resgate | Trouxe de volta o seu irmão | Gn 14:16 | 2 | B3 |
 | melquisedeque | Bendito seja Abrão | Gn 14:19 | 2 | B3 |
-| nemUmFio | Nem um fio | Gn 14:23 | 1 | B3 |
+| nemUmFio | Nem um fio | Gn 14:22-23 | 1 | B3 |
 | poDaTerra | Como o pó da terra *(segredo)* | Gn 13:16 | 1 | segredo em Canaã |
 | estrelas | Conta as estrelas | Gn 15:5 | — | B4 (resultado) |
 | jeovaJire | Javé-Jiré | Gn 22:14 | — | B5 |
@@ -462,7 +462,7 @@ Tipos: físico, batalha, cooperativo. Refs: Gn 14:12-24; Hb 7:1-3; Mt 6:21.
      - "Pegue tudo antes que outro pegue."
      - "Com isso você nunca mais precisará de ninguém."
      - "Ló escolheu a melhor terra. Pegue a sua parte."
-   - respostas: ['Gn 14:22-23', 'Gn 13:8', 'Gn 12:2'] (Gn 14:22 sozinho termina em vírgula). As respostas se alternam entre as mentiras, então cada uma responde a todas.
+   - respostas: ['Gn 14:22-24', 'Gn 13:8', 'Gn 12:2'] (Gn 14:22 e Gn 14:23 terminam em vírgula; a frase acaba em 14:24). As respostas se alternam entre as mentiras, então cada uma responde a todas.
    - Ao vencer:
      - abraao: Gn 14:22 «Eu levanto a minha mão ao Senhor, o Deus Altíssimo, o possuidor do céu e da terra,»
      - abraao: Gn 14:23, Gn 14:24
