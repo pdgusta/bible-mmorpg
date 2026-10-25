@@ -22,6 +22,10 @@ export interface CanaaAbraao {
   estadoAltar(nome: NomeAltar): EstadoAltar;
   /** Tendas, fogueiras, cercado dos cativos e despojos em Dã (B3). */
   definirAcampamentoInimigo(visivel: boolean): void;
+  /** Os despojos trazidos de volta, no vale de Savé (B3). */
+  definirDespojos(visivel: boolean): void;
+  /** Acende o brilho dos despojos; ele desbota sozinho conforme o jogador se afasta (ensinamento 15). */
+  acenderDespojos(sim: boolean): void;
   /** Mostra a corda e ativa a escalada 'cordaMoria' (B5). */
   amarrarCordaMoria(sim: boolean): void;
   /** Discernir no fosso: 0 = normal, 1 = firmes douradas e soltas vermelhas. */

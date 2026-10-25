@@ -447,6 +447,7 @@ Tipos: físico, batalha, cooperativo. Refs: Gn 14:12-24; Hb 7:1-3; Mt 6:21.
    - abraao (ficção): "Somos irmãos, Ló. Sempre fomos."
    - narrador: Gn 14:16. Memória `resgate`; Unidade +15.
 5. **melquisedeque** — No vale de Savé:
+   - Os bens trazidos de volta (Gn 14:16) estão ali, em duas pilhas de despojos (ponto `despojosSave`).
    - narrador: Gn 14:17, Gn 14:18
    - Melquisedeque traz pão e vinho.
    - melquisedeque: Gn 14:19 «Bendito seja Abrão do Deus Altíssimo, criador do céu e da terra.»
@@ -455,6 +456,7 @@ Tipos: físico, batalha, cooperativo. Refs: Gn 14:12-24; Hb 7:1-3; Mt 6:21.
    - Memória `melquisedeque`. Aponta para Cristo `melquisedeque` (Hb 7:1-3).
 6. **nemUmFio**
    - rei de Sodoma: Gn 14:21 «Dá-me as pessoas, e toma os bens para ti.»
+   - Os despojos de Savé começam a brilhar antes da fala do rei (ensinamento 15). O brilho desbota sozinho conforme o jogador se afasta: pleno até 4 m, apagado a 18 m. É efeito passivo, sem passo novo; quem recusa sem se afastar também avança.
    - Prova `tentacao`. Os despojos brilham e o sussurro insiste (ficção):
      - "Isso é seu. Não divida com ninguém."
      - "Pegue tudo antes que outro pegue."
@@ -465,7 +467,9 @@ Tipos: físico, batalha, cooperativo. Refs: Gn 14:12-24; Hb 7:1-3; Mt 6:21.
      - abraao: Gn 14:22 «Eu levanto a minha mão ao Senhor, o Deus Altíssimo, o possuidor do céu e da terra,»
      - abraao: Gn 14:23, Gn 14:24
      - Memória `nemUmFio`. Banner: Mt 6:21
+     - XP da recusa: o da prova (60, "Resistir a uma tentação" no DESIGN §6), mais que qualquer achado.
    - Ló volta a Sodoma (NPC sai de cena; Gn 14:12 conta que ele habitava lá).
+   - Os despojos ficam em Savé, ainda brilhando, até o fade do começo de B4, quando somem (Gn 14:24: ficaram com o rei de Sodoma).
    - Próxima: B4.
 
 ## B4 — Conta as estrelas (desafio espiritual)

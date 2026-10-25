@@ -3,7 +3,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { Construtor, CORES } from '../../entidades/Construtor';
 import type { Mundo } from '../../mundo/Mundo';
 import type { Colisor } from '../../mundo/Colisao';
-import { GLOBAIS, aplicarPatch } from '../../render/Shaders';
+import { GLOBAIS, aplicarPatch, glslEncolher } from '../../render/Shaders';
 import { damp } from '../../core/util';
 import { Aleatorio } from '../../core/aleatorio';
 
@@ -295,7 +295,7 @@ void main() {
   vUv = uv;
   vec4 base = modelMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
   float s = length(instanceMatrix[0].xyz);
-  float enc = 1.0 - smoothstep(uRaio - 20.0, uRaio, distance(base.xz, uCentro));
+  float enc = 1.0 - ${glslEncolher('base.xz')};
 #ifdef BILLBOARD
   vec4 mvPosition = viewMatrix * base;
   mvPosition.xy += position.xy * s * enc;
@@ -607,5 +607,63 @@ export class Porteira {
   private refazerNavegacao() {
     const r = this.comp + 2;
     this.m.nav?.reconstruir(this.hx - r, this.hz - r, this.hx + r, this.hz + r);
+  }
+}
+
+// ------------------------------------------------------------------------------------------
+// Brilho dos despojos (B3, ensinamento 15: "o brilho desbota quando o jogador se afasta")
+// ------------------------------------------------------------------------------------------
+
+/**
+ * Reflexos dourados sobre a pilha de despojos, em dois draw calls (halos no ar e brilho no chão).
+ * `forca` (0..1) vem da missão, pela distância do jogador; com 0 o grupo some e não desenha nada.
+ */
+export class BrilhoDespojos {
+  readonly grupo = new THREE.Group();
+  forca = 0;
+  private readonly reflexos: { x: number; y: number; z: number; e: number; fase: number }[] = [];
+  private readonly halos: THREE.InstancedMesh;
+  private readonly chao: THREE.InstancedMesh;
+  private readonly matHalo = materialBrilho('#ffd46a', true);
+  private readonly matChao = materialBrilho('#ffc24a', false);
+  private m4 = new THREE.Matrix4();
+  private q = new THREE.Quaternion();
+  private p = new THREE.Vector3();
+  private s = new THREE.Vector3();
+
+  /** (x, y, z): centro da pilha no chão; `largura`/`fundo`: meia-extensão onde há ouro e bronze. */
+  constructor(x: number, y: number, z: number, largura: number, fundo: number, r: Aleatorio) {
+    this.grupo.name = 'brilhoDespojos';
+    for (let i = 0; i < 9; i++) {
+      this.reflexos.push({ x: x + r.entre(-largura, largura), y: y + r.entre(0.5, 1.3), z: z + r.entre(-fundo, fundo), e: r.entre(0.8, 1.5), fase: r.entre(0, Math.PI * 2) });
+    }
+    this.halos = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), this.matHalo, this.reflexos.length);
+    this.chao = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), this.matChao, 1);
+    this.chao.setMatrixAt(0, this.m4.compose(this.p.set(x, y + 0.06, z), this.q, this.s.set(largura * 4, 1, fundo * 5)));
+    for (const im of [this.halos, this.chao]) {
+      im.frustumCulled = false;
+      im.castShadow = false;
+      im.receiveShadow = false;
+      this.grupo.add(im);
+    }
+    this.halos.renderOrder = 5;
+    this.chao.renderOrder = 4;
+    this.atualizar(0);
+  }
+
+  atualizar(t: number) {
+    const f = Math.min(1, Math.max(0, this.forca));
+    this.grupo.visible = f > 0.002;
+    if (!this.grupo.visible) return;
+    const { m4, q, p, s } = this;
+    this.reflexos.forEach((b, i) => {
+      // cintila: cada reflexo pulsa no seu tempo
+      const pulso = 0.55 + 0.45 * Math.max(0, Math.sin(t * 2.1 + b.fase)) ** 3;
+      m4.compose(p.set(b.x, b.y, b.z), q, s.setScalar(b.e * (0.9 + 1.4 * pulso) * (0.6 + 0.4 * f)));
+      this.halos.setMatrixAt(i, m4);
+    });
+    this.halos.instanceMatrix.needsUpdate = true;
+    this.matHalo.uniforms.uForca.value = 1.15 * f;
+    this.matChao.uniforms.uForca.value = 0.6 * f;
   }
 }
