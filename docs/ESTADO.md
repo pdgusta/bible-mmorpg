@@ -41,7 +41,7 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
   - A1 com HUD, objetivo, andar, Diário (J), pausa (Esc);
   - salvar no espaço 1; depois muda posição e flag, sai para o título e carrega pelo menu, conferindo que voltam.
 - Com `--transicao`, ele joga a era 1 inteira pelos atalhos: A6 (arco-íris), transição com a genealogia de Sem a Abrão, que é limpa no fim, e B1 jogável com Abrão em Canaã. Fotos em `e2e/saida/integracao/`.
-- Junções na `frente/integracao`: `frente/era-noe` (5 ajustes e o cervo), `frente/era-abraao` (até 741f716), `frente/motor` (até 2ff129e, T-008) e `frente/audio` (até 650c01b).
+- Junções na `frente/integracao`: `frente/era-noe` (5 ajustes e o cervo), `frente/era-abraao` (até 9687739, T-020), `frente/motor` (até 2ff129e, T-008) e `frente/audio` (até 650c01b).
 - Era 2 ligada (`src/jogo/ligacao/abraao.ts`):
   - `ERA_ABRAAO` com jogáveis, NPCs e início;
   - `ServicosAbraao` completo (rebanhos em `mundo.atualizaveis`, NPCs de cena, entrada, `aCadaQuadro`, créditos);
@@ -62,31 +62,33 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
   - **`?dev&missao=b1..b5`:** o novo jogo sempre montava a era de Noé, e a missão da era 2 dava "Missão desconhecida nesta era". Agora ele começa pela era que tem a missão (`eraDaMissao`; `tests/eras.test.ts`).
   - **Câmera:** a 3ª pessoa não entra mais na copa das árvores (`Natureza.copas()` e `src/camera/Copas.ts`; `tests/camera-copas.test.ts`). A transição de era não usa mais a `FOLGA_TERRENO`, e o close da genealogia ficou a 1,5 m do rosto (antes, 0,8 m: a câmera cortava o turbante).
 - `npm run validar` funciona no Windows (`fileURLToPath` em `scripts/biblia-comum.mjs`); `playwright` é dependência de desenvolvimento.
-- T-013/T-018: `e2e/jogar-mvp.mjs` (`npm run e2e`, junção da `frente/jogar-mvp`) joga o MVP inteiro pelos atalhos: título, era 1, transição, era 2, fim de B5, resumo da jornada, créditos e volta ao título. Em cada momento-chave tira uma foto (`e2e/saida/mvp/`) e mede `jogo.render.gl.info.render`. Leva uns 19 min no SwiftShader; rode sem o vitest junto.
+- T-013/T-018: `e2e/jogar-mvp.mjs` (`npm run e2e`, junção da `frente/jogar-mvp`) joga o MVP inteiro pelos atalhos: título, era 1, transição, era 2, fim de B5, resumo da jornada, créditos e volta ao título. Em cada momento-chave tira uma foto (`e2e/saida/mvp/`) e mede `jogo.render.gl.info.render`. Leva de 19 a 24 min no SwiftShader; rode sem o vitest junto.
+- T-020: junção da `frente/era-abraao` (até 9687739: T-009, T-014 e T-016). O e2e conta os animais pelo jogo (`partida.dev.animais()`) e importa os atalhos e as missões pela URL que o jogo carregou: um módulo editado depois que o Vite subiu vem com `?t=`, e o import pelo caminho puro trazia outra instância (a A4 contava 0 animais).
 
-**Orçamento da integração** (`npm run e2e`, preset médio, 960 × 540, as draw calls contam a passada de sombra; base `frente/integracao` com o LOD dos humanos, antes das junções da `frente/hud`, da `frente/desempenho` e da T-016):
+**Orçamento da integração** (`npm run e2e`, preset médio, 960 × 540, as draw calls contam a passada de sombra; base `frente/integracao` com o LOD dos humanos e a T-016, antes das junções da `frente/hud`, da `frente/desempenho` e da `frente/a4`):
 
-| Era | Vista | Etapa | Draw calls | Triângulos |
-|---|---|---|---|---|
-| noe | titulo | - | 126 | 368 mil |
-| noe | a1-deus | a1.orar | 133 | 458 mil |
-| noe | troca | a2.planejar | 98 | 339 mil |
-| noe | a2-viga | a2.erguer | 73 | 366 mil |
-| noe | a3-prova | a3.pregar | 63 | 507 mil |
-| noe | a4-animais | a4.animais | 75 | 371 mil |
-| noe | a5-arca | a5.fontes | 71 | 456 mil |
-| noe | a6-arco | a6.bencao | 83 | 458 mil |
-| noe | transicao | a6.transicao | 53 | 197 mil |
-| abraao | b1-canaa | b1.altarMore | 67 | 322 mil |
-| abraao | b2-manre | b2.manre | 93 | 342 mil |
-| abraao | b3-batalha | b3.ataque | **151** | 545 mil |
-| abraao | b4-estrelas | b4.duvida | 52 | 337 mil |
-| abraao | b5-moria | b5.altar | 78 | 256 mil |
+| Era | Vista | Etapa | Draw calls | Triângulos | Animais |
+|---|---|---|---|---|---|
+| noe | titulo | - | 126 | 369 mil | 0 |
+| noe | a1-deus | a1.orar | 133 | 458 mil | 0 |
+| noe | troca | a2.planejar | 98 | 339 mil | 0 |
+| noe | a2-viga | a2.erguer | 73 | 365 mil | 0 |
+| noe | a3-prova | a3.pregar | 63 | 507 mil | 0 |
+| noe | a4-animais (pico, câmera para os animais) | a4.animais | 130 | 471 mil | 23 |
+| noe | a5-arca | a5.fontes | 71 | 456 mil | 0 |
+| noe | a6-arco | a6.bencao | 82 | 458 mil | 8 |
+| noe | transicao | a6.transicao | 53 | 197 mil | 8 |
+| abraao | b1-canaa | b1.altarMore | 67 | 322 mil | 8 |
+| abraao | b2-manre | b2.manre | 61 | 259 mil | 18 |
+| abraao | b3-batalha | b3.ataque | 134 | 419 mil | 8 |
+| abraao | b4-estrelas | b4.duvida | 52 | 337 mil | 8 |
+| abraao | b5-moria | b5.altar | 78 | 256 mil | 9 |
+
+Todas as vistas ficam dentro do orçamento. A A4 foi medida a cada 5 animais com a câmera virada para eles: 7 animais, 75 calls; 14, 113; 23, 130 (o pico); 29, 120. Antes da T-016, a B3 dava 151.
 
 **Falta:**
-1. **B3 passa do orçamento:** 151 draw calls na batalha (limite 150).
-2. **A4 com os animais:** a medida da A4 sai no começo de `a4.animais`, antes de os animais chegarem, e o script contou 0 animais durante toda a etapa. Por isso a nova medida a cada 5 animais nunca disparou. Falta medir o pior caso, com cerca de 29 animais.
-3. O desvio do `Animal` (sondas de `moverChao`) alterna entre dois lados num bolsão e o bicho treme no lugar até o reposicionamento; um desvio com memória do lado escolhido evitaria o tremor.
+1. **Animais da era 1 na era 2:** os 8 animais que saem da arca na A6 continuam em `Animal.todos` depois da transição (a B1 conta 8 antes de qualquer rebanho, e o rebanho da B2 só nasce em B2). Hipótese: o mundo de Noé é descartado sem `Animal.remover()`, e esses animais ainda entram na separação de `moverChao` dos animais de Canaã.
+2. O desvio do `Animal` (sondas de `moverChao`) alterna entre dois lados num bolsão e o bicho treme no lugar até o reposicionamento; um desvio com memória do lado escolhido evitaria o tremor.
 
 **Testes sob carga:** com o Chromium/e2e aberto ou vários agentes na máquina, os testes de CPU pura (o Simplificar, a síntese de áudio, as eras em sequência, a arca) estouram os 5 s porque os workers do vitest disputam os núcleos com o SwiftShader: no pico, 4 rodadas deram de 0 a 11 timeouts. Nessa situação use `npm run test:leve` (2 workers), que deu 121/121 nas 2 rodadas no pico. Os timeouts de Provas e Missoes (espera de timer) acabaram com a T-010 (`ciclo()` com `setImmediate`).
 
@@ -143,7 +145,7 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 
 Pendências:
 - `docs/ROTEIRO.md` (A4 "0/8 pares" e "par perdido", A5 "Jafé abre a cobertura") e `docs/tecnico/revisao.md` §8 (pendências 1 a 4) ainda descrevem o estado antigo.
-- Medir as draw calls de A4 no jogo integrado: no pior caso há cerca de 29 animais ao mesmo tempo.
+- ✅ Draw calls de A4 no jogo integrado: pico de 130 com 23 animais (T-020; a tabela está em "Orçamento da integração").
 
 ## Problemas conhecidos (arte)
 
