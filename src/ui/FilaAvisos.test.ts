@@ -102,6 +102,17 @@ describe('limiteAvisos', () => {
     expect(limiteAvisos(360, 10, 12)).toBe(1);
     expect(limiteAvisos(1080, 2000, 17)).toBe(4);
   });
+
+  it('conta a altura medida de cada aviso: textos longos ocupam mais de duas linhas', () => {
+    // o caso da revisão (640×360): memória de 68px e xp de 55px, mais 5px entre eles, em 113px livres
+    expect(limiteAvisos(360, 113, 12, [73.4, 60.8])).toBe(1);
+    expect(limiteAvisos(360, 113, 12, [50, 50])).toBe(2);
+    // o da fila ainda sem medida conta como um de duas linhas (50,4px a 12px)
+    expect(limiteAvisos(360, 113, 12, [73.4])).toBe(1);
+    expect(limiteAvisos(360, 130, 12, [73.4])).toBe(2);
+    expect(limiteAvisos(720, 200, 12, [40, undefined, 40])).toBe(3);
+    expect(limiteAvisos(360, 30, 12, [73.4])).toBe(1);
+  });
 });
 
 describe('duracaoAviso', () => {

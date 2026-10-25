@@ -91,6 +91,8 @@ Saem do `Progresso` por `ui.aviso`: XP, nível, atributo, memória, armadura e u
 
 - **Fila:** a pilha mostra no máximo N avisos; o resto espera a vez (`FilaAvisos`) e aparece quando um sai.
   - N tem um teto pela altura da tela (2 abaixo de 560 px, 3 abaixo de 900 px, 4 acima) e, abaixo dele, é quantos cabem entre a coluna do retrato e a dica, quando ela está na tela. Sempre pelo menos um.
+  - O encaixe usa a altura medida de cada cartão (um texto longo passa de duas linhas; o ×n estreita o texto). O cartão novo é medido logo depois de posto, antes de aparecer: se não coube, volta para a fila sem piscar, com a medida guardada. O ajuste roda ao entrar, agrupar e sair um aviso, ao mostrar ou esconder a dica, ao redimensionar e quando a coluna do retrato muda de altura. Quem ainda não foi medido conta como duas linhas (`ALTURA_AVISO_REM`).
+  - Regressão no Chromium: `node e2e/teste-avisos.mjs` (textos curtos e longos a 640×360, 960×540 e 1280×720; o lab expõe `window.ui`).
   - Quando o limite cai (a dica apareceu, a janela encolheu), os avisos mais novos voltam para a frente da fila e reaparecem depois.
   - Com fila, cada aviso fica menos tempo (2,6 s, ou 3,6 s para nível, memória e armadura; sem fila, 4,2 s e 5,6 s).
   - Aviso igual a um que está na tela ou na fila vira ×n no mesmo cartão. A fila guarda até 8; acima disso cai o mais antigo.

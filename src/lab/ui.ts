@@ -305,6 +305,8 @@ export async function labUI(canvas: HTMLCanvasElement, raiz: HTMLDivElement) {
     e.preventDefault();
     void ui.rodaPersonagens(RODA).then((id) => id && ui.aviso(`Trocar para ${NOMES[id]}`, 'info'));
   });
+  // os testes de navegador mandam avisos e dicas depois de pronto (e2e/teste-avisos.mjs)
+  (window as unknown as { ui: UI }).ui = ui;
   setTimeout(() => ((window as unknown as { pronto: boolean }).pronto = true), atraso);
 }
 

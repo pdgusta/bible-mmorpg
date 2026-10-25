@@ -47,6 +47,10 @@ export class Avisos {
   /** No máximo N avisos na tela (pela altura); os outros esperam. Avisos iguais são agrupados. */
   private fila = new FilaAvisos<DadosAviso>(limiteAvisos(window.innerHeight));
   private vivos = new Map<ItemAviso<DadosAviso>, { el: HTMLElement; timer: number }>();
+  /** O cartão de cada aviso que ocupa vaga (inclusive o que está saindo), para medir a altura. */
+  private cartoes = new Map<ItemAviso<DadosAviso>, HTMLElement>();
+  /** Altura (px) dos avisos que voltaram para a fila, medida quando estavam na tela. */
+  private medidas = new WeakMap<ItemAviso<DadosAviso>, number>();
 
   constructor(raiz: HTMLDivElement) {
     this.pilha = el('div', 'avisos');
@@ -75,14 +79,17 @@ export class Avisos {
   aviso(texto: string, tipo: TipoAviso = 'info') {
     this.ajustarLimite();
     const r = this.fila.entrar(`${tipo}|${texto}`, { texto, tipo });
-    if (r.tipo === 'mostrar') this.mostrarAviso(r.item);
-    else if (r.tipo === 'agrupar') {
+    if (r.tipo === 'mostrar') {
+      this.mostrarAviso(r.item);
+      this.ajustarLimite(); // o novo pode ter mais de duas linhas
+    } else if (r.tipo === 'agrupar') {
       const vivo = this.vivos.get(r.item);
       if (!vivo) return; // ainda na fila: aparece já com o ×n
       const cont = vivo.el.querySelector('.aviso-cont');
       if (cont) cont.textContent = `×${r.item.n}`;
       clearTimeout(vivo.timer);
       vivo.timer = window.setTimeout(() => this.esconderCartao(r.item), duracaoAviso(tipo, this.fila.espera.length > 0));
+      this.ajustarLimite(); // o ×n estreita o texto, que pode ganhar uma linha
     }
   }
 
@@ -95,6 +102,7 @@ export class Avisos {
       el('span', 'aviso-cont', item.n > 1 ? `×${item.n}` : ''),
     );
     this.pilha.append(a);
+    this.cartoes.set(item, a);
     requestAnimationFrame(() => a.classList.add('visivel'));
     const dur = duracaoAviso(tipo, this.fila.espera.length > 0);
     this.vivos.set(item, { el: a, timer: window.setTimeout(() => this.esconderCartao(item), dur) });
@@ -106,6 +114,15 @@ export class Avisos {
     if (!vivo) return;
     this.vivos.delete(item);
     clearTimeout(vivo.timer);
+    if (paraFila) {
+      this.medidas.set(item, this.alturaCartao(vivo.el));
+      this.cartoes.delete(item);
+      // acabou de entrar e ainda não apareceu (não coube): sai já, sem animação
+      if (!vivo.el.classList.contains('visivel')) {
+        vivo.el.remove();
+        return;
+      }
+    }
     vivo.el.classList.remove('visivel');
     vivo.el.classList.add('saindo');
     if (paraFila) {
@@ -116,7 +133,9 @@ export class Avisos {
     this.fila.despedir(item);
     setTimeout(() => {
       vivo.el.remove();
+      this.cartoes.delete(item);
       for (const novo of this.fila.sair(item)) this.mostrarAviso(novo);
+      this.ajustarLimite();
     }, 500);
   }
 
@@ -124,16 +143,35 @@ export class Avisos {
     window.removeEventListener('resize', this.ajustarLimite);
   }
 
-  /** Quantos avisos cabem entre o retrato e a dica (ou o pé da tela). */
+  /**
+   * Quantos avisos cabem entre o retrato e a dica (ou o pé da tela), pela altura de cada cartão.
+   * Quem entra é medido logo depois de posto (antes de aparecer); se não coube, volta para a fila
+   * e a medida fica guardada, por isso a segunda passada já não muda nada.
+   */
   readonly ajustarLimite = () => {
+    for (let i = 0; i < 4; i++) if (!this.aplicarLimite()) break;
+  };
+
+  /** Uma passada do ajuste; devolve se algum aviso entrou ou saiu da tela. */
+  private aplicarLimite(): boolean {
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 14;
     // offsetTop, e não o retângulo: a dica entra deslizando (transform)
     const fim = this.dicaEl.classList.contains('visivel') ? this.dicaEl.offsetTop : window.innerHeight;
     const espaco = fim - this.pilha.offsetTop - 0.6 * rem;
-    const { entram, voltam } = this.fila.definirLimite(limiteAvisos(window.innerHeight, espaco, rem));
+    const alturas = [...this.fila.visiveis, ...this.fila.espera].map((item) => {
+      const c = this.cartoes.get(item);
+      return c ? this.alturaCartao(c) : this.medidas.get(item);
+    });
+    const { entram, voltam } = this.fila.definirLimite(limiteAvisos(window.innerHeight, espaco, rem, alturas));
     for (const item of voltam) this.esconderCartao(item, true);
     for (const novo of entram) this.mostrarAviso(novo);
-  };
+    return entram.length + voltam.length > 0;
+  }
+
+  /** Altura do cartão com o espaço até o próximo (px). */
+  private alturaCartao(c: HTMLElement): number {
+    return c.offsetHeight + (parseFloat(getComputedStyle(this.pilha).rowGap) || 0);
+  }
 
   dica(texto: string) {
     limpar(this.dicaTexto);

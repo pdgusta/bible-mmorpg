@@ -79,16 +79,25 @@ export class FilaAvisos<T> {
   }
 }
 
-/** Altura que um aviso de duas linhas ocupa na pilha, com o espaço entre eles, em rem. */
+/** Altura estimada de um aviso de duas linhas, com o espaço até o próximo, em rem. */
 export const ALTURA_AVISO_REM = 4.2;
 
 /**
  * Quantos avisos aparecem de uma vez: um teto pela altura da tela (px) e, abaixo dele, quantos
- * cabem no `espaco` livre (px) entre o retrato e a dica. Sempre pelo menos um.
+ * cabem, um depois do outro, no `espaco` livre (px) entre o retrato e a dica. `alturas` (px, com
+ * o espaço até o próximo) são as medidas dos avisos na ordem em que ocupam as vagas: os da tela e
+ * depois os da fila; quem ainda não foi medido conta como um de duas linhas. Sempre pelo menos um.
  */
-export function limiteAvisos(altura: number, espaco = Infinity, rem = 14): number {
+export function limiteAvisos(altura: number, espaco = Infinity, rem = 14, alturas: (number | undefined)[] = []): number {
   const teto = altura < 560 ? 2 : altura < 900 ? 3 : 4;
-  return Math.max(1, Math.min(teto, Math.floor(espaco / (ALTURA_AVISO_REM * rem))));
+  let usado = 0;
+  let n = 0;
+  while (n < teto) {
+    usado += alturas[n] ?? ALTURA_AVISO_REM * rem;
+    if (usado > espaco) break;
+    n++;
+  }
+  return Math.max(1, n);
 }
 
 const MARCANTES: TipoAviso[] = ['nivel', 'memoria', 'armadura'];
