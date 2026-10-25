@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { afastarDePaineis, type Caixa, type Ret } from './AreaLivre';
+import { afastarDePaineis, type Caixa, distribuirSussurros, type Ret, tetoSussurros } from './AreaLivre';
 
 // 640×360 como na foto do T-016: perfil no alto à esquerda, topo da prova, firmeza embaixo à esquerda
 const PERFIL: Ret = { esq: 10, topo: 10, dir: 200, base: 125 };
@@ -65,6 +65,63 @@ describe('afastarDePaineis', () => {
         expect(livre({ ...c, ...p }), `${x},${y} → ${p.x},${p.y}`).toBe(true);
         expect(p.x >= 0 && p.y >= 0 && p.x + 200 <= 640 && p.y + 40 <= 360).toBe(true);
       }
+    }
+  });
+});
+
+describe('distribuirSussurros', () => {
+  const s = (id: number, cx: number, cy: number, naTela = false) => ({ id, cx, cy, larg: 200, alt: 40, naTela });
+
+  it('não passa do teto pela altura da tela; os mais perto do centro entram primeiro', () => {
+    expect(tetoSussurros(360)).toBe(3);
+    expect(tetoSussurros(540)).toBe(3);
+    expect(tetoSussurros(720)).toBe(4);
+    expect(tetoSussurros(1080)).toBe(6);
+    const itens = [s(1, 100, 180), s(2, 320, 180), s(3, 540, 180), s(4, 320, 250), s(5, 320, 150)];
+    const l = distribuirSussurros(itens, [], 640, 360);
+    expect([...l.values()].filter(Boolean).length).toBe(3);
+    expect(l.get(2)).not.toBeNull(); // o do centro
+    expect(l.get(1)).toBeNull(); // o mais longe espera
+  });
+
+  it('quem já está na tela fica com a vaga diante de um novo à mesma distância; o que vai acertar antes toma a vaga', () => {
+    const naTela = [s(1, 120, 120, true), s(2, 520, 120, true), s(3, 320, 300, true)];
+    // à mesma distância do centro que os da tela: espera
+    expect(distribuirSussurros([...naTela, s(4, 120, 240)], [], 640, 360).get(4)).toBeNull();
+    // bem mais perto do centro: aparece, e o mais longe da tela vai esperar
+    const l = distribuirSussurros([...naTela, s(4, 330, 185)], [], 640, 360);
+    expect(l.get(4)).not.toBeNull();
+    expect([...l.values()].filter(Boolean).length).toBe(3);
+  });
+
+  it('sem lugar livre, o único à vista cobre um passageiro (a frase do centro), não um painel fixo', () => {
+    // fora a frase (no meio, a tela toda de largura), só sobram frestas
+    const frase: Ret = { esq: 0, topo: 95, dir: 640, base: 292, passageiro: true };
+    const hora: Ret = { esq: 440, topo: 0, dir: 640, base: 95 };
+    const memorias: Ret = { esq: 400, topo: 292, dir: 640, base: 360 };
+    const l = distribuirSussurros([s(1, 320, 60)], [...PAINEIS, hora, memorias, frase], 640, 360);
+    const p = l.get(1)!;
+    const c = { ...p, larg: 200, alt: 40 };
+    expect(livre(c) && !cruza(c, hora) && !cruza(c, memorias)).toBe(true);
+    expect(cruza(c, frase)).toBe(true);
+  });
+
+  it('sem nenhum lugar livre, o mais urgente aparece mesmo assim', () => {
+    const tudo: Ret = { esq: 0, topo: 0, dir: 640, base: 360 };
+    const l = distribuirSussurros([s(1, 100, 100), s(2, 320, 170)], [tudo], 640, 360);
+    expect(l.get(2)).not.toBeNull();
+    expect(l.get(1)).toBeNull();
+  });
+
+  it('os postos não se cobrem nem cobrem painéis; sem lugar livre, espera', () => {
+    const itens = Array.from({ length: 12 }, (_, i) => s(i + 1, 300 + (i % 3) * 10, 180 + i * 3));
+    const l = distribuirSussurros(itens, PAINEIS, 640, 360);
+    const postos = itens.filter((i) => l.get(i.id)).map((i) => ({ ...l.get(i.id)!, larg: i.larg, alt: i.alt }));
+    expect(postos.length).toBeGreaterThan(0);
+    expect(postos.length).toBeLessThanOrEqual(3);
+    for (const [k, a] of postos.entries()) {
+      expect(livre(a)).toBe(true);
+      for (const b of postos.slice(k + 1)) expect(cruza(a, { esq: b.x, topo: b.y, dir: b.x + b.larg, base: b.y + b.alt })).toBe(false);
     }
   });
 });
