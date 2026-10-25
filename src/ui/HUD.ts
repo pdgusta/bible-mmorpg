@@ -96,6 +96,8 @@ export class HUD {
   private v = new THREE.Vector3();
   private rumoAtual = 0;
   private fpsUltimo = 0;
+  /** Chamado quando a coluna do retrato muda de altura (os avisos começam logo abaixo dela). */
+  aoMudarColuna?: () => void;
 
   constructor(raizUI: HTMLDivElement) {
     // --- perfil
@@ -161,8 +163,16 @@ export class HUD {
     this.camadaMarcadores = el('div', 'marcadores-tela');
     this.fpsEl = el('div', 'hud-fps');
 
-    this.raiz = el('div', 'hud', el('div', 'hud-esquerda', perfil, unidadeCaixa), bussola, tempo, this.objetivoEl, this.promptEl, this.fpsEl);
+    const esquerda = el('div', 'hud-esquerda', perfil, unidadeCaixa);
+    this.raiz = el('div', 'hud', esquerda, bussola, tempo, this.objetivoEl, this.promptEl, this.fpsEl);
     raizUI.append(this.camadaMarcadores, this.raiz);
+    // os avisos começam logo abaixo da coluna do retrato, que muda de altura (classe longa, Unidade oculta)
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(() => {
+        raizUI.style.setProperty('--base-esquerda', `${esquerda.offsetTop + esquerda.offsetHeight}px`);
+        this.aoMudarColuna?.();
+      }).observe(esquerda);
+    }
     this.objetivo(null, null);
     this.marcadores([], 0);
   }

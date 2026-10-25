@@ -264,7 +264,7 @@ export async function labUI(canvas: HTMLCanvasElement, raiz: HTMLDivElement) {
       break;
     case 'prova':
       mostrarHUD({ dominio: 60 });
-      provaDemo(ui, P.get('tipo') === 'duvida');
+      provaDemo(ui, P.get('tipo') === 'duvida', Number(P.get('mems')) || 0, Number(P.get('usadas')) || 0);
       atraso = 1200;
       break;
     case 'avisos':
@@ -305,10 +305,30 @@ export async function labUI(canvas: HTMLCanvasElement, raiz: HTMLDivElement) {
     e.preventDefault();
     void ui.rodaPersonagens(RODA).then((id) => id && ui.aviso(`Trocar para ${NOMES[id]}`, 'info'));
   });
+  // os testes de navegador mandam avisos e dicas depois de pronto (e2e/teste-avisos.mjs)
+  (window as unknown as { ui: UI }).ui = ui;
   setTimeout(() => ((window as unknown as { pronto: boolean }).pronto = true), atraso);
 }
 
-function provaDemo(ui: UI, duvida: boolean) {
+/** Memórias que um jogador tem na B4 (as da era 1 e as de Abraão até ali), para `&mems=n`. */
+const MEMORIAS_B4: [string, string][] = [
+  ['graca', 'Achou graça'], ['pacto', 'Contigo estabelecerei o meu pacto'], ['pregador', 'Pregador da justiça'],
+  ['portaFechada', 'O Senhor fechou a porta'], ['deusLembrou', 'Deus lembrou de Noé'], ['folhaOliveira', 'A folha de oliveira'],
+  ['arcoIris', 'O sinal da aliança'], ['chamado', 'O chamado'], ['altarBetel', 'O altar entre Betel e Ai'],
+  ['naoHajaContenda', 'Não haja contenda'], ['percorreATerra', 'Levanta-te, caminha pela terra'],
+  ['resgate', 'Trouxe de volta o seu irmão'], ['melquisedeque', 'Bendito seja Abrão'], ['nemUmFio', 'Nem um fio'],
+];
+
+/** n memórias como o jogo manda: as `usadas` primeiras já lembradas e as teclas 1–5 nas cinco livres seguintes. */
+function memoriasDemo(n: number, usadas: number): NonNullable<EstadoProvaUI['memorias']> {
+  let tecla = 1;
+  return MEMORIAS_B4.slice(0, n).map(([id, titulo], i) => {
+    const usada = i < usadas;
+    return !usada && tecla <= 5 ? { id, titulo, usada, tecla: tecla++ } : { id, titulo, usada };
+  });
+}
+
+function provaDemo(ui: UI, duvida: boolean, mems = 0, usadas = 0) {
   const gn618 = ui.servicos.versiculo('Gn 6:18').texto.split(';')[0];
   const estado: EstadoProvaUI = duvida
     ? {
@@ -318,7 +338,7 @@ function provaDemo(ui: UI, duvida: boolean) {
           { id: 1, x: 0.24, y: 0.36, texto: 'Você é velho demais.', bloqueado: false },
           { id: 2, x: 0.7, y: 0.58, texto: 'Sarai é estéril. Promessas são só palavras.', bloqueado: false },
         ],
-        memorias: [
+        memorias: mems ? memoriasDemo(mems, usadas) : [
           { id: 'arcoIris', titulo: 'O sinal da aliança', usada: true },
           { id: 'pacto', titulo: 'Contigo estabelecerei o meu pacto', usada: false, tecla: 1 },
           { id: 'graca', titulo: 'Achou graça', usada: false, tecla: 2 },

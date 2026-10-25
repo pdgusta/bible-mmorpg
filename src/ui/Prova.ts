@@ -1,10 +1,12 @@
 // Overlay das provas espirituais: "dardos" de mentira como cartões escuros que avançam para o
 // centro (os bloqueados ficam dourados e caem), barra de firmeza, progresso, "Está escrito" (Q),
-// Escudo da fé (botão direito), memórias para a dúvida (1–n) e mensagens ("A luta continua").
+// Escudo da fé (botão direito), memórias para a dúvida (as cinco da vez, teclas 1–5) e mensagens ("A luta continua").
 import type { EstadoProvaUI, TipoProva } from '../jogo/contratos';
 import type { CtxUI } from './contexto';
 import { clamp01, el, limpar, tecla } from './dom';
+import { afastarDePaineis, type Ret } from './AreaLivre';
 import { icone } from './icones';
+import { dividirMemorias } from './ListaMemorias';
 
 const FIRMEZA: Record<TipoProva, string> = {
   tentacao: 'Domínio próprio',
@@ -25,7 +27,18 @@ interface ElDardo {
   bloqueado: boolean;
   x: number;
   y: number;
+  /** Tamanho do cartão (px), medido quando entra. */
+  larg: number;
+  alt: number;
 }
+
+/** Painéis que o sussurro não cobre (os que não estão na tela são ignorados). */
+const PAINEIS_PROVA = [
+  '.hud-esquerda', '.hud-tempo', '.bussola', '.hud-objetivo', '.avisos', '.dica-tutorial', '.faixa-versiculo',
+  '.prova-topo', '.prova-firmeza', '.prova-acoes', '.prova-memorias',
+];
+/** De quanto em quanto tempo (ms) os painéis são medidos de novo. */
+const MEDIR_PAINEIS_MS = 400;
 
 export class OverlayProva {
   private raiz: HTMLDivElement;
@@ -45,8 +58,17 @@ export class OverlayProva {
   private dardos = new Map<number, ElDardo>();
   private chaves = new Map<string, string>();
   private ativa = false;
+  private paineis: Ret[] = [];
+  private paineisEm = -Infinity;
+  /** A tela mudou de tamanho: o rem e os painéis mudam, e os dardos são medidos de novo. */
+  private medidasVelhas = false;
+  private readonly aoRedimensionar = () => {
+    this.paineisEm = -Infinity;
+    this.medidasVelhas = true;
+  };
 
   constructor(private ctx: CtxUI) {
+    window.addEventListener('resize', this.aoRedimensionar);
     this.vinheta = el('div', 'prova-vinheta');
     this.tipoEl = el('div', 'prova-tipo');
     this.titulo = el('div', 'prova-titulo');
@@ -81,8 +103,30 @@ export class OverlayProva {
     ctx.raiz.append(this.raiz);
   }
 
+  destruir() {
+    window.removeEventListener('resize', this.aoRedimensionar);
+  }
+
   aberta() {
     return this.ativa;
+  }
+
+  /** Caixas dos painéis visíveis, medidas no máximo a cada MEDIR_PAINEIS_MS. */
+  private medirPaineis(): Ret[] {
+    const agora = performance.now();
+    if (agora - this.paineisEm < MEDIR_PAINEIS_MS) return this.paineis;
+    this.paineisEm = agora;
+    this.paineis = [];
+    for (const sel of PAINEIS_PROVA) {
+      const e = document.querySelector<HTMLElement>(sel);
+      if (!e || e.hidden) continue;
+      // os da prova contam já enquanto ela aparece (fade); os do HUD, só se estão na tela
+      const daProva = this.raiz.contains(e);
+      if (!daProva && !e.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) continue;
+      const r = e.getBoundingClientRect();
+      if (r.width && r.height) this.paineis.push({ esq: r.left, topo: r.top, dir: r.right, base: r.bottom });
+    }
+    return this.paineis;
   }
 
   private mudou(k: string, v: string) {
@@ -107,6 +151,7 @@ export class OverlayProva {
     if (!this.ativa) {
       this.ativa = true;
       this.raiz.classList.add('aberta');
+      this.paineisEm = -Infinity;
     }
     if (this.mudou('tipo', e.tipo)) {
       this.raiz.dataset.tipo = e.tipo;
@@ -134,19 +179,29 @@ export class OverlayProva {
       if (!ed) {
         const c = el('div', 'dardo', el('span', 'dardo-brasa'), el('span', 'dardo-texto', d.texto));
         this.camadaDardos.append(c);
-        ed = { el: c, bloqueado: false, x: d.x, y: d.y };
+        ed = { el: c, bloqueado: false, x: d.x, y: d.y, larg: c.offsetWidth, alt: c.offsetHeight };
         this.dardos.set(d.id, ed);
         requestAnimationFrame(() => c.classList.add('visivel'));
       }
       ed.x = d.x;
       ed.y = d.y;
+      if (this.medidasVelhas) {
+        ed.larg = ed.el.offsetWidth;
+        ed.alt = ed.el.offsetHeight;
+      }
       if (d.bloqueado && !ed.bloqueado) {
         ed.bloqueado = true;
         ed.el.classList.add('bloqueado');
       }
-      if (!ed.bloqueado) ed.el.style.transform = `translate3d(calc(${(d.x * 100).toFixed(2)}vw - 50%), calc(${(d.y * 100).toFixed(2)}vh - 50%), 0)`;
-      else ed.el.style.setProperty('--pos', `translate3d(calc(${(d.x * 100).toFixed(2)}vw - 50%), calc(${(d.y * 100).toFixed(2)}vh - 50%), 0)`);
+      // o jogo dá o centro em fração da tela; o cartão não cobre painéis (AreaLivre)
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      const pos = afastarDePaineis({ x: d.x * W - ed.larg / 2, y: d.y * H - ed.alt / 2, larg: ed.larg, alt: ed.alt }, this.medirPaineis(), W, H);
+      const t = `translate3d(${pos.x.toFixed(1)}px, ${pos.y.toFixed(1)}px, 0)`;
+      if (!ed.bloqueado) ed.el.style.transform = t;
+      else ed.el.style.setProperty('--pos', t);
     }
+    this.medidasVelhas = false;
     for (const [id, ed] of this.dardos) {
       if (vistos.has(id)) continue;
       this.dardos.delete(id);
@@ -168,6 +223,7 @@ export class OverlayProva {
     const pal = e.palavra;
     const kp = pal ? `${pal.ref}|${pal.texto}|${pal.pronta}` : '';
     if (this.mudou('palavra', kp)) {
+      this.paineisEm = -Infinity; // muda o tamanho de um painel
       this.palavra.hidden = !pal;
       if (pal) {
         limpar(this.palavra);
@@ -189,21 +245,29 @@ export class OverlayProva {
     const mems = e.memorias ?? [];
     const km = mems.map((m) => `${m.id}:${m.usada ? 1 : 0}:${m.tecla ?? ''}`).join(',');
     if (this.mudou('mem', km)) {
+      this.paineisEm = -Infinity; // muda o tamanho de um painel
       limpar(this.memorias);
       this.memorias.hidden = mems.length === 0;
       if (mems.length) {
+        const { daVez, acesas, depois } = dividirMemorias(mems);
         this.memorias.append(el('div', 'prova-memorias-cab', icone('estrela'), 'Lembre-se'));
-        mems.forEach((m, i) => {
-          const t = m.tecla ?? (m.usada ? null : i + 1);
-          const b = el('button', `prova-memoria${m.usada ? ' usada' : ''}`,
-            t ? tecla(String(t)) : el('span', 'prova-memoria-acesa', icone('estrela')),
-            el('span', null, m.titulo),
-          );
+        if (acesas.length) {
+          const fileira = el('div', 'prova-memorias-acesas');
+          fileira.setAttribute('aria-label', `${acesas.length} ${acesas.length === 1 ? 'lembrada' : 'lembradas'}`);
+          for (const m of acesas) {
+            const estrela = el('span', 'prova-memoria-acesa', icone('estrela'));
+            estrela.title = m.titulo;
+            fileira.append(estrela);
+          }
+          this.memorias.append(fileira);
+        }
+        for (const m of daVez) {
+          const b = el('button', 'prova-memoria', tecla(String(m.tecla)), el('span', null, m.titulo));
           b.type = 'button';
-          b.disabled = m.usada;
           b.addEventListener('click', () => this.ctx.acoes().lembrarMemoria?.(m.id));
           this.memorias.append(b);
-        });
+        }
+        if (depois) this.memorias.append(el('div', 'prova-memorias-depois', `+${depois} para depois`));
       }
     }
 

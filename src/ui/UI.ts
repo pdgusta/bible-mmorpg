@@ -89,6 +89,7 @@ export class UI implements InterfaceUI {
     this.provaC = new OverlayProva(ctx);
     this.faixaC = new FaixaVersiculo(raiz);
     this.avisosC = new Avisos(raiz);
+    this.hudC.aoMudarColuna = this.avisosC.ajustarLimite;
     this.dialogoC = new Dialogo(ctx);
     this.rodaC = new Roda(ctx);
     this.menusC = new Menus(ctx, {
@@ -110,6 +111,8 @@ export class UI implements InterfaceUI {
     window.removeEventListener('keydown', this.teclaBaixo, { capture: true });
     window.removeEventListener('keyup', this.teclaCima, { capture: true });
     document.removeEventListener('pointerlockchange', this.mudouPonteiro);
+    this.avisosC.destruir();
+    this.provaC.destruir();
   }
 
   // ===================================== InterfaceUI ==================================

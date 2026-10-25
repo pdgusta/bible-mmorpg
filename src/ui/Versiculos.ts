@@ -207,7 +207,7 @@ export class FaixaVersiculo {
   private fila: Versiculo[] = [];
   private ocupada = false;
 
-  constructor(raiz: HTMLDivElement) {
+  constructor(private raiz: HTMLDivElement) {
     this.caixa = el('div', 'faixa-versiculo');
     this.caixa.setAttribute('aria-live', 'polite');
     raiz.append(this.caixa);
@@ -222,6 +222,7 @@ export class FaixaVersiculo {
     const v = this.fila.shift();
     if (!v) {
       this.ocupada = false;
+      this.raiz.classList.remove('com-faixa');
       return;
     }
     this.ocupada = true;
@@ -231,6 +232,7 @@ export class FaixaVersiculo {
       el('div', 'faixa-conteudo', el('p', 'texto-biblico', v.bkj), el('div', 'faixa-ref', v.referenciaExtenso)),
     );
     this.caixa.classList.add('visivel');
+    this.raiz.classList.add('com-faixa');
     const dur = Math.min(9000, Math.max(5200, 3000 + v.bkj.length * 28));
     await new Promise((r) => setTimeout(r, dur));
     this.caixa.classList.remove('visivel');
@@ -241,5 +243,6 @@ export class FaixaVersiculo {
   limpar() {
     this.fila = [];
     this.caixa.classList.remove('visivel');
+    this.raiz.classList.remove('com-faixa');
   }
 }
