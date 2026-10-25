@@ -194,6 +194,11 @@ function posicionarNaArca(c: CtxMissao, conves: NomePontoArca, ids = FAMILIA) {
 // Animais criados pelas etapas, por chave (recriar a etapa não duplica).
 const animaisCena = new Map<string, AnimalNoe>();
 
+/** O vale vai ser descartado (troca de era, jogo novo): as missões esquecem os animais dele. */
+export function limparCenaNoe() {
+  animaisCena.clear();
+}
+
 async function criarAnimal(chave: string, especie: string, x: number, z: number, opts?: OpcoesAnimalNoe): Promise<AnimalNoe> {
   await removerAnimal(chave, false);
   const a = await sv().animais.criar(especie, x, z, opts);

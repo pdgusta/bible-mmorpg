@@ -1,6 +1,6 @@
 // Era 1 — Noé (Gn 6–9): tudo o que o orquestrador precisa para montar e jogar a era.
 import { JOGAVEIS_NOE, NPCS_NOE, FAMILIA_NOE, MORADORES_NOE, INICIO_NOE } from './personagens';
-import { MISSOES_NOE, reconstruirMundoNoe, GENEALOGIA_NOE } from './missoes';
+import { MISSOES_NOE, reconstruirMundoNoe, GENEALOGIA_NOE, limparCenaNoe } from './missoes';
 import { MEMORIAS_NOE, SEGREDOS_NOE } from './memorias';
 import { CRISTO_NOE } from './cristo';
 import { ATALHOS_NOE, jogarEraNoe, resolverEtapaNoe } from './atalhos';
@@ -35,6 +35,8 @@ export const ERA_NOE = {
   reconstruir: reconstruirMundoNoe,
   /** Registra os segredos (memórias opcionais) que valem a era inteira. */
   registrarSegredos: registrarSegredosNoe,
+  /** O vale vai ser descartado: as missões esquecem os animais dele. */
+  limparCena: limparCenaNoe,
   jogar: jogarEraNoe,
   resolverEtapa: resolverEtapaNoe,
 } as const;
