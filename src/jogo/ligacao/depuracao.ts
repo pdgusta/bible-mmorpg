@@ -43,6 +43,8 @@ export class Depuracao {
   private provaPendente = false;
   private disparada: { c: Captura; t: number } | null = null;
   private inicioTransicao = -1;
+  /** Sobe a cada encerrar(): o runner de uma geração passada não mexe mais em nada. */
+  private geracao = 0;
 
   constructor(private p: Partida) {
     p.jogo.eventos.on('era:transicao', () => (this.inicioTransicao = p.jogo.tempo));
@@ -101,9 +103,18 @@ export class Depuracao {
 
   private atalhos(): AtalhosEra {
     const era = this.p.era;
+    const g = this.geracao;
+    const vivo = () => {
+      if (g !== this.geracao) throw new Error('dev.jogar encerrado (a partida saiu)');
+    };
     const a = era?.atalhos?.({
       resolverProva: () => this.resolverProva(),
-      esperar: (seg) => esperarJogo(this.p.jogo, seg),
+      // o runner encerrado morre na próxima espera
+      esperar: async (seg) => {
+        vivo();
+        await esperarJogo(this.p.jogo, seg);
+        vivo();
+      },
       limite: 900,
     });
     if (!a) throw new Error(`A era ${era?.def.id ?? '?'} não tem atalhos de depuração.`);
@@ -130,18 +141,36 @@ export class Depuracao {
     this.fim = false;
     this.erro = null;
     this.p.ui.dialogoC.velocidade = 0;
+    const g = this.geracao;
     this.jogando = this.atalhos()
       .jogar({ ate, aoEtapa: (m, e) => this.etapas.push(`${m}.${e}`) })
       .then(
         () => {
-          this.fim = true;
+          if (g === this.geracao) this.fim = true;
         },
         (e) => {
+          if (g !== this.geracao) return;
           this.erro = String((e as Error)?.message ?? e);
           this.fim = true;
           console.error('[dev] atalhos:', e);
         },
       );
+  }
+
+  /**
+   * A partida saiu (título, novo jogo, carregar): as missões abortaram e os atalhos ficariam
+   * esperando para sempre, recusando o próximo jogar(). Solta o runner e devolve a velocidade
+   * das falas; o `jogo.manual` fica com quem o ligou (o e2e, ou o laço do pularPara/jogarSozinho).
+   */
+  encerrar() {
+    if (this.jogando && !this.fim) this.p.ui.dialogoC.velocidade = 52;
+    this.geracao++;
+    this.jogando = null;
+    this.fim = true;
+    this.erro = null;
+    this.pendente = null;
+    this.disparada = null;
+    this.provaPendente = false;
   }
 
   /** Passa a fala/escolha na tela (a primeira opção disponível). */
@@ -231,15 +260,18 @@ export class Depuracao {
     }
     const titulo = s.missoes.definicao(missao)?.titulo ?? missao;
     this.jogar(missao);
+    const g = this.geracao;
     while (!this.fim) {
       const i = Math.max(0, ordem.indexOf(this.missao ?? ''));
       ui.carregamento({ progresso: Math.min(0.98, (i + 0.5) / Math.max(1, alvo)), texto: `Avançando até ${titulo}…` });
       const r = await this.avancar(4);
       if (r.captura) this.liberar();
     }
+    jogo.manual = false;
+    // a partida saiu no meio: a tela de carregamento já é de outra coisa
+    if (g !== this.geracao) return;
     ui.carregamento(null);
     ui.dialogoC.velocidade = 52;
-    jogo.manual = false;
     if (this.erro) ui.aviso(`Atalho falhou: ${this.erro}`, 'info');
   }
 

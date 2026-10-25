@@ -495,6 +495,8 @@ export class Partida {
   /** Para tudo o que a sessão anterior deixou na tela (missão, prova, fala, cinemática). */
   private limparSessao() {
     const { jogo, ui, s } = this;
+    // o runner do dev.jogar desta sessão ficaria esperando as missões abortadas
+    this.dev.encerrar();
     s.missoes.abortar();
     s.provas.cancelar();
     s.dialogo.cancelar();
