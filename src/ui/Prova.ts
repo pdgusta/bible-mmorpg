@@ -60,8 +60,15 @@ export class OverlayProva {
   private ativa = false;
   private paineis: Ret[] = [];
   private paineisEm = -Infinity;
+  /** A tela mudou de tamanho: o rem e os painéis mudam, e os dardos são medidos de novo. */
+  private medidasVelhas = false;
+  private readonly aoRedimensionar = () => {
+    this.paineisEm = -Infinity;
+    this.medidasVelhas = true;
+  };
 
   constructor(private ctx: CtxUI) {
+    window.addEventListener('resize', this.aoRedimensionar);
     this.vinheta = el('div', 'prova-vinheta');
     this.tipoEl = el('div', 'prova-tipo');
     this.titulo = el('div', 'prova-titulo');
@@ -94,6 +101,10 @@ export class OverlayProva {
       this.mensagem,
     );
     ctx.raiz.append(this.raiz);
+  }
+
+  destruir() {
+    window.removeEventListener('resize', this.aoRedimensionar);
   }
 
   aberta() {
@@ -174,6 +185,10 @@ export class OverlayProva {
       }
       ed.x = d.x;
       ed.y = d.y;
+      if (this.medidasVelhas) {
+        ed.larg = ed.el.offsetWidth;
+        ed.alt = ed.el.offsetHeight;
+      }
       if (d.bloqueado && !ed.bloqueado) {
         ed.bloqueado = true;
         ed.el.classList.add('bloqueado');
@@ -186,6 +201,7 @@ export class OverlayProva {
       if (!ed.bloqueado) ed.el.style.transform = t;
       else ed.el.style.setProperty('--pos', t);
     }
+    this.medidasVelhas = false;
     for (const [id, ed] of this.dardos) {
       if (vistos.has(id)) continue;
       this.dardos.delete(id);

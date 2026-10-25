@@ -112,6 +112,7 @@ export class UI implements InterfaceUI {
     window.removeEventListener('keyup', this.teclaCima, { capture: true });
     document.removeEventListener('pointerlockchange', this.mudouPonteiro);
     this.avisosC.destruir();
+    this.provaC.destruir();
   }
 
   // ===================================== InterfaceUI ==================================
