@@ -9,7 +9,7 @@ import {
   jogarEraAbraao, ligarServicosAbraao, type AmbienteAtalhosAbraao, type AnimalAbraao, type OpcoesAnimalAbraao,
   type RebanhoAbraao, type ServicosAbraao,
 } from '../../eras/abraao';
-import { criarAnimal, ESPECIES, type Animal, type Especie } from '../../entidades/Animal';
+import { Animal, criarAnimal, ESPECIES, type Especie } from '../../entidades/Animal';
 import { Rebanho } from '../../entidades/Rebanho';
 import type { ContextoEra, DefEra, EraAtiva, OpcoesAtalhos, VistaTitulo } from '../eras';
 import type { AmbienteEra, Superficie } from './audio';
@@ -166,7 +166,10 @@ class EraAbraao implements EraAtiva {
 
   desligar() {
     for (const f of this.desligar_.splice(0)) f();
-    // o mundo vai ser descartado: as missões esquecem animais, rebanhos e a mecânica de cena
+    // o mundo vai ser descartado: os animais dele saem de Animal.todos (senão entram na
+    // separação dos animais da era seguinte) e as missões esquecem animais, rebanhos e a
+    // mecânica de cena
+    Animal.descartar(this.mundo);
     ligarServicosAbraao(null);
     ERA_ABRAAO.limparCena();
   }

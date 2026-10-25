@@ -14,10 +14,10 @@ O mundo (`mapa.ts`, `construir.ts`/`MundoNoe`, `Arca.ts`) é do motor: veja `doc
 | `memorias.ts` | 10 memórias (`DefMemoria`). `arcoIris` tem força 3 e é a ponte para a prova da dúvida em B4. `enoque`, `lameque` e `estacoes` são segredos. |
 | `cristo.ts` | Tipo `EntradaCristo` e entradas `semente`, `arca`, `tempestade`, `linhagem`. |
 | `interativos.ts` | Registra e remove os interativos de cada etapa, com os ids exatamente como no ROTEIRO, posicionados pelos pontos do mapa (há posições de reserva). `registrarSegredosNoe` registra os segredos válidos na era inteira; um segredo com `depoisDe` só se abre depois daquela flag (`segredoEstacoes` exige `a6Altar`). |
-| `missoes.ts` | `MISSOES_NOE` (prólogo, A1–A6) e `reconstruirMundoNoe(s, mundo, flags)`, que remonta o vale a partir das flags ao carregar. |
+| `missoes.ts` | `MISSOES_NOE` (prólogo, A1–A6), `reconstruirMundoNoe(s, mundo, flags)`, que remonta o vale a partir das flags ao carregar, e `limparCenaNoe()`. |
 | `servicos.ts` | `ServicosNoe`: tudo que as missões usam além do `CtxMissao`. Também `ligarServicosNoe` e `servicosNoe`. |
 | `atalhos.ts` | `ATALHOS_NOE`, `resolverEtapaNoe` e `jogarEraNoe(ambiente)`, que joga a era inteira pelas APIs do jogo (usado pelo e2e). |
-| `index.ts` | `ERA_NOE` (id `noe`, jogáveis, missões, memórias, cristo, missão inicial). `seguinte: {era: 'abraao', missao: 'b1'}`. |
+| `index.ts` | `ERA_NOE` (id `noe`, jogáveis, missões, memórias, cristo, missão inicial, `ligarServicos`, `reconstruir`, `registrarSegredos`, `limparCena`, `jogar`, `resolverEtapa`). `seguinte: {era: 'abraao', missao: 'b1'}`. |
 
 ## Padrão de uma etapa
 
@@ -32,6 +32,7 @@ O mundo (`mapa.ts`, `construir.ts`/`MundoNoe`, `Arca.ts`) é do motor: veja `doc
 
 Regras:
 - **Etapa idempotente.** Ao carregar, `reconstruirMundoNoe` restaura o mundo pelas flags, como o estágio da arca, o estado do vale e o interior. Depois a etapa atual roda do início. Abortada no meio, ela não deixa interativos para trás; há teste para isso.
+- **Estado de módulo:** `missoes.ts` guarda os animais de cena entre etapas (`animaisCena`). Quando o vale é descartado (transição para Canaã, jogo novo), o `desligar()` da ligação (`src/jogo/ligacao/noe.ts`) chama `Animal.descartar(mundo)` e `ERA_NOE.limparCena()`. Assim os animais saem de `Animal.todos` e as missões os esquecem (`tests/eras-desligar.test.ts`).
 - **Falas:**
   - Bíblicas: `{quem, ref, trecho?}`, conferidas pelos testes e pelo `npm run validar`.
   - Ficção: `{quem, texto}`, curta e sem contradizer o texto bíblico.
