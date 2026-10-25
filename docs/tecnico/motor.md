@@ -114,6 +114,8 @@ Medidas nos momentos do e2e (`e2e/jogar-mvp.mjs`), chegando a eles com `?q=medio
 
 As medidas da T-013 (até 752 mil em b4) eram de uma base sem a T-008: os draw calls batem, só os triângulos caíram.
 
+Conferido com a tabela da integração (`npm run e2e`, T-018/T-020, no ESTADO): o "antes" bate em a1-deus, a3-prova, a5-arca e b4-estrelas, e lá a b4 vem depois da transição de era de verdade. A a4 dá 130 / 471 mil (os animais variam). A troca dá 98 calls lá e 106 aqui, com os mesmos 339 mil triângulos; hipótese: o quadro da foto cai num ponto diferente do voo da troca.
+
 O que mudou:
 - **Grama com culling por blocos, sem draw call a mais:** as instâncias de cada anel ficam agrupadas em blocos de 6 m, cada um com a sua caixa, e o InstancedMesh recebe só os blocos que entram no frustum. Ele é reescrito (só a parte usada) quando esse conjunto muda.
 - **Estruturas além da neblina saem do desenho:** quando a caixa inteira está além do `far` (pela profundidade de vista) e abaixo de `ALTURA_NEBLINA_CHEIA`, sem material `fog: false`. Do interior da arca (neblina a 70 m) a cidade sai, na cor e na sombra.
