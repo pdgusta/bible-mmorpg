@@ -146,4 +146,3 @@ describe('Grama com culling por blocos', () => {
     }
   });
 });
-
