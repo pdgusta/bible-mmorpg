@@ -26,7 +26,7 @@ Estado do código ao sair: `npx tsc --noEmit` dá 0 erros, `npx vitest run` pass
 | Conteúdo da era 1 | ✅ escrito, revisado e com os 5 ajustes de lógica da revisão (branch `frente/era-noe`) | `tecnico/era-noe.md`, `tecnico/revisao.md` |
 | Conteúdo da era 2 | ✅ escrito, testado e revisado · ⏳ ligação na integração (abaixo) | `tecnico/era-abraao.md` |
 | Motor visual do vale de Noé | ✅ arte, transição, física e orçamento (abaixo) | `tecnico/motor.md` |
-| Integração (fluxo da partida, ligações, e2e) | ✅ era 1 → transição → B1 jogável (e2e `integracao.mjs --transicao`) · ⏳ `jogar-mvp` até o fim de B5 | `tecnico/integracao.md` |
+| Integração (fluxo da partida, ligações, e2e) | ✅ o MVP inteiro, do título aos créditos (e2e `npm run e2e`, `jogar-mvp.mjs`) | `tecnico/integracao.md` |
 | Deploy (GitHub Pages) | ✅ workflow pronto (ativar em *Settings → Pages → GitHub Actions*) | `README.md` |
 
 ## O que ficou pela metade, frente por frente
@@ -62,10 +62,30 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
   - **`?dev&missao=b1..b5`:** o novo jogo sempre montava a era de Noé, e a missão da era 2 dava "Missão desconhecida nesta era". Agora ele começa pela era que tem a missão (`eraDaMissao`; `tests/eras.test.ts`).
   - **Câmera:** a 3ª pessoa não entra mais na copa das árvores (`Natureza.copas()` e `src/camera/Copas.ts`; `tests/camera-copas.test.ts`). A transição de era não usa mais a `FOLGA_TERRENO`, e o close da genealogia ficou a 1,5 m do rosto (antes, 0,8 m: a câmera cortava o turbante).
 - `npm run validar` funciona no Windows (`fileURLToPath` em `scripts/biblia-comum.mjs`); `playwright` é dependência de desenvolvimento.
+- T-013/T-018: `e2e/jogar-mvp.mjs` (`npm run e2e`, junção da `frente/jogar-mvp`) joga o MVP inteiro pelos atalhos: título, era 1, transição, era 2, fim de B5, resumo da jornada, créditos e volta ao título. Em cada momento-chave tira uma foto (`e2e/saida/mvp/`) e mede `jogo.render.gl.info.render`. Leva uns 19 min no SwiftShader; rode sem o vitest junto.
+
+**Orçamento da integração** (`npm run e2e`, preset médio, 960 × 540, as draw calls contam a passada de sombra; base `frente/integracao` com o LOD dos humanos, antes das junções da `frente/hud`, da `frente/desempenho` e da T-016):
+
+| Era | Vista | Etapa | Draw calls | Triângulos |
+|---|---|---|---|---|
+| noe | titulo | - | 126 | 368 mil |
+| noe | a1-deus | a1.orar | 133 | 458 mil |
+| noe | troca | a2.planejar | 98 | 339 mil |
+| noe | a2-viga | a2.erguer | 73 | 366 mil |
+| noe | a3-prova | a3.pregar | 63 | 507 mil |
+| noe | a4-animais | a4.animais | 75 | 371 mil |
+| noe | a5-arca | a5.fontes | 71 | 456 mil |
+| noe | a6-arco | a6.bencao | 83 | 458 mil |
+| noe | transicao | a6.transicao | 53 | 197 mil |
+| abraao | b1-canaa | b1.altarMore | 67 | 322 mil |
+| abraao | b2-manre | b2.manre | 93 | 342 mil |
+| abraao | b3-batalha | b3.ataque | **151** | 545 mil |
+| abraao | b4-estrelas | b4.duvida | 52 | 337 mil |
+| abraao | b5-moria | b5.altar | 78 | 256 mil |
 
 **Falta:**
-1. `e2e/jogar-mvp.mjs` (`npm run e2e`) até o fim de B5 e os créditos. O miolo já está no `--transicao` de `integracao.mjs`; a era 2 tem `jogarEraAbraao` ligado aos atalhos.
-2. Medir `jogo.render.gl.info.render` em 3 vistas, no preset médio (inclusive A4, com cerca de 29 animais).
+1. **B3 passa do orçamento:** 151 draw calls na batalha (limite 150).
+2. **A4 com os animais:** a medida da A4 sai no começo de `a4.animais`, antes de os animais chegarem, e o script contou 0 animais durante toda a etapa. Por isso a nova medida a cada 5 animais nunca disparou. Falta medir o pior caso, com cerca de 29 animais.
 3. O desvio do `Animal` (sondas de `moverChao`) alterna entre dois lados num bolsão e o bicho treme no lugar até o reposicionamento; um desvio com memória do lado escolhido evitaria o tremor.
 
 **Testes sob carga:** com o Chromium/e2e aberto ou vários agentes na máquina, os testes de CPU pura (o Simplificar, a síntese de áudio, as eras em sequência, a arca) estouram os 5 s porque os workers do vitest disputam os núcleos com o SwiftShader: no pico, 4 rodadas deram de 0 a 11 timeouts. Nessa situação use `npm run test:leve` (2 workers), que deu 121/121 nas 2 rodadas no pico. Os timeouts de Provas e Missoes (espera de timer) acabaram com a T-010 (`ciclo()` com `setImmediate`).
@@ -136,7 +156,7 @@ Pendências:
 1. Integração, itens 1 e 2: ver o jogo rodar e corrigir o que quebrar.
 2. Era 2: `index.ts`, `atalhos.ts`, testes, ligação na integração e revisão.
 3. Os 5 ajustes da era 1.
-4. `e2e/jogar-mvp.mjs` do início da era 1 ao fim da era 2.
+4. ✅ `e2e/jogar-mvp.mjs` do início da era 1 ao fim da era 2 (`npm run e2e`).
 5. Passada de arte (motor e Canaã), depois desempenho em GPU integrada real (60 fps no preset médio).
 6. Ouvir e ajustar o áudio.
 7. Ativar o Pages e fazer merge na `main`.
