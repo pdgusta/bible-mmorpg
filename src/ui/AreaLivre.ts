@@ -78,40 +78,51 @@ export interface Sussurro {
   cy: number;
   larg: number;
   alt: number;
+  /**
+   * Distância até o alvo dos dardos, na conta do jogo (fração da tela): todos andam à mesma
+   * velocidade, então o menor acerta antes.
+   */
+  urgencia: number;
   /** Já estava na tela no quadro anterior (fica com a vaga). */
   naTela: boolean;
 }
 
-/** Folga de quem já está na tela, na ordem por distância: evita que dois troquem de vaga a cada quadro. */
+/** Abaixo desta urgência o sussurro está para acertar (menos de ~1 s): aparece sempre, até acima do teto. */
+export const URGENCIA_IMINENTE = 0.2;
+/** Folga de quem já está na tela, entre os que ainda estão longe: evita que dois troquem de vaga a cada quadro. */
 const FOLGA_NA_TELA = 0.75;
 
 /**
- * Dá lugar aos sussurros, do mais perto do centro (o que vai acertar antes) ao mais longe; quem já
- * está na tela conta como um pouco mais perto. Cada um posto vira obstáculo para os seguintes. Quem
- * não acha lugar livre ou passa do teto fica `null` (espera a vez). Sempre aparece pelo menos um:
- * sem lugar livre, o mais urgente cobre só painéis passageiros, e o menos possível.
+ * Dá lugar aos sussurros, do que vai acertar antes ao que vai acertar depois. Cada um posto vira
+ * obstáculo para os seguintes; quem não acha lugar livre ou passa do teto fica `null` (espera a
+ * vez). Os iminentes vêm primeiro, sem folga, e aparecem sempre: sem lugar livre (ou acima do teto),
+ * ficam onde cobrem menos, poupando os painéis fixos. Entre os que ainda estão longe, quem já está
+ * na tela conta como um pouco mais perto. O mais urgente de todos aparece sempre.
  */
 export function distribuirSussurros(itens: Sussurro[], paineis: Ret[], largTela: number, altTela: number, margem = 6): Map<number, { x: number; y: number } | null> {
-  const perto = (s: Sussurro) => Math.hypot(s.cx - largTela / 2, s.cy - altTela / 2) * (s.naTela ? FOLGA_NA_TELA : 1);
-  const ordem = [...itens].sort((a, b) => perto(a) - perto(b));
+  const iminente = (s: Sussurro) => s.urgencia <= URGENCIA_IMINENTE;
+  const chave = (s: Sussurro) => (iminente(s) ? s.urgencia - 1 : s.urgencia * (s.naTela ? FOLGA_NA_TELA : 1));
+  const ordem = [...itens].sort((a, b) => chave(a) - chave(b));
   const ocupados = [...paineis];
   const teto = tetoSussurros(altTela);
   const lugares = new Map<number, { x: number; y: number } | null>();
   let postos = 0;
-  for (const s of ordem) {
+  for (const [i, s] of ordem.entries()) {
+    const obrigatorio = i === 0 || iminente(s);
+    if (!obrigatorio && postos >= teto) {
+      lugares.set(s.id, null);
+      continue;
+    }
     const caixa = { x: s.cx - s.larg / 2, y: s.cy - s.alt / 2, larg: s.larg, alt: s.alt };
-    const pos = postos < teto ? afastarDePaineis(caixa, ocupados, largTela, altTela, margem) : null;
-    if (!pos || areaCoberta({ ...caixa, ...pos }, ocupados, margem) > 0) {
+    // sem lugar livre, o obrigatório fica onde cobre menos (os outros sussurros contam como passageiros)
+    const pos = afastarDePaineis(caixa, ocupados, largTela, altTela, margem);
+    if (!obrigatorio && areaCoberta({ ...caixa, ...pos }, ocupados, margem) > 0) {
       lugares.set(s.id, null);
       continue;
     }
     lugares.set(s.id, pos);
     postos++;
-    ocupados.push({ esq: pos.x, topo: pos.y, dir: pos.x + s.larg, base: pos.y + s.alt });
-  }
-  if (!postos && ordem.length) {
-    const s = ordem[0];
-    lugares.set(s.id, afastarDePaineis({ x: s.cx - s.larg / 2, y: s.cy - s.alt / 2, larg: s.larg, alt: s.alt }, paineis, largTela, altTela, margem));
+    ocupados.push({ esq: pos.x, topo: pos.y, dir: pos.x + s.larg, base: pos.y + s.alt, passageiro: true });
   }
   return lugares;
 }

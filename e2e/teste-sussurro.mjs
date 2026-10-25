@@ -8,6 +8,13 @@
 import { abrir, BASE, pasta, verificador } from './utilidades.mjs';
 
 const v = verificador();
+// a grade de sussurros (id → posição em fração da tela) e a urgência na conta do jogo (Provas.ts)
+const GRADE = new Map([[900, [0.99, 0.5]]]);
+for (let gy = 0, id = 1; gy <= 4; gy++) for (let gx = 0; gx <= 4; gx++) GRADE.set(id++, [0.05 + gx * 0.225, 0.05 + gy * 0.225]);
+const iminente = (id) => {
+  const [x, y] = GRADE.get(id);
+  return Math.hypot(x - 0.5, y - 0.55) <= 0.2;
+};
 const cruza = (a, b) => a.esq < b.dir && b.esq < a.dir && a.topo < b.base && b.topo < a.base;
 const saida = pasta('e2e/saida/sussurro');
 const telas = [
@@ -69,7 +76,7 @@ for (const tipo of ['tentacao', 'duvida']) {
           .map(([s, e]) => ({ s, ...(s === '.prova-mensagem' ? texto(e) : caixa(e)) }))
           .filter((p) => p.dir > p.esq && p.base > p.topo);
         const todos = document.querySelectorAll('.dardo').length;
-        const dardos = [...document.querySelectorAll('.dardo:not(.esperando)')].map((e) => ({ texto: e.textContent, ...caixa(e) }));
+        const dardos = [...document.querySelectorAll('.dardo:not(.esperando)')].map((e) => ({ id: Number(e.dataset.id), texto: e.textContent, ...caixa(e) }));
         return { paineis, dardos, todos };
       }, PAINEIS);
       const nome = `${tipo} ${largura}×${altura}${n ? ` (depois de ${telas[n - 1].join('×')})` : ''}`;
@@ -77,12 +84,14 @@ for (const tipo of ['tentacao', 'duvida']) {
       v(r.dardos.length >= 1 && r.dardos.length <= teto(altura), `${nome}: ${r.dardos.length} à vista (teto ${teto(altura)}), os outros esperam`);
       v(r.dardos.every((a, i) => r.dardos.slice(i + 1).every((b) => !cruza(a, b))), `${nome}: nenhum sussurro sobre outro`);
       v(r.paineis.length >= 4, `${nome}: painéis medidos: ${r.paineis.map((p) => p.s).join(' ')}`);
-      // a frase do centro e a faixa passam: sem lugar livre, o único à vista pode cobri-las
+      // a frase do centro e a faixa passam: sem lugar livre, o sussurro que vai acertar (ou o único
+      // à vista) pode cobri-las; os painéis fixos, nunca
       const passageiro = (p) => ['.faixa-versiculo', '.prova-mensagem'].includes(p.s);
       const cobertos = new Set();
       let ruins = 0;
       for (const d of r.dardos) {
-        const sob = r.paineis.filter((p) => cruza(d, p) && !(r.dardos.length === 1 && passageiro(p)));
+        const pode = r.dardos.length === 1 || iminente(d.id);
+        const sob = r.paineis.filter((p) => cruza(d, p) && !(pode && passageiro(p)));
         if (sob.length) ruins++;
         for (const p of sob) cobertos.add(p.s);
       }

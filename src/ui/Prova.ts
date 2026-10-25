@@ -41,6 +41,8 @@ const PAINEIS_PROVA = [
 ];
 /** Painéis que passam (sem lugar livre, o sussurro mais urgente pode cobri-los; os outros, nunca). */
 const PASSAGEIROS = ['.avisos', '.dica-tutorial', '.faixa-versiculo', '.prova-mensagem'];
+/** Para onde os dardos andam, em fração da tela (o mesmo CENTRO_X/CENTRO_Y de Provas.ts). */
+const ALVO_DARDOS = { x: 0.5, y: 0.55 };
 /** De quanto em quanto tempo (ms) os painéis são medidos de novo. */
 const MEDIR_PAINEIS_MS = 400;
 
@@ -196,6 +198,7 @@ export class OverlayProva {
       let ed = this.dardos.get(d.id);
       if (!ed) {
         const c = el('div', 'dardo esperando', el('span', 'dardo-brasa'), el('span', 'dardo-texto', d.texto));
+        c.dataset.id = String(d.id);
         this.camadaDardos.append(c);
         ed = { el: c, bloqueado: false, x: d.x, y: d.y, larg: c.offsetWidth, alt: c.offsetHeight, naTela: false };
         this.dardos.set(d.id, ed);
@@ -218,7 +221,10 @@ export class OverlayProva {
       } else ativos.push({ d, ed });
     }
     const lugares = distribuirSussurros(
-      ativos.map(({ d, ed }) => ({ id: d.id, cx: d.x * W, cy: d.y * H, larg: ed.larg, alt: ed.alt, naTela: ed.naTela })),
+      ativos.map(({ d, ed }) => ({
+        id: d.id, cx: d.x * W, cy: d.y * H, larg: ed.larg, alt: ed.alt, naTela: ed.naTela,
+        urgencia: Math.hypot(d.x - ALVO_DARDOS.x, d.y - ALVO_DARDOS.y),
+      })),
       this.medirPaineis(), W, H,
     );
     for (const { d, ed } of ativos) {
@@ -234,7 +240,7 @@ export class OverlayProva {
       if (ed.bloqueado) {
         setTimeout(() => ed.el.remove(), 900);
       } else {
-        const perto = Math.hypot(ed.x - 0.5, ed.y - 0.5) < 0.16;
+        const perto = Math.hypot(ed.x - ALVO_DARDOS.x, ed.y - ALVO_DARDOS.y) < 0.16;
         ed.el.classList.add(perto ? 'acertou' : 'sumiu');
         if (perto) {
           this.raiz.classList.remove('golpe');
