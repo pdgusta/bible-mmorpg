@@ -172,6 +172,9 @@ export class Animal {
   private poleiro: AlvoVoo | null = null;
   private desvio = 0;
   private tDesvio = 0;
+  /** Lado (1 ou -1) do último desvio, preferido enquanto `tLado` durar (sem ele, treme num bolsão). */
+  private ladoDesvio = 0;
+  private tLado = 0;
   private olharPos: THREE.Vector3 | null = null;
 
   constructor(especie: Especie, corpo: CorpoAnimal, mundo: MundoAnimais, x: number, z: number, op: OpcoesAnimal = {}) {
@@ -790,21 +793,28 @@ export class Animal {
         vz += (dz / d) * k * 2.2;
       }
     }
-    // desvio de obstáculos e água funda à frente
+    // desvio de obstáculos e água funda à frente; contorna sempre pelo mesmo lado enquanto
+    // estiver desviando (escolher do zero a cada sonda alternava os lados e o bicho tremia)
     if (vel > 0.05) {
       this.tDesvio -= dt;
+      this.tLado -= dt;
+      if (this.tLado <= 0) this.ladoDesvio = 0;
       if (this.tDesvio <= 0) {
         this.tDesvio = 0.25;
         this.desvio = 0;
         const dir = Math.atan2(vx, vz);
         const alcance = f.raio + 0.6 + vel * 0.3;
-        for (const a of [0, 0.6, -0.6, 1.2, -1.2, 1.9, -1.9]) {
+        for (const a of sondasDesvio(this.ladoDesvio)) {
           const x = pos.x + Math.sin(dir + a) * alcance;
           const z = pos.z + Math.cos(dir + a) * alcance;
           if (m.profundidade(x, z) > m.profundidadeMax * 0.6) continue;
           if (!m.livre(x, z, pos.y, f.raio * 0.9, Math.min(1.2, f.altura))) continue;
           this.desvio = a;
           break;
+        }
+        if (this.desvio !== 0) {
+          this.ladoDesvio = Math.sign(this.desvio);
+          this.tLado = 2;
         }
       }
       if (this.desvio !== 0) {
@@ -970,6 +980,17 @@ export class Animal {
 
 function d0(a: THREE.Vector3, b: THREE.Vector3) {
   return Math.hypot(a.x - b.x, a.z - b.z);
+}
+
+// Ângulos (rad) das sondas de desvio, em ordem de preferência: em frente, depois o lado do
+// desvio anterior (todos os ângulos dele antes do outro lado), ou alternando sem lado.
+const SONDAS_SEM_LADO = [0, 0.6, -0.6, 1.2, -1.2, 1.9, -1.9];
+const SONDAS_POSITIVO = [0, 0.6, 1.2, 1.9, -0.6, -1.2, -1.9];
+const SONDAS_NEGATIVO = SONDAS_POSITIVO.map((a) => -a || 0);
+
+/** Ordem das sondas de desvio para o lado preferido (1, -1 ou 0). */
+export function sondasDesvio(lado: number): readonly number[] {
+  return lado > 0 ? SONDAS_POSITIVO : lado < 0 ? SONDAS_NEGATIVO : SONDAS_SEM_LADO;
 }
 
 /** Cria (carregando o modelo, se preciso) um animal no mundo. */

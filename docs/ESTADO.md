@@ -61,6 +61,9 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
   - **`Animal` preso na tela:** o `travado` disparava a cada 5 s, mas a única saída na tela era refazer a rota, e sem rota nova o bicho tremia entre dois desvios para sempre. Se travar de novo a menos de 3 m de onde travou, ele vai para o ponto com um fade de 0,6 s (`tests/animal-travado.test.ts`).
   - **`?dev&missao=b1..b5`:** o novo jogo sempre montava a era de Noé, e a missão da era 2 dava "Missão desconhecida nesta era". Agora ele começa pela era que tem a missão (`eraDaMissao`; `tests/eras.test.ts`).
   - **Câmera:** a 3ª pessoa não entra mais na copa das árvores (`Natureza.copas()` e `src/camera/Copas.ts`; `tests/camera-copas.test.ts`). A transição de era não usa mais a `FOLGA_TERRENO`, e o close da genealogia ficou a 1,5 m do rosto (antes, 0,8 m: a câmera cortava o turbante).
+- T-019:
+  - **Tremor do `Animal`:** as sondas de desvio de `moverChao` eram escolhidas do zero a cada 0,25 s. Num bolsão, o lado livre alternava e o bicho sacudia no lugar até o reposicionamento (7 ou 8 trocas de lado em 8 s). Agora ele guarda o lado do último desvio por 2 s e tenta os ângulos desse lado antes dos do outro (`sondasDesvio`). Assim contorna a parede por um lado só, e contorna um pilar no caminho, o que antes não conseguia em 15 s (`tests/animal-desvio.test.ts`).
+  - **`?dev&missao=a4` "travado" em `a4.chamado`:** é do atalho de depuração, não do jogo. O `?dev&missao=` já roda o `pularPara`, e o `modo` vira `'jogo'` antes de ele acabar. Um `dev.jogar()` chamado nessa hora abre um segundo runner de atalhos, e os dois dividem o `dev.fim`. Quando o do `pularPara` chega em a4, o `fim` vira verdadeiro e o `dev.avancar` passa a voltar sem avançar o tempo, com `jogo.manual` ligado. Sozinho, o `?dev&missao=a4` chega e segue. Scripts devem esperar `dev.fim && !jogo.manual` antes de chamar `dev.jogar()`, como fazem o `jogar-mvp` e a medição da T-017. O conserto em `depuracao.ts` (recusar um `jogar()` com outro em andamento) ficou com a T-020.
 - `npm run validar` funciona no Windows (`fileURLToPath` em `scripts/biblia-comum.mjs`); `playwright` é dependência de desenvolvimento.
 - T-013/T-018: `e2e/jogar-mvp.mjs` (`npm run e2e`, junção da `frente/jogar-mvp`) joga o MVP inteiro pelos atalhos: título, era 1, transição, era 2, fim de B5, resumo da jornada, créditos e volta ao título. Em cada momento-chave tira uma foto (`e2e/saida/mvp/`) e mede `jogo.render.gl.info.render`. Leva uns 19 min no SwiftShader; rode sem o vitest junto.
 
@@ -86,8 +89,6 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 **Falta:**
 1. **B3 passa do orçamento:** 151 draw calls na batalha (limite 150).
 2. **A4 com os animais:** a medida da A4 sai no começo de `a4.animais`, antes de os animais chegarem, e o script contou 0 animais durante toda a etapa. Por isso a nova medida a cada 5 animais nunca disparou. Falta medir o pior caso, com cerca de 29 animais.
-3. O desvio do `Animal` (sondas de `moverChao`) alterna entre dois lados num bolsão e o bicho treme no lugar até o reposicionamento; um desvio com memória do lado escolhido evitaria o tremor.
-
 **Testes sob carga:** com o Chromium/e2e aberto ou vários agentes na máquina, os testes de CPU pura (o Simplificar, a síntese de áudio, as eras em sequência, a arca) estouram os 5 s porque os workers do vitest disputam os núcleos com o SwiftShader: no pico, 4 rodadas deram de 0 a 11 timeouts. Nessa situação use `npm run test:leve` (2 workers), que deu 121/121 nas 2 rodadas no pico. Os timeouts de Provas e Missoes (espera de timer) acabaram com a T-010 (`ciclo()` com `setImmediate`).
 
 **Dicas para o e2e no Windows:**
