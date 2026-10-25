@@ -122,7 +122,7 @@ fontes/            (fora do git) KJF.json, NVT.json, kjv-markdown/, assets/ (pac
 | O quê | Como |
 |---|---|
 | Tipos | `npx tsc --noEmit`: tem de dar 0 erros |
-| Unidades | `npx vitest run`. As missões são testadas com `tests/falsos.ts`, um `CtxMissao` falso que resolve interações e provas na hora |
+| Unidades | `npx vitest run`; com Chromium/e2e aberto ou vários agentes na máquina, `npm run test:leve` (2 workers: com a CPU disputada, os testes de CPU pura, como o Simplificar e a síntese, estouram os 5 s). As missões são testadas com `tests/falsos.ts`, um `CtxMissao` falso que resolve interações e provas na hora |
 | Textos bíblicos | `npm run validar` |
 | Visual | `node e2e/foto.mjs "/?..." out.png 960 540`. A página precisa definir `window.pronto = true` |
 | Troca e transição | `node e2e/teste-troca.mjs [pasta] [--era]` |

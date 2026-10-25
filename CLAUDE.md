@@ -30,6 +30,7 @@ npm ci                 # dependências
 npm run dev            # http://localhost:5173
 npx tsc --noEmit       # tipos (tem de dar 0 erros)
 npx vitest run         # testes unitários
+npm run test:leve      # os mesmos, com 2 workers: use com Chromium/e2e aberto ou vários agentes na máquina
 npm run validar        # refs e trechos bíblicos usados no código existem e batem com a BKJ
 npm run versiculos     # regenera versiculos.json (precisa de fontes/KJF.json, fontes/NVT.json, fontes/kjv-markdown/)
 node e2e/foto.mjs "/?<query>" saida.png 960 540   # foto headless (espera window.pronto)

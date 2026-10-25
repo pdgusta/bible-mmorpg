@@ -52,18 +52,14 @@ const LEAO: [number, number] = [-105, -65];
 const PORTA: [number, number] = [15.5, 32];
 
 describe('Arca: navegação por estágio', () => {
-  it('com a arca no estágio 5, o leão contorna o casco e chega à porta', () => {
-    const m = montar();
-    m.arca.definirEstagio(5);
-    expect(seguir(m, LEAO, PORTA)).toBeLessThan(1.5);
-  }, 60_000);
-
-  it('o casco do estágio 5 fica fora da grade (e ficava dentro sem refazer)', () => {
+  // uma arca só (montar o estágio 5 é a parte cara do teste)
+  it('o casco do estágio 5 sai da grade e o leão o contorna até a porta', () => {
     const m = montar();
     // junto à ponta oeste, entre a quilha e o costado: livre no estágio 0, casco no 5
     const ponta: [number, number] = [-60, 8];
     expect(m.mundo.nav.pode(...ponta)).toBe(true);
     m.arca.definirEstagio(5);
     expect(m.mundo.nav.pode(...ponta)).toBe(false);
+    expect(seguir(m, LEAO, PORTA)).toBeLessThan(1.5);
   }, 60_000);
 });

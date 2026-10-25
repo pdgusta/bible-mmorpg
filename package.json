@@ -9,6 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:leve": "vitest run --maxWorkers=2",
     "typecheck": "tsc --noEmit",
     "versiculos": "node scripts/extrair-versiculos.mjs",
     "validar": "node scripts/validar-textos.mjs",

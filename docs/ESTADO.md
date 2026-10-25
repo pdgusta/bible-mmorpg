@@ -68,7 +68,7 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 2. Medir `jogo.render.gl.info.render` em 3 vistas, no preset médio (inclusive A4, com cerca de 29 animais).
 3. O desvio do `Animal` (sondas de `moverChao`) alterna entre dois lados num bolsão e o bicho treme no lugar até o reposicionamento; um desvio com memória do lado escolhido evitaria o tremor.
 
-**Testes instáveis:** com a máquina carregada (vários agentes e o Chromium rodando), três testes podem estourar os 5 s: a prova de ira (`tests/Provas.test.ts:171`), o "mover usa a IA de cena" (`tests/Missoes.test.ts`) e o de coerência de cor de `src/render/Simplificar.test.ts` (T-008). Sozinhos, passam.
+**Testes sob carga:** com o Chromium/e2e aberto ou vários agentes na máquina, os testes de CPU pura (o Simplificar, a síntese de áudio, as eras em sequência, a arca) estouram os 5 s porque os workers do vitest disputam os núcleos com o SwiftShader: no pico, 4 rodadas deram de 0 a 11 timeouts. Nessa situação use `npm run test:leve` (2 workers), que deu 121/121 nas 2 rodadas no pico. Os timeouts de Provas e Missoes (espera de timer) acabaram com a T-010 (`ciclo()` com `setImmediate`).
 
 **Dicas para o e2e no Windows:**
 - No Git Bash, use `MSYS_NO_PATHCONV=1` antes de `node e2e/foto.mjs "/..."`.
