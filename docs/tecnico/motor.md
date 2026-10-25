@@ -95,6 +95,28 @@ Como medir: com o servidor no ar, abra uma das URLs acima com `/?teste=medir&q=m
 
 O LOD dos humanos (T-008, `tecnico/personagens.md`) tira de 66 a 82 mil triângulos por vista: a sombra de cada humano passa a usar o nível de longe (25%), e quem está a mais de 18 m da câmera também é desenhado nele. As draw calls não mudam.
 
+**Culling dos humanos (T-026, `tecnico/personagens.md`, "Volume do corpo e culling"):** o corpo de cada humano passou a ter `frustumCulled` com uma esfera que acompanha a pose. Medido com `e2e/saida/medir-vistas.mjs` (preset médio, 960 × 540, mesmo momento de cada vista pelos atalhos, base `frente/integracao` 48f4784):
+
+| Vista | Etapa | Antes (calls / triângulos) | Depois | Corpos na cor (antes → depois) | Na sombra |
+|---|---|---|---|---|---|
+| a3-prova (12 humanos na obra) | a3.pregar | 63 / 507 mil | 60 / 438 mil | 13 → 10 (275 → 206 mil) | 13 → 13 |
+| b4-estrelas (Abrão olha o céu) | b4.duvida | 52 / 337 mil | 27 / 180 mil | 13 → 0 (91 mil → 0) | 13 → 1 (72 → 6 mil) |
+| b3-batalha (Dã, 28 corpos na cena) | b3.ataque | 134 / 419 mil | 118 / 328 mil | 20 → 4 (132 → 41 mil) | 3 → 3 |
+
+Na A3 todos os que projetam sombra estão no volume de sombra do sol, que é maior que a tela; na B4 a câmera olha o céu e só a sombra do Abrão fica. Prova de borda: `e2e/saida/borda-culling.mjs` gira a câmera em volta do personagem (48 direções × 2 inclinações) e compara, pixel a pixel, o quadro com o culling ligado e desligado. Na A3 deu 0 pixel diferente nos 96 passos, com o culling tirando de 2 a 7 corpos por quadro. Os controles mostram que a comparação pega o erro: com a esfera a 20% do raio, 12.404 pixels em 24 dos 96 passos (corpos cortados na borda); com a esfera jogada a 1 km, milhares de pixels por passo.
+
+**Culling dos animais (T-030, só medição):** os animais (`SkinnedMesh` de `src/entidades/animais/Corpos.ts`) usam o culling padrão do three com a esfera da primeira pose, aumentada 30% (`Animal.ts`, depois do `computeBoundingSphere`). A mesma prova (`borda-culling.mjs --alvo=animais --dt=0.25`: 96 passos, 0,25 s de jogo por passo, para a pose mudar) deu:
+
+| Cena | Animais | Pixels diferentes | Passos com diferença | Calls que o culling tira por passo |
+|---|---|---|---|---|
+| a4.animais (a arca enchendo; A2 não tem animais) | 23 a 29, quase todos andando | 238 (no máximo 16 por quadro) | 38 de 96 | ~35 a 55 |
+| b1.altarMore | 0 (nenhum rebanho nessa etapa) | 0 | - | 0 |
+| b2.muitos (rebanhos no poço) | 20, a maioria pastando | 46, só no passo 0 | 1 de 96 | 0 |
+
+Na A4 a esfera da primeira pose não cobre o animal andando: na borda da tela, pedaços pequenos (até 16 pixels a 480 × 270) somem com o culling ligado. Na B2 o culling não tirou nenhuma call em nenhum passo: todos os animais estavam na tela ou no volume de sombra do sol. Os 46 pixels do passo 0 aparecem com as mesmas 139 calls nos dois quadros, então não vêm do culling (hipótese: efeito do primeiro quadro depois de virar a câmera). A B2 não exercita a borda, e o pastar (644 animais-passo) fica sem prova. Nenhum animal voou nos passos medidos.
+
+Não houve mudança de código; fica como pendência em "Problemas conhecidos". Não separei se o que some na A4 é o corpo ou a sombra, nem qual espécie.
+
 O que pesa (vista do céu, com o LOD dos humanos): terreno, grama (~85 mil), personagens (os 4 de perto ≈ 120 mil, com a sombra barata), oliveiras de perto (com sombra) e a cidade (~50 mil, uma malha com sombra).
 
 ### Vistas do jogo (T-017)
@@ -126,3 +148,4 @@ Como medir: o script de medição da T-017 (fora do git, em `e2e/saida/`) faz is
 - Silhuetas e versões de longe não projetam sombra; a troca perto → longe (37 m no médio) faz a sombra da árvore sumir de uma vez.
 - Instâncias de perto fora do frustum (a mais de 10 m) não são desenhadas, então a sombra de uma árvore atrás da câmera pode faltar.
 - O culling da grama é pelo frustum da câmera: grama não projeta sombra, então nada falta na sombra. Morro acima, a caixa de um bloco pode passar da altura da câmera e ele é desenhado mesmo olhando o céu (é conservador).
+- Animais na borda da tela podem perder pedaços pequenos: a esfera de culling é a da primeira pose + 30% e não acompanha a marcha (T-030; na A4, até 16 pixels a 480 × 270 em 38 de 96 vistas). Correção sugerida: a mesma esfera pelos ossos dos humanos (`tecnico/personagens.md`, "Volume do corpo e culling"), refeita a cada `atualizar` do corpo do animal.
