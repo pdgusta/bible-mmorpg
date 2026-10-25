@@ -68,7 +68,7 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 2. Medir `jogo.render.gl.info.render` em 3 vistas, no preset médio (inclusive A4, com cerca de 29 animais).
 3. O desvio do `Animal` (sondas de `moverChao`) alterna entre dois lados num bolsão e o bicho treme no lugar até o reposicionamento; um desvio com memória do lado escolhido evitaria o tremor.
 
-**Testes instáveis:** com a máquina carregada (vários agentes e o Chromium rodando), o teste da prova de ira (`tests/Provas.test.ts:171`) e o "mover usa a IA de cena" (`tests/Missoes.test.ts`) podem estourar os 5 s; sozinhos, passam.
+**Testes instáveis:** com a máquina carregada (vários agentes e o Chromium rodando), três testes podem estourar os 5 s: a prova de ira (`tests/Provas.test.ts:171`), o "mover usa a IA de cena" (`tests/Missoes.test.ts`) e o de coerência de cor de `src/render/Simplificar.test.ts` (T-008). Sozinhos, passam.
 
 **Dicas para o e2e no Windows:**
 - No Git Bash, use `MSYS_NO_PATHCONV=1` antes de `node e2e/foto.mjs "/..."`.
