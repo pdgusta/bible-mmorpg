@@ -120,8 +120,13 @@ export class Depuracao {
     return this.p.s.provas.resolverAutomaticamente();
   }
 
-  /** Começa a jogar a era atual pelos atalhos (não espera; use avancar()). */
+  /**
+   * Começa a jogar a era atual pelos atalhos (não espera; use avancar()). Recusa se já há
+   * atalhos rodando: dois runners dividiriam o mesmo `fim`, e o avancar pararia de avançar o
+   * tempo quando o primeiro acabasse (com ?dev&missao, o pularPara roda depois do modo 'jogo').
+   */
   jogar(ate?: string) {
+    if (this.jogando && !this.fim) throw new Error('dev.jogar: pularPara em andamento (os atalhos já rodam); espere dev.fim && !jogo.manual');
     this.fim = false;
     this.erro = null;
     this.p.ui.dialogoC.velocidade = 0;
