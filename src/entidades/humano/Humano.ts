@@ -26,6 +26,8 @@ const _q = new THREE.Quaternion();
 const _q2 = new THREE.Quaternion();
 const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
+const _m = new THREE.Matrix4();
+const _caixa = new THREE.Box3();
 
 /**
  * Personagem humano visível: corpo base vestido por código + animador + objetos nas mãos.
@@ -57,6 +59,11 @@ export class Humano {
   distanciaLongePropria: number | null = null;
   private longe = false;
   private descartado = false;
+  /** Raio, no espaço de cada osso, que cobre os vértices presos a ele (-1: osso sem vértice). */
+  private raiosOssos: Float32Array;
+  /** Centros (mundo) e raios dos ossos no quadro, para o volume do corpo. */
+  private centrosOssos: Float32Array;
+  private raiosMundo: Float32Array;
 
   constructor(base: CorpoBase, aparencia: Aparencia) {
     this.base = base;
@@ -78,10 +85,13 @@ export class Humano {
     this.malha.name = 'corpo';
     this.malha.castShadow = true;
     this.malha.receiveShadow = true;
-    this.malha.frustumCulled = false;
     orig.parent!.add(this.malha);
     const ossos = base.nomesOssos.map((n) => this.ossos.get(n)!);
     this.malha.bind(new THREE.Skeleton(ossos, orig.skeleton.boneInverses.map((m) => m.clone())), base.bindMatrix.clone());
+    this.raiosOssos = this.medirOssos();
+    this.centrosOssos = new Float32Array(ossos.length * 3);
+    this.raiosMundo = new Float32Array(ossos.length);
+    this.malha.boundingSphere = new THREE.Sphere();
     for (const o of remover) o.parent?.remove(o);
     const escala = aparencia.altura / (base.yTopo - base.ySola);
     this.modelo.scale.setScalar(escala);
@@ -90,7 +100,65 @@ export class Humano {
     this.raiz.add(this.modelo);
     this.animador = new Animador(this.modelo, base);
     this.animador.atualizar(0);
+    this.raiz.updateMatrixWorld(true);
+    this.atualizarVolume();
     void simplificadorPronto.then(() => this.prepararLod());
+  }
+
+  /**
+   * Para cada osso, a maior distância (no espaço do osso, o de `boneInverse · bindMatrix`) de um
+   * vértice que tenha algum peso nele. Como o osso é rígido, esse vértice fica, em qualquer pose,
+   * a no máximo esse raio (vezes a escala do osso) da posição do osso; e o vértice animado é uma
+   * média ponderada desses pontos, então cabe em qualquer esfera que contenha as dos seus ossos.
+   */
+  private medirOssos() {
+    const g = this.malha.geometry;
+    const pos = g.attributes.position;
+    const si = g.attributes.skinIndex;
+    const sw = g.attributes.skinWeight;
+    const inv = this.malha.skeleton.boneInverses;
+    const paraOsso = inv.map((b) => new THREE.Matrix4().multiplyMatrices(b, this.malha.bindMatrix));
+    const raios = new Float32Array(inv.length).fill(-1);
+    for (let i = 0; i < pos.count; i++) {
+      for (let c = 0; c < 4; c++) {
+        if (sw.getComponent(i, c) <= 0) continue;
+        const b = si.getComponent(i, c);
+        const d = _v.fromBufferAttribute(pos, i).applyMatrix4(paraOsso[b]).length();
+        if (d > raios[b]) raios[b] = d;
+      }
+    }
+    return raios;
+  }
+
+  /**
+   * Volume do corpo para o culling (na cor e na sombra, que o three testa contra o volume de
+   * sombra da luz): a esfera que contém as esferas dos ossos na pose do quadro, guardada no
+   * espaço da malha, como o three espera em `SkinnedMesh.boundingSphere`. Mover a raiz depois
+   * não a invalida; mudar a pose, sim (é refeita no fim de `atualizar`).
+   */
+  private atualizarVolume() {
+    const ossos = this.malha.skeleton.bones;
+    const c = this.centrosOssos;
+    const r = this.raiosMundo;
+    _caixa.makeEmpty();
+    for (let b = 0; b < ossos.length; b++) {
+      if (this.raiosOssos[b] < 0) continue;
+      const e = ossos[b].matrixWorld;
+      _v.setFromMatrixPosition(e).toArray(c, b * 3);
+      r[b] = this.raiosOssos[b] * e.getMaxScaleOnAxis();
+      _caixa.expandByPoint(_v2.copy(_v).subScalar(r[b]));
+      _caixa.expandByPoint(_v2.copy(_v).addScalar(r[b]));
+    }
+    const centro = _caixa.getCenter(_v2);
+    let raio = 0;
+    for (let b = 0; b < ossos.length; b++) {
+      if (this.raiosOssos[b] < 0) continue;
+      raio = Math.max(raio, _v.fromArray(c, b * 3).distanceTo(centro) + r[b]);
+    }
+    const m = this.malha.matrixWorld;
+    const esfera = this.malha.boundingSphere!;
+    esfera.center.copy(centro).applyMatrix4(_m.copy(m).invert());
+    esfera.radius = raio / m.getMaxScaleOnAxis();
   }
 
   /**
@@ -153,6 +221,7 @@ export class Humano {
     this.raiz.updateMatrixWorld(true);
     this.alvoOracao = this.oracao;
     this.posProcedural(dt, distanciaCamera);
+    this.atualizarVolume();
   }
 
   /** Ajustes procedurais depois do mixer: olhar, oração e escalada. */

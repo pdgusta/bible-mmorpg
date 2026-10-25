@@ -129,7 +129,7 @@ Todas as vistas ficam dentro do orçamento. A A4 foi medida a cada 5 animais com
 - **Céu e luz:** ciclo do dia, nuvens brancas e fofas, tempestade, arco-íris e glória dourada. A neblina é suave e mais rala no alto, então as montanhas do horizonte guardam o relevo.
 - **Terreno:** blocos de 96 m com malha de 2 m perto e de 4 m longe, mais saias contra frestas; modos lama e molhado. A grama tem a base na cor do chão e a ponta clara.
 - **Transição de era:** duas faixas encadeadas em `Shaders.ts`. A vegetação e a grama somem primeiro; depois o terreno, as estruturas e a água afundam ou se apagam. Nada flutua, e a sombra das estruturas, da arca e dos animais afunda junto (`Mundo.prepararSombras`).
-- **Humanos:** LOD da malha com 25% dos triângulos a partir de 18 m da câmera; a sombra usa sempre esse nível. De perto o corpo não muda (`tecnico/personagens.md`).
+- **Humanos:** LOD da malha com 25% dos triângulos a partir de 18 m da câmera; a sombra usa sempre esse nível. De perto o corpo não muda (`tecnico/personagens.md`). O corpo tem culling por frustum, na cor e na sombra, com uma esfera refeita a cada quadro a partir dos ossos (T-026): a B4 caiu de 52 para 27 draw calls e de 337 para 180 mil triângulos, a B3 de 134 para 118 calls e a A3 de 507 para 438 mil triângulos (tabela em `tecnico/motor.md`).
 - **Física:** inclinação máxima a pé, que vale também no ar; quem fica numa encosta íngreme escorrega e não pula (`CorpoFisico.naEncosta`). Testes em `src/mundo/Fisica.test.ts`.
 - **Orçamento (preset médio, 7 vistas):** no máximo 128 draw calls e 513 mil triângulos. Tabela em `tecnico/motor.md`.
 

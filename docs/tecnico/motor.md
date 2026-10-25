@@ -95,6 +95,16 @@ Como medir: com o servidor no ar, abra uma das URLs acima com `/?teste=medir&q=m
 
 O LOD dos humanos (T-008, `tecnico/personagens.md`) tira de 66 a 82 mil triângulos por vista: a sombra de cada humano passa a usar o nível de longe (25%), e quem está a mais de 18 m da câmera também é desenhado nele. As draw calls não mudam.
 
+**Culling dos humanos (T-026, `tecnico/personagens.md`, "Volume do corpo e culling"):** o corpo de cada humano passou a ter `frustumCulled` com uma esfera que acompanha a pose. Medido com `e2e/saida/medir-vistas.mjs` (preset médio, 960 × 540, mesmo momento de cada vista pelos atalhos, base `frente/integracao` 48f4784):
+
+| Vista | Etapa | Antes (calls / triângulos) | Depois | Corpos na cor (antes → depois) | Na sombra |
+|---|---|---|---|---|---|
+| a3-prova (12 humanos na obra) | a3.pregar | 63 / 507 mil | 60 / 438 mil | 13 → 10 (275 → 206 mil) | 13 → 13 |
+| b4-estrelas (Abrão olha o céu) | b4.duvida | 52 / 337 mil | 27 / 180 mil | 13 → 0 (91 mil → 0) | 13 → 1 (72 → 6 mil) |
+| b3-batalha (Dã, 28 corpos na cena) | b3.ataque | 134 / 419 mil | 118 / 328 mil | 20 → 4 (132 → 41 mil) | 3 → 3 |
+
+Na A3 todos os que projetam sombra estão no volume de sombra do sol, que é maior que a tela; na B4 a câmera olha o céu e só a sombra do Abrão fica. Prova de borda: `e2e/saida/borda-culling.mjs` gira a câmera em volta do personagem (48 direções × 2 inclinações) e compara, pixel a pixel, o quadro com o culling ligado e desligado. Na A3 deu 0 pixel diferente nos 96 passos, com o culling tirando de 2 a 7 corpos por quadro. Os controles mostram que a comparação pega o erro: com a esfera a 20% do raio, 12.404 pixels em 24 dos 96 passos (corpos cortados na borda); com a esfera jogada a 1 km, milhares de pixels por passo.
+
 O que pesa (vista do céu, com o LOD dos humanos): terreno, grama (~85 mil), personagens (os 4 de perto ≈ 120 mil, com a sombra barata), oliveiras de perto (com sombra) e a cidade (~50 mil, uma malha com sombra).
 
 ## Problemas conhecidos
