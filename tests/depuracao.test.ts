@@ -118,3 +118,86 @@ describe('Partida.sairParaTitulo', () => {
     expect(runners).toHaveLength(2);
   });
 });
+
+/**
+ * Partida para os laços que dirigem os atalhos (pularPara, jogarSozinho, avancar): cada passo de
+ * `jogo.avancar` só resolve quando o teste mandar, e cada efeito na UI fica contado.
+ */
+function partidaDirigida() {
+  const passos: Array<() => void> = [];
+  const efeitos: string[] = [];
+  const p = {
+    jogo: {
+      eventos: { on() {} }, manual: false, tempo: 0,
+      avancar: () => new Promise<void>((r) => passos.push(r)),
+    },
+    ui: {
+      dialogoC: { velocidade: 52 },
+      carregamento: (c: unknown) => efeitos.push(c ? 'carregamento' : 'carregamento:fim'),
+      aviso: () => efeitos.push('aviso'),
+      menusC: { topo: () => (efeitos.push('fala'), null) },
+      dialogoAberto: () => false,
+    },
+    era: {
+      def: { id: 'noe', missoes: [{ id: 'a1' }, { id: 'a2' }, { id: 'a3' }, { id: 'a4' }] },
+      atalhos: () => ({ jogar: () => new Promise<void>(() => {}) }),
+    },
+    s: { missoes: { missaoAtual: 'a1', definicao: () => ({ titulo: 'A4' }) } },
+  };
+  return { dev: new Depuracao(p as unknown as Partida), p, passos, efeitos };
+}
+
+describe('Depuracao.encerrar com o laço no meio de um passo', () => {
+  /** Encerra, e um dono novo (um e2e) liga o manual, zera as falas e começa outro runner. */
+  function trocarDeDono(d: ReturnType<typeof partidaDirigida>) {
+    d.dev.encerrar();
+    expect(d.p.jogo.manual).toBe(false);
+    d.p.jogo.manual = true;
+    d.p.ui.dialogoC.velocidade = 0;
+    d.dev.jogar();
+    d.efeitos.length = 0;
+  }
+
+  function semEfeitoNovo(d: ReturnType<typeof partidaDirigida>) {
+    expect(d.passos).toHaveLength(1);
+    expect(d.efeitos).toEqual([]);
+    expect(d.p.jogo.manual).toBe(true);
+    expect(d.p.ui.dialogoC.velocidade).toBe(0);
+    expect(d.dev.fim).toBe(false);
+  }
+
+  it('o pularPara antigo para sem mexer na sessão nova', async () => {
+    const d = partidaDirigida();
+    const antigo = d.dev.pularPara('a4');
+    expect(d.passos).toHaveLength(1);
+    expect(d.efeitos.filter((e) => e === 'carregamento')).toHaveLength(1);
+    trocarDeDono(d);
+    d.passos[0]();
+    await antigo;
+    semEfeitoNovo(d);
+  });
+
+  it('o jogarSozinho antigo para sem mexer na sessão nova', async () => {
+    const d = partidaDirigida();
+    const antigo = d.dev.jogarSozinho();
+    expect(d.passos).toHaveLength(1);
+    trocarDeDono(d);
+    d.passos[0]();
+    await antigo;
+    semEfeitoNovo(d);
+  });
+
+  it('o avancar em curso volta no fim do passo, sem passar falas nem avançar de novo', async () => {
+    const d = partidaDirigida();
+    d.dev.jogar();
+    const antigo = d.dev.avancar(10);
+    expect(d.passos).toHaveLength(1);
+    d.dev.encerrar();
+    d.dev.jogar();
+    d.efeitos.length = 0;
+    d.passos[0]();
+    expect(await antigo).toEqual({ t: 0, fim: true });
+    expect(d.passos).toHaveLength(1);
+    expect(d.efeitos).toEqual([]);
+  });
+});

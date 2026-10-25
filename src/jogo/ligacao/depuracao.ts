@@ -45,6 +45,8 @@ export class Depuracao {
   private inicioTransicao = -1;
   /** Sobe a cada encerrar(): o runner de uma geração passada não mexe mais em nada. */
   private geracao = 0;
+  /** O pularPara/jogarSozinho ligou o modo manual (pelo avancar) e o desliga ao acabar. */
+  private dirigindo = false;
 
   constructor(private p: Partida) {
     p.jogo.eventos.on('era:transicao', () => (this.inicioTransicao = p.jogo.tempo));
@@ -159,11 +161,15 @@ export class Depuracao {
 
   /**
    * A partida saiu (título, novo jogo, carregar): as missões abortaram e os atalhos ficariam
-   * esperando para sempre, recusando o próximo jogar(). Solta o runner e devolve a velocidade
-   * das falas; o `jogo.manual` fica com quem o ligou (o e2e, ou o laço do pularPara/jogarSozinho).
+   * esperando para sempre, recusando o próximo jogar(). Solta o runner e os laços que o dirigem
+   * (avancar, pularPara, jogarSozinho voltam no fim do passo em curso, sem mais nenhum efeito) e
+   * devolve a velocidade das falas. O `jogo.manual` só desliga se foi um desses laços que o
+   * ligou; se foi o e2e, fica com ele.
    */
   encerrar() {
     if (this.jogando && !this.fim) this.p.ui.dialogoC.velocidade = 52;
+    if (this.dirigindo) this.p.jogo.manual = false;
+    this.dirigindo = false;
     this.geracao++;
     this.jogando = null;
     this.fim = true;
@@ -194,6 +200,7 @@ export class Depuracao {
    */
   async avancar(segundos: number, passo = 0.1): Promise<ResultadoAvanco> {
     const jogo = this.p.jogo;
+    const g = this.geracao;
     jogo.manual = true;
     let t = 0;
     while (t < segundos - 1e-6) {
@@ -203,6 +210,7 @@ export class Depuracao {
       if (!this.disparada?.c.manterFala) this.passarFala();
       if (this.fim && !this.disparada) return { t, fim: true, erro: this.erro ?? undefined };
       await jogo.avancar(passo);
+      if (g !== this.geracao) return { t, fim: true };
       t += passo;
     }
     return { t };
@@ -261,15 +269,17 @@ export class Depuracao {
     const titulo = s.missoes.definicao(missao)?.titulo ?? missao;
     this.jogar(missao);
     const g = this.geracao;
+    this.dirigindo = true;
     while (!this.fim) {
       const i = Math.max(0, ordem.indexOf(this.missao ?? ''));
       ui.carregamento({ progresso: Math.min(0.98, (i + 0.5) / Math.max(1, alvo)), texto: `Avançando até ${titulo}…` });
       const r = await this.avancar(4);
+      // a partida saiu no meio: o encerrar já limpou, e o que está na tela é de outro dono
+      if (g !== this.geracao) return;
       if (r.captura) this.liberar();
     }
+    this.dirigindo = false;
     jogo.manual = false;
-    // a partida saiu no meio: a tela de carregamento já é de outra coisa
-    if (g !== this.geracao) return;
     ui.carregamento(null);
     ui.dialogoC.velocidade = 52;
     if (this.erro) ui.aviso(`Atalho falhou: ${this.erro}`, 'info');
@@ -278,10 +288,14 @@ export class Depuracao {
   /** ?dev&auto=1: joga a era inteira sozinho (a renderização continua a cada quadro). */
   async jogarSozinho() {
     this.jogar();
+    const g = this.geracao;
+    this.dirigindo = true;
     while (!this.fim) {
       const r = await this.avancar(2);
+      if (g !== this.geracao) return;
       if (r.captura) this.liberar();
     }
+    this.dirigindo = false;
     this.p.jogo.manual = false;
     this.p.ui.dialogoC.velocidade = 52;
     if (this.erro) this.p.ui.aviso(`Atalho falhou: ${this.erro}`, 'info');
