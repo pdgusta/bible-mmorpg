@@ -107,6 +107,21 @@ export class Animal {
   /** Distância (m) além da qual o esqueleto não é animado. */
   static distanciaAnimar = 70;
 
+  /**
+   * Remove na hora (sem fade) os animais de um mundo que vai ser descartado (troca de era):
+   * sem isso eles ficam em `todos` e entram na separação dos animais do mundo novo.
+   * Devolve quantos removeu.
+   */
+  static descartar(mundo: MundoAnimais): number {
+    let n = 0;
+    for (const a of [...Animal.todos]) {
+      if (a.mundo !== mundo) continue;
+      void a.remover(false);
+      n++;
+    }
+    return n;
+  }
+
   readonly especie: Especie;
   readonly info: InfoEspecie;
   readonly sexo: Sexo;

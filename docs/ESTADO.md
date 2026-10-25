@@ -67,6 +67,7 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 - `npm run validar` funciona no Windows (`fileURLToPath` em `scripts/biblia-comum.mjs`); `playwright` é dependência de desenvolvimento.
 - T-013/T-018: `e2e/jogar-mvp.mjs` (`npm run e2e`, junção da `frente/jogar-mvp`) joga o MVP inteiro pelos atalhos: título, era 1, transição, era 2, fim de B5, resumo da jornada, créditos e volta ao título. Em cada momento-chave tira uma foto (`e2e/saida/mvp/`) e mede `jogo.render.gl.info.render`. Leva de 19 a 24 min no SwiftShader; rode sem o vitest junto.
 - T-020: junção da `frente/era-abraao` (até 9687739: T-009, T-014 e T-016). O e2e conta os animais pelo jogo (`partida.dev.animais()`) e importa os atalhos e as missões pela URL que o jogo carregou: um módulo editado depois que o Vite subiu vem com `?t=`, e o import pelo caminho puro trazia outra instância (a A4 contava 0 animais).
+- T-023: **animais da era 1 na era 2.** `Animal.todos` é global, e o `desligar()` da era de Noé descartava o vale sem remover os animais. Por isso os 8 que saem da arca na A6 seguiam na era 2 e entravam na separação de `moverChao` dos animais de Canaã: em `b1.chegada`, `dev.animais().n` dava 8, nenhum no mundo de Canaã. Agora o `EraNoe.desligar()` chama `Animal.descartar(mundo)` (remove na hora os animais daquele mundo) e `ERA_NOE.limparCena()` (as missões esquecem os animais do vale), e a B1 conta 0 (`tests/animal-descartar.test.ts`). Na tabela abaixo, as colunas de animais de B1 a B5 foram medidas antes do conserto e incluem esses 8.
 
 **Orçamento da integração** (`npm run e2e`, preset médio, 960 × 540, as draw calls contam a passada de sombra; base `frente/integracao` com o LOD dos humanos e a T-016, antes das junções da `frente/hud`, da `frente/desempenho` e da `frente/a4`):
 
@@ -90,7 +91,7 @@ Os briefings originais de cada frente estão em `docs/agentes/*.md`. Eles citam 
 Todas as vistas ficam dentro do orçamento. A A4 foi medida a cada 5 animais com a câmera virada para eles: 7 animais, 75 calls; 14, 113; 23, 130 (o pico); 29, 120. Antes da T-016, a B3 dava 151.
 
 **Falta:**
-1. **Animais da era 1 na era 2:** os 8 animais que saem da arca na A6 continuam em `Animal.todos` depois da transição (a B1 conta 8 antes de qualquer rebanho, e o rebanho da B2 só nasce em B2). Hipótese: o mundo de Noé é descartado sem `Animal.remover()`, e esses animais ainda entram na separação de `moverChao` dos animais de Canaã.
+1. **Animais da era 2 ao sair dela:** o `desligar()` de `src/jogo/ligacao/abraao.ts` ainda não chama `Animal.descartar(this.mundo)`. Depois de B5, quem volta ao título e começa um jogo novo leva os animais de Canaã em `Animal.todos` para a era 1 (é o mesmo defeito que a T-023 corrigiu na era 1).
 
 **Testes sob carga:** com o Chromium/e2e aberto ou vários agentes na máquina, os testes de CPU pura (o Simplificar, a síntese de áudio, as eras em sequência, a arca) estouram os 5 s porque os workers do vitest disputam os núcleos com o SwiftShader: no pico, 4 rodadas deram de 0 a 11 timeouts. Nessa situação use `npm run test:leve` (2 workers), que deu 121/121 nas 2 rodadas no pico. Os timeouts de Provas e Missoes (espera de timer) acabaram com a T-010 (`ciclo()` com `setImmediate`).
 

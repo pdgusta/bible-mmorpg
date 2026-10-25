@@ -8,7 +8,7 @@ import {
   ERA_NOE, CRISTO_NOE, INICIO_NOE, JOGAVEIS_NOE, NPCS_NOE, MEMORIAS_NOE, MISSOES_NOE, GENEALOGIA_NOE,
   jogarEraNoe, ponto2, type AmbienteAtalhosNoe, type AnimalNoe, type OpcoesAnimalNoe, type ServicosNoe,
 } from '../../eras/noe';
-import { criarAnimal, ESPECIES, type Especie } from '../../entidades/Animal';
+import { Animal, criarAnimal, ESPECIES, type Especie } from '../../entidades/Animal';
 import { distPolilinha } from '../../mundo/Relevo';
 import type { Personagem } from '../Personagem';
 import type { ContextoEra, DefEra, EraAtiva, OpcoesAtalhos, VistaTitulo } from '../eras';
@@ -193,6 +193,10 @@ class EraNoe implements EraAtiva {
 
   desligar() {
     for (const f of this.desligar_.splice(0)) f();
+    // o vale vai ser descartado: os animais dele saem de Animal.todos (senão entram na
+    // separação dos animais da era seguinte) e as missões os esquecem
+    Animal.descartar(this.mundo);
+    ERA_NOE.limparCena();
   }
 
   atalhos(op: OpcoesAtalhos) {
