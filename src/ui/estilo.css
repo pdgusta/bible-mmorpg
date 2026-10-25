@@ -706,6 +706,8 @@ details.kjv p { padding: 0 1rem 0.9rem; font-style: italic; color: var(--tinta-2
   opacity: 0; transition: opacity 0.3s;
 }
 .dardo.visivel { opacity: 1; }
+/* sem vaga (teto ou sem lugar livre): espera a vez, invisível, e aparece quando couber */
+.dardo.esperando { opacity: 0; }
 .dardo-brasa { flex: none; width: 0.7rem; height: 0.7rem; border-radius: 50%; background: radial-gradient(circle, #ffd27a, #e0552a 60%, #8a1e0e); box-shadow: 0 0 0.6rem 0.2rem rgba(230, 100, 40, 0.75); animation: brasa 0.6s ease-in-out infinite alternate; }
 @keyframes brasa { to { box-shadow: 0 0 1rem 0.35rem rgba(230, 100, 40, 0.5); } }
 .dardo.bloqueado {
@@ -1068,6 +1070,8 @@ details.kjv p { padding: 0 1rem 0.9rem; font-style: italic; color: var(--tinta-2
   .dica-tutorial { max-width: 14.5rem; }
   /* centrada, a coluna de memórias da dúvida encostaria no painel do topo: desce para o canto */
   .prova-memorias { top: auto; bottom: 1.2rem; transform: none; gap: 0.3rem; }
+  /* a frase do centro em duas linhas, não três: sobra lugar para os sussurros */
+  .prova-mensagem { font-size: 1.6rem; padding: 0.8rem 2rem; }
   .prova-memorias-cab { font-size: 1.15rem; }
   .prova-memoria { padding-top: 0.35rem; padding-bottom: 0.35rem; }
   .legenda-troca { padding: 0.4rem 1.1rem; }
@@ -1084,6 +1088,8 @@ details.kjv p { padding: 0 1rem 0.9rem; font-style: italic; color: var(--tinta-2
   }
   .faixa-versiculo.visivel { transform: none; }
   .com-faixa .bussola, .com-faixa .hud-tempo, .com-faixa .hud-objetivo { opacity: 0; }
+  /* na prova de dúvida, a faixa fica entre a coluna do retrato e a das memórias */
+  .com-memorias .faixa-versiculo { right: calc(1.1rem + min(17rem, 30vw) + 0.6rem); }
 }
 @media (prefers-reduced-motion: reduce) {
   .ui-raiz *, .ui-raiz *::before, .ui-raiz *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }

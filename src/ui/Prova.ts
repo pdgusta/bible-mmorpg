@@ -4,7 +4,7 @@
 import type { EstadoProvaUI, TipoProva } from '../jogo/contratos';
 import type { CtxUI } from './contexto';
 import { clamp01, el, limpar, tecla } from './dom';
-import { afastarDePaineis, type Ret } from './AreaLivre';
+import { afastarDePaineis, distribuirSussurros, type Ret } from './AreaLivre';
 import { icone } from './icones';
 import { dividirMemorias } from './ListaMemorias';
 
@@ -30,13 +30,19 @@ interface ElDardo {
   /** Tamanho do cartão (px), medido quando entra. */
   larg: number;
   alt: number;
+  /** Tem vaga na tela (os outros esperam a vez, invisíveis). */
+  naTela: boolean;
 }
 
 /** Painéis que o sussurro não cobre (os que não estão na tela são ignorados). */
 const PAINEIS_PROVA = [
-  '.hud-esquerda', '.hud-tempo', '.bussola', '.hud-objetivo', '.avisos', '.dica-tutorial', '.faixa-versiculo',
-  '.prova-topo', '.prova-firmeza', '.prova-acoes', '.prova-memorias',
+  '.hud-esquerda', '.hud-tempo', '.bussola', '.hud-objetivo', '.hud-prompt', '.avisos', '.dica-tutorial', '.faixa-versiculo',
+  '.prova-topo', '.prova-firmeza', '.prova-acoes', '.prova-memorias', '.prova-mensagem',
 ];
+/** Painéis que passam (sem lugar livre, o sussurro mais urgente pode cobri-los; os outros, nunca). */
+const PASSAGEIROS = ['.avisos', '.dica-tutorial', '.faixa-versiculo', '.prova-mensagem'];
+/** Para onde os dardos andam, em fração da tela (o mesmo CENTRO_X/CENTRO_Y de Provas.ts). */
+const ALVO_DARDOS = { x: 0.5, y: 0.55 };
 /** De quanto em quanto tempo (ms) os painéis são medidos de novo. */
 const MEDIR_PAINEIS_MS = 400;
 
@@ -120,11 +126,21 @@ export class OverlayProva {
     for (const sel of PAINEIS_PROVA) {
       const e = document.querySelector<HTMLElement>(sel);
       if (!e || e.hidden) continue;
+      if (e === this.mensagem) {
+        // a frase do centro: só enquanto aparece, e o texto com metade do halo em volta (folga)
+        if (!e.classList.contains('visivel')) continue;
+        const r = e.getBoundingClientRect();
+        const cs = getComputedStyle(e);
+        const px = (parseFloat(cs.paddingLeft) || 0) / 2;
+        const py = (parseFloat(cs.paddingTop) || 0) / 2;
+        this.paineis.push({ esq: r.left + px, topo: r.top + py, dir: r.right - px, base: r.bottom - py, passageiro: true });
+        continue;
+      }
       // os da prova contam já enquanto ela aparece (fade); os do HUD, só se estão na tela
       const daProva = this.raiz.contains(e);
       if (!daProva && !e.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) continue;
       const r = e.getBoundingClientRect();
-      if (r.width && r.height) this.paineis.push({ esq: r.left, topo: r.top, dir: r.right, base: r.bottom });
+      if (r.width && r.height) this.paineis.push({ esq: r.left, topo: r.top, dir: r.right, base: r.bottom, passageiro: PASSAGEIROS.includes(sel) });
     }
     return this.paineis;
   }
@@ -171,15 +187,20 @@ export class OverlayProva {
       this.vinheta.style.opacity = (0.25 + peso * 0.75).toFixed(3);
     }
 
-    // dardos
+    // dardos: o jogo dá o centro em fração da tela; a UI os tira de cima dos painéis e um do outro,
+    // e os que não cabem esperam a vez, invisíveis (AreaLivre)
+    const W = window.innerWidth;
+    const H = window.innerHeight;
     const vistos = new Set<number>();
+    const ativos: { d: (typeof e.dardos)[number]; ed: ElDardo }[] = [];
     for (const d of e.dardos) {
       vistos.add(d.id);
       let ed = this.dardos.get(d.id);
       if (!ed) {
-        const c = el('div', 'dardo', el('span', 'dardo-brasa'), el('span', 'dardo-texto', d.texto));
+        const c = el('div', 'dardo esperando', el('span', 'dardo-brasa'), el('span', 'dardo-texto', d.texto));
+        c.dataset.id = String(d.id);
         this.camadaDardos.append(c);
-        ed = { el: c, bloqueado: false, x: d.x, y: d.y, larg: c.offsetWidth, alt: c.offsetHeight };
+        ed = { el: c, bloqueado: false, x: d.x, y: d.y, larg: c.offsetWidth, alt: c.offsetHeight, naTela: false };
         this.dardos.set(d.id, ed);
         requestAnimationFrame(() => c.classList.add('visivel'));
       }
@@ -191,15 +212,26 @@ export class OverlayProva {
       }
       if (d.bloqueado && !ed.bloqueado) {
         ed.bloqueado = true;
-        ed.el.classList.add('bloqueado');
+        // o que esperava a vez não aparece só para cair
+        if (ed.naTela) ed.el.classList.add('bloqueado');
       }
-      // o jogo dá o centro em fração da tela; o cartão não cobre painéis (AreaLivre)
-      const W = window.innerWidth;
-      const H = window.innerHeight;
-      const pos = afastarDePaineis({ x: d.x * W - ed.larg / 2, y: d.y * H - ed.alt / 2, larg: ed.larg, alt: ed.alt }, this.medirPaineis(), W, H);
-      const t = `translate3d(${pos.x.toFixed(1)}px, ${pos.y.toFixed(1)}px, 0)`;
-      if (!ed.bloqueado) ed.el.style.transform = t;
-      else ed.el.style.setProperty('--pos', t);
+      if (ed.bloqueado) {
+        const pos = afastarDePaineis({ x: d.x * W - ed.larg / 2, y: d.y * H - ed.alt / 2, larg: ed.larg, alt: ed.alt }, this.medirPaineis(), W, H);
+        ed.el.style.setProperty('--pos', `translate3d(${pos.x.toFixed(1)}px, ${pos.y.toFixed(1)}px, 0)`);
+      } else ativos.push({ d, ed });
+    }
+    const lugares = distribuirSussurros(
+      ativos.map(({ d, ed }) => ({
+        id: d.id, cx: d.x * W, cy: d.y * H, larg: ed.larg, alt: ed.alt, naTela: ed.naTela,
+        urgencia: Math.hypot(d.x - ALVO_DARDOS.x, d.y - ALVO_DARDOS.y),
+      })),
+      this.medirPaineis(), W, H,
+    );
+    for (const { d, ed } of ativos) {
+      const pos = lugares.get(d.id);
+      ed.naTela = !!pos;
+      ed.el.classList.toggle('esperando', !pos);
+      if (pos) ed.el.style.transform = `translate3d(${pos.x.toFixed(1)}px, ${pos.y.toFixed(1)}px, 0)`;
     }
     this.medidasVelhas = false;
     for (const [id, ed] of this.dardos) {
@@ -208,7 +240,7 @@ export class OverlayProva {
       if (ed.bloqueado) {
         setTimeout(() => ed.el.remove(), 900);
       } else {
-        const perto = Math.hypot(ed.x - 0.5, ed.y - 0.5) < 0.16;
+        const perto = Math.hypot(ed.x - ALVO_DARDOS.x, ed.y - ALVO_DARDOS.y) < 0.16;
         ed.el.classList.add(perto ? 'acertou' : 'sumiu');
         if (perto) {
           this.raiz.classList.remove('golpe');
@@ -274,6 +306,7 @@ export class OverlayProva {
     // mensagem
     const msg = e.mensagem ?? '';
     if (this.mudou('msg', msg)) {
+      this.paineisEm = -Infinity; // a frase do centro também é área ocupada
       this.mensagem.textContent = msg;
       this.mensagem.classList.remove('visivel');
       if (msg) {

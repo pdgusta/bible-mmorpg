@@ -167,6 +167,8 @@ export class UI implements InterfaceUI {
   prova(estado: EstadoProvaUI | null): void {
     this.provaC.atualizar(estado);
     this.raiz.classList.toggle('em-prova', estado !== null);
+    // a faixa de versículo dá lugar à lista de memórias da dúvida (estilo.css)
+    this.raiz.classList.toggle('com-memorias', !!estado?.memorias?.length);
   }
 
   rodaPersonagens(itens: ItemRoda[]): Promise<string | null> {

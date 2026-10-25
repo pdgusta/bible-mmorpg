@@ -5,6 +5,7 @@
 import { abrir, BASE, pasta, verificador } from './utilidades.mjs';
 
 const v = verificador();
+const cruza = (a, b) => a.esq < b.dir && b.esq < a.dir && a.topo < b.base && b.topo < a.base;
 const saida = pasta('e2e/saida/prova-memorias');
 const telas = [
   [640, 360],
@@ -47,10 +48,22 @@ for (const [largura, altura] of telas) {
     v(r.lista.topo >= 0 && r.lista.base <= altura && r.lista.dir <= largura, `${nome}: coluna dentro da tela (y ${r.lista.topo.toFixed(0)}..${r.lista.base.toFixed(0)})`);
     v(r.rolagem <= 1, `${nome}: nada cortado pelo teto da coluna (sobra ${r.rolagem}px)`);
     v(r.lista.esq >= largura * 0.62, `${nome}: fora do céu do centro (começa em x ${r.lista.esq.toFixed(0)} de ${largura})`);
-    const cruza = (a, b) => a.esq < b.dir && b.esq < a.dir && a.topo < b.base && b.topo < a.base;
     const nomes = ['topo', 'ações', 'firmeza'];
     const encosta = nomes.filter((_, i) => cruza(r.lista, r.paineis[i]));
     v(!encosta.length, `${nome}: não encosta nos painéis${encosta.length ? ` (encosta: ${encosta.join(', ')})` : ''}`);
+    // a faixa de versículo, na prova, não cobre a lista
+    const faixa = await pag.evaluate(async () => {
+      const t = window.ui.servicos.versiculo('Hb 11:7');
+      window.ui.bannerVersiculo({ ref: 'Hb 11:7', referenciaExtenso: t.extenso, bkj: t.texto, nvt: t.nvt, kjv: t.kjv });
+      await new Promise((r) => setTimeout(r, 900));
+      const caixa = (e) => {
+        const b = e.getBoundingClientRect();
+        return { esq: b.left, dir: b.right, topo: b.top, base: b.bottom };
+      };
+      return { faixa: caixa(document.querySelector('.faixa-versiculo')), lista: caixa(document.querySelector('.prova-memorias')) };
+    });
+    v(!cruza(faixa.faixa, faixa.lista), `${nome}: a faixa de versículo não cobre a lista (faixa x ${faixa.faixa.esq.toFixed(0)}..${faixa.faixa.dir.toFixed(0)}, y ..${faixa.faixa.base.toFixed(0)}; lista x ${faixa.lista.esq.toFixed(0)}.., y ${faixa.lista.topo.toFixed(0)}..)`);
+    v(faixa.faixa.esq >= 0 && faixa.faixa.dir <= largura, `${nome}: a faixa cabe na tela`);
     v(erros.length === 0, `${nome}: sem erros no console`);
     await pag.screenshot({ path: `${saida}/${largura}x${altura}-${mems}m-${usadas}u.png`, timeout: 180000 });
     await nav.close();
