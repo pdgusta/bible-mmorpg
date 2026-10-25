@@ -73,6 +73,7 @@ const ui = new UI(div, servicosBiblia({ nomes, classes }), acoes);
 5. **Provas:** Q, o botão direito e 1–5 continuam com a Entrada; a UI só desenha o overlay.
    - Memórias da dúvida (`ListaMemorias`): o jogo dá as teclas 1–5 às cinco primeiras ainda não lembradas, e só essas viram botão. As lembradas aparecem como uma fileira de estrelas acesas; as outras, como "+N para depois". Quando uma é lembrada, a próxima ganha a tecla. Memória sem tecla não mostra número.
    - A coluna fica na lateral direita, com teto de altura; em tela pequena desce para o canto de baixo, para não encostar no painel do topo. Teste no Chromium: `node e2e/teste-prova-memorias.mjs` (lab: `?lab=ui&tela=prova&tipo=duvida&mems=13&usadas=3`).
+   - Sussurros (os "dardos" de mentira): o jogo dá o centro em fração da tela; a UI tira o cartão de cima dos painéis visíveis (perfil, hora, bússola, objetivo, avisos, dica, faixa de versículo, topo da prova, firmeza, ações e memórias), empurrando-o para o lado mais perto que fique livre (`AreaLivre`). Os painéis são medidos de novo a cada 0,4 s e quando a prova abre ou muda de tamanho. Teste no Chromium: `node e2e/teste-sussurro.mjs`.
 
 ## Dados do Diário (montados pela integração)
 
